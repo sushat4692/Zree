@@ -1838,6 +1838,68 @@ public func FfiConverterTypeTagCount_lower(_ value: TagCount) -> RustBuffer {
 }
 
 
+/**
+ * Result of a text transform, with the selection expressed in **characters**
+ * (each UI converts to its own UTF-16 offsets).
+ */
+public struct ToggleResult: Equatable, Hashable {
+    public var text: String
+    public var selStart: UInt32
+    public var selEnd: UInt32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(text: String, selStart: UInt32, selEnd: UInt32) {
+        self.text = text
+        self.selStart = selStart
+        self.selEnd = selEnd
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension ToggleResult: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeToggleResult: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ToggleResult {
+        return
+            try ToggleResult(
+                text: FfiConverterString.read(from: &buf), 
+                selStart: FfiConverterUInt32.read(from: &buf), 
+                selEnd: FfiConverterUInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ToggleResult, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.text, into: &buf)
+        FfiConverterUInt32.write(value.selStart, into: &buf)
+        FfiConverterUInt32.write(value.selEnd, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeToggleResult_lift(_ buf: RustBuffer) throws -> ToggleResult {
+    return try FfiConverterTypeToggleResult.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeToggleResult_lower(_ value: ToggleResult) -> RustBuffer {
+    return FfiConverterTypeToggleResult.lower(value)
+}
+
+
 
 public enum Block: Equatable, Hashable {
     
@@ -2963,6 +3025,20 @@ public func setGitCaBundle(path: String)throws   {try rustCallWithError(FfiConve
 }
 }
 /**
+ * Wrap or unwrap an inline marker such as `**` (idempotent toggle).
+ */
+public func toggleInline(text: String, selStart: UInt32, selEnd: UInt32, mark: String) -> ToggleResult  {
+    return try!  FfiConverterTypeToggleResult_lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_toggle_inline(
+        FfiConverterString.lower(text),
+        FfiConverterUInt32.lower(selStart),
+        FfiConverterUInt32.lower(selEnd),
+        FfiConverterString.lower(mark),uniffiCallStatus
+    )
+})
+}
+/**
  * Flip a task checkbox, converting a plain line into an unchecked task.
  */
 public func toggleTask(line: String) -> String  {
@@ -3005,6 +3081,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_func_set_git_ca_bundle() != 19378) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_func_toggle_inline() != 20244) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_func_toggle_task() != 59847) {

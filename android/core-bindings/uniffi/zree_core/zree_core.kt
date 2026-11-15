@@ -687,6 +687,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_zree_core_checksum_func_set_git_ca_bundle(
     ): Int
+    external fun uniffi_zree_core_checksum_func_toggle_inline(
+    ): Int
     external fun uniffi_zree_core_checksum_func_toggle_task(
     ): Int
     external fun uniffi_zree_core_checksum_method_gitrepo_commit_all(
@@ -869,6 +871,8 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_set_git_ca_bundle(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
+    external fun uniffi_zree_core_fn_func_toggle_inline(`text`: RustBuffer.ByValue,`selStart`: Int,`selEnd`: Int,`mark`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_toggle_task(`line`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun ffi_zree_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1006,6 +1010,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_func_set_git_ca_bundle() and 0xFFFF) != 19378) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_func_toggle_inline() and 0xFFFF) != 20244) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_func_toggle_task() and 0xFFFF) != 59847) {
@@ -3001,6 +3008,53 @@ public object FfiConverterTypeTagCount: FfiConverterRustBuffer<TagCount> {
 
 
 
+/**
+ * Result of a text transform, with the selection expressed in **characters**
+ * (each UI converts to its own UTF-16 offsets).
+ */
+data class ToggleResult (
+    var `text`: kotlin.String
+    , 
+    var `selStart`: kotlin.UInt
+    , 
+    var `selEnd`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeToggleResult: FfiConverterRustBuffer<ToggleResult> {
+    override fun read(buf: ByteBuffer): ToggleResult {
+        return ToggleResult(
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ToggleResult) = (
+            FfiConverterString.allocationSize(value.`text`) +
+            FfiConverterUInt.allocationSize(value.`selStart`) +
+            FfiConverterUInt.allocationSize(value.`selEnd`)
+    )
+
+    override fun write(value: ToggleResult, buf: ByteBuffer) {
+            FfiConverterString.write(value.`text`, buf)
+            FfiConverterUInt.write(value.`selStart`, buf)
+            FfiConverterUInt.write(value.`selEnd`, buf)
+    }
+}
+
+
+
 sealed class Block {
     
     object Blank : Block()
@@ -4265,6 +4319,23 @@ public object FfiConverterSequenceTypeInline: FfiConverterRustBuffer<List<Inline
         FfiConverterString.lower(`path`),_status)
 }
     
+    
+
+        /**
+         * Wrap or unwrap an inline marker such as `**` (idempotent toggle).
+         */ fun `toggleInline`(`text`: kotlin.String, `selStart`: kotlin.UInt, `selEnd`: kotlin.UInt, `mark`: kotlin.String): ToggleResult {
+            return FfiConverterTypeToggleResult.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_func_toggle_inline(
+    
+        
+        FfiConverterString.lower(`text`),
+        FfiConverterUInt.lower(`selStart`),
+        FfiConverterUInt.lower(`selEnd`),
+        FfiConverterString.lower(`mark`),_status)
+}
+    )
+    }
     
 
         /**

@@ -30,6 +30,7 @@ import uniffi.zree_core.ListAction
 import uniffi.zree_core.BlockKind
 import uniffi.zree_core.completionContext
 import uniffi.zree_core.formatBlock
+import uniffi.zree_core.toggleInline
 import uniffi.zree_core.toggleTask
 import uniffi.zree_core.indentLine
 import uniffi.zree_core.listAction
@@ -591,16 +592,26 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
 
     fun applyTaskToggle() = rewriteCurrentLine { toggleTask(it) }
 
-    fun wrap(marks: String) {
-        val sel = value.selection
+    /**
+     * Wrap/unwrap an inline marker. Offsets cross the FFI in characters, so they
+     * are converted from UTF-16 here; the toggle itself lives in the core.
+     */
+    fun toggleWrap(mark: String) {
         val text = value.text
-        val start = minOf(sel.start, sel.end).coerceIn(0, text.length)
-        val end = maxOf(sel.start, sel.end).coerceIn(0, text.length)
-        val selected = text.substring(start, end)
-        val newText = text.substring(0, start) + marks + selected + marks + text.substring(end)
-        val caret = start + marks.length + selected.length
-        value = TextFieldValue(newText, TextRange(caret))
-        vm.setDraft(newText)
+        val sel = value.selection
+        val utf16Start = minOf(sel.start, sel.end).coerceIn(0, text.length)
+        val utf16End = maxOf(sel.start, sel.end).coerceIn(0, text.length)
+        val cpStart = text.codePointCount(0, utf16Start)
+        val cpEnd = text.codePointCount(0, utf16End)
+
+        val result = runCatching {
+            toggleInline(text, cpStart.toUInt(), cpEnd.toUInt(), mark)
+        }.getOrNull() ?: return
+
+        val a = utf16Index(result.text, result.selStart.toInt())
+        val b = utf16Index(result.text, result.selEnd.toInt())
+        value = TextFieldValue(result.text, TextRange(a, b))
+        vm.setDraft(result.text)
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -664,9 +675,19 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
             onHeading = { applyBlock(BlockKind.HEADING) },
             onQuote = { applyBlock(BlockKind.QUOTE) },
             onToggleTask = { applyTaskToggle() },
-            onBold = { wrap("**") },
+            onBold = { toggleWrap("**") },
         )
     }
+}
+
+private fun utf16Index(text: String, codePoints: Int): Int {
+    var i = 0
+    var n = 0
+    while (n < codePoints && i < text.length) {
+        i += Character.charCount(text.codePointAt(i))
+        n++
+    }
+    return i
 }
 
 @Composable

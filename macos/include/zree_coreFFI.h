@@ -468,6 +468,11 @@ RustBuffer uniffi_zree_core_fn_func_list_action(RustBuffer line, RustCallStatus 
 void uniffi_zree_core_fn_func_set_git_ca_bundle(RustBuffer path, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_TOGGLE_INLINE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_TOGGLE_INLINE
+RustBuffer uniffi_zree_core_fn_func_toggle_inline(RustBuffer text, uint32_t selStart, uint32_t selEnd, RustBuffer mark, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_TOGGLE_TASK
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_TOGGLE_TASK
 RustBuffer uniffi_zree_core_fn_func_toggle_task(RustBuffer line, RustCallStatus *_Nonnull out_status
@@ -766,6 +771,12 @@ uint16_t uniffi_zree_core_checksum_func_list_action(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_SET_GIT_CA_BUNDLE
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_SET_GIT_CA_BUNDLE
 uint16_t uniffi_zree_core_checksum_func_set_git_ca_bundle(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_TOGGLE_INLINE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_TOGGLE_INLINE
+uint16_t uniffi_zree_core_checksum_func_toggle_inline(void
     
 );
 #endif

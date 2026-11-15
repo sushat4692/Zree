@@ -106,6 +106,11 @@ Decided in the core (`complete.rs`), wired by each UI.
 | empty item, indented | outdent one level (2 spaces, 1 tab or 1 space per step) |
 | empty item in a nested ordered list | outdent, keeping the current number |
 
+**Bold (and other inline markers)**: the button toggles, so pressing it twice returns to the
+original text. With a selection it wraps unless the markers are already inside or just outside
+the selection, in which case they are removed; with no selection it inserts a pair and puts the
+caret between them, or removes the pair enclosing the caret.
+
 **Tab / Shift-Tab on a list line** (`indent_line`): indent adds two spaces before the marker,
 outdent removes one step (2 spaces / 1 tab / 1 space) and stops at the left margin. Lines that
 are not list items are left alone.

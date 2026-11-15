@@ -183,6 +183,12 @@ pub fn list_action(line: String) -> crate::complete::ListAction {
     crate::complete::list_action(&line)
 }
 
+/// Wrap or unwrap an inline marker such as `**` (idempotent toggle).
+#[uniffi::export]
+pub fn toggle_inline(text: String, selStart: u32, selEnd: u32, mark: String) -> crate::complete::ToggleResult {
+    crate::complete::toggle_inline(&text, selStart, selEnd, &mark)
+}
+
 /// Apply (or toggle off) a block style on the current line.
 #[uniffi::export]
 pub fn format_block(line: String, kind: crate::complete::BlockKind) -> String {

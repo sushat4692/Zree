@@ -424,3 +424,40 @@ fn block_buttons_replace_and_toggle() {
     assert_eq!(toggle_task("foo"), "- [ ] foo");
     assert_eq!(toggle_task("  - [x] foo"), "  - [ ] foo");
 }
+
+#[test]
+fn inline_marker_toggles_instead_of_stacking() {
+    use zree_core::complete::toggle_inline;
+
+    // no selection: insert a pair and put the caret between them
+    let r = toggle_inline("foo", 3, 3, "**");
+    assert_eq!(r.text, "foo****");
+    assert_eq!((r.sel_start, r.sel_end), (5, 5));
+
+    // pressing again inside the empty pair removes it
+    let r2 = toggle_inline(&r.text, r.sel_start, r.sel_end, "**");
+    assert_eq!(r2.text, "foo");
+
+    // selection gets wrapped, then unwrapped
+    let r = toggle_inline("foo", 0, 3, "**");
+    assert_eq!(r.text, "**foo**");
+    let r2 = toggle_inline(&r.text, r.sel_start, r.sel_end, "**");
+    assert_eq!(r2.text, "foo");
+
+    // selection that already contains the markers
+    let r = toggle_inline("**foo**", 0, 7, "**");
+    assert_eq!(r.text, "foo");
+
+    // caret inside a bold span removes the pair
+    let r = toggle_inline("a **foo** b", 5, 5, "**");
+    assert_eq!(r.text, "a foo b");
+    assert_eq!((r.sel_start, r.sel_end), (3, 3));
+
+    // caret in plain text far from any marker still wraps
+    let r = toggle_inline("foo bar", 2, 2, "**");
+    assert_eq!(r.text, "fo****o bar");
+
+    // emoji (surrogate pairs) are handled as characters, not bytes
+    let r = toggle_inline("😀", 1, 1, "**");
+    assert_eq!(r.text, "😀****");
+}
