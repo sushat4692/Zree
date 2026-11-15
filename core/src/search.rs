@@ -68,13 +68,16 @@ impl Index {
         })
     }
 
-    /// Fill in creation times for notes that have none (Android), keyed by note id.
-    /// Returns how many entries were updated.
+    /// Take creation times from Git.
+    ///
+    /// Git wins even when the filesystem reported a birth time, so both devices sort
+    /// the same way (Android has no birth time at all, macOS does). Notes that Git has
+    /// never seen keep whatever the filesystem said.
     pub fn apply_created_times(&mut self, times: &[(String, i64)]) -> usize {
         let mut updated = 0;
         for (id, ms) in times {
             if let Some(entry) = self.entries.iter_mut().find(|e| &e.meta.id == id) {
-                if entry.meta.created_ms == 0 {
+                if entry.meta.created_ms != *ms {
                     entry.meta.created_ms = *ms;
                     updated += 1;
                 }

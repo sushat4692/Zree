@@ -10,6 +10,7 @@ struct NoteRow: Identifiable, Hashable {
     let snippet: String
     let tags: [String]
     let mtimeMs: Int64
+    let createdMs: Int64
 }
 
 @MainActor
@@ -219,7 +220,8 @@ final class AppState {
                 title: $0.title,
                 snippet: $0.snippet,
                 tags: $0.tags,
-                mtimeMs: $0.mtimeMs
+                mtimeMs: $0.mtimeMs,
+                createdMs: $0.createdMs
             )
         }
         status = "\(rows.count) / \(session.search(query: "", tags: [], limit: 0).count) ノート"
@@ -308,8 +310,12 @@ final class AppState {
                     title: row.title,
                     snippet: row.snippet,
                     tags: row.tags,
-                    mtimeMs: meta.mtimeMs
+                    mtimeMs: meta.mtimeMs,
+                    createdMs: row.createdMs
                 )
+                if sortOrder == .updatedDesc {
+                    rows.sort { $0.mtimeMs > $1.mtimeMs }
+                }
             }
         } catch {
             errorMessage = "保存できません: \(describe(error))"
@@ -703,6 +709,15 @@ final class AppState {
                 self.reloadRows()
             }
         }
+    }
+
+    /// Creation / update time of the open note, for the editor header.
+    var openNoteDates: (created: Int64, updated: Int64) {
+        guard let id = selectedID else { return (0, 0) }
+        if let row = rows.first(where: { $0.id == id }) {
+            return (row.createdMs, row.mtimeMs)
+        }
+        return (0, 0)
     }
 
     // MARK: - Display settings

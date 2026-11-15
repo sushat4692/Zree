@@ -162,7 +162,10 @@ struct RowView: View {
                     .lineLimit(2)
             }
             HStack(spacing: 4) {
-                Text(Self.format(row.mtimeMs))
+                Text("更新 \(Self.format(row.mtimeMs))")
+                if row.createdMs > 0 {
+                    Text("· 作成 \(Self.format(row.createdMs))")
+                }
                 if !row.tags.isEmpty {
                     Text("·")
                     Text(row.tags.prefix(3).map { "#\($0)" }.joined(separator: " "))
@@ -283,6 +286,18 @@ struct Header: View {
             }
 
             Spacer()
+
+            let dates = app.openNoteDates
+            if dates.updated > 0 {
+                Text("更新 \(RowView.format(dates.updated))")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                if dates.created > 0 {
+                    Text("作成 \(RowView.format(dates.created))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
 
             if !app.selectedTags.isEmpty {
                 Text(app.selectedTags.sorted().map { "#\($0)" }.joined(separator: " "))

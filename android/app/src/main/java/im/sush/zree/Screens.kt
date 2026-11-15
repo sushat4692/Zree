@@ -299,6 +299,20 @@ fun ListScreen(vm: ZreeViewModel, state: UiState) {
                             maxLines = 2,
                         )
                     }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "更新 ${rowDate(row.mtimeMs)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (row.createdMs > 0) {
+                            Text(
+                                "作成 ${rowDate(row.createdMs)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     if (row.tags.isNotEmpty()) {
                         Text(
                             row.tags.take(3).joinToString(" ") { "#$it" },
@@ -395,6 +409,23 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
             TextButton(onClick = { showDelete = true }) { Text("削除") }
             TextButton(onClick = vm::togglePreview) {
                 Text(if (state.preview) "編集" else "プレビュー")
+            }
+        }
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                "更新 ${rowDate(state.noteMtimeMs)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (state.noteCreatedMs > 0) {
+                Text(
+                    "作成 ${rowDate(state.noteCreatedMs)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
         HorizontalDivider()
@@ -798,4 +829,10 @@ private fun LabeledSlider(
         )
         Text(display, style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(44.dp))
     }
+}
+
+private fun rowDate(ms: Long): String {
+    if (ms <= 0L) return "—"
+    val format = java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.US)
+    return format.format(java.util.Date(ms))
 }

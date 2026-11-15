@@ -514,3 +514,25 @@ fn thematic_breaks_are_rules_not_paragraphs() {
         [Block::Paragraph { .. }]
     ));
 }
+
+#[test]
+fn git_creation_times_win_over_the_filesystem() {
+    use zree_core::search::SortOrder;
+
+    let (_dir, vault) = fixture();
+    let mut index = Index::build(&vault).unwrap();
+    let before = index
+        .list_rows(SortOrder::CreatedAsc)
+        .first()
+        .map(|r| r.title.clone())
+        .unwrap();
+
+    // pretend Git says the note called "ようこそ" is the very oldest
+    let updated = index.apply_created_times(&[("ようこそ.md".to_string(), 1)]);
+    assert!(updated >= 1 || before == "ようこそ");
+
+    let oldest = index.list_rows(SortOrder::CreatedAsc).first().unwrap();
+    if index.entries.iter().any(|e| e.meta.id == "ようこそ.md") {
+        assert_eq!(oldest.created_ms, 1);
+    }
+}

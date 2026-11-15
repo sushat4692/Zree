@@ -35,6 +35,7 @@ data class Row(
     val snippet: String,
     val tags: List<String>,
     val mtimeMs: Long,
+    val createdMs: Long,
 )
 
 enum class Screen { Setup, List, Editor, Conflicts }
@@ -60,6 +61,8 @@ data class UiState(
     val lastSyncAt: Long = 0L,
     val recentTrees: List<String> = emptyList(),
     val sortOrder: SortOrder = SortOrder.UPDATED_DESC,
+    val noteCreatedMs: Long = 0L,
+    val noteMtimeMs: Long = 0L,
     val editorFontSize: Float = 15f,
     val editorLineHeight: Float = 1.5f,
     val previewScale: Float = 1f,
@@ -230,7 +233,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         } else {
             s.search(query, _state.value.activeTags.toList(), 0u)
         }
-        val rows = hits.map { Row(it.id, it.title, it.snippet, it.tags, it.mtimeMs) }
+        val rows = hits.map { Row(it.id, it.title, it.snippet, it.tags, it.mtimeMs, it.createdMs) }
         val all = s.search("", emptyList(), 0u).size
         _state.value = _state.value.copy(rows = rows, allCount = all, tags = s.tags())
     }
@@ -269,6 +272,10 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         val row = _state.value.rows.firstOrNull { it.id == id }
         seenMtime = row?.mtimeMs ?: 0L
         dirty = false
+        _state.value = _state.value.copy(
+            noteCreatedMs = row?.createdMs ?: 0L,
+            noteMtimeMs = row?.mtimeMs ?: 0L,
+        )
         _state.value = _state.value.copy(
             screen = Screen.Editor,
             selectedId = id,
