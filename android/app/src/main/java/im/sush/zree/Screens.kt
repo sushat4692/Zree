@@ -603,6 +603,23 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
     }
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    val scheme = MaterialTheme.colorScheme
+    val transformation = remember(
+        state.editorFontSize,
+        scheme.onSurface,
+        scheme.onSurfaceVariant,
+        scheme.primary,
+        scheme.surfaceVariant,
+    ) {
+        MarkdownVisualTransformation(
+            baseSizeSp = state.editorFontSize,
+            onSurface = scheme.onSurface,
+            muted = scheme.onSurfaceVariant,
+            accent = scheme.primary,
+            codeBackground = scheme.surfaceVariant,
+        )
+    }
+
     fun current(): EditText = EditText(value.text, value.selection.start, value.selection.end)
 
     fun apply(edit: EditText) {
@@ -684,6 +701,7 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurface,
                 ),
+                visualTransformation = transformation,
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
                 modifier = Modifier

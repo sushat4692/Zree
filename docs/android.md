@@ -151,6 +151,19 @@ Still missing:
 The settings dialog has **ツリーを切り替え…**, which returns to the chooser; the chooser lists the
 last five trees (tap to open, 外す to forget) next to clone / create-empty.
 
+## In-place Markdown rendering
+
+The editor renders Markdown in place, like macOS: headings larger and bold, list/quote
+markers muted, inline bold/italic/strike/code styled, `---` struck through as a rule with
+the dashes hidden. Implemented as a `VisualTransformation` (`MarkdownStyling.kt`), so the
+text the app saves never changes and the caret/IME are untouched.
+
+- styling does not depend on the caret position (no reflow while typing)
+- lines are cached by their text, so only the edited line is re-parsed (one-line parse in
+  the core)
+- Compose spans cannot set a line height, so headings share the body line height here
+- `---` becomes a struck-through transparent line rather than a full-width rule
+
 ## Editor toolbar
 
 The editor's assist bar sits at the bottom of the screen, directly above the soft keyboard

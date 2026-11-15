@@ -681,7 +681,11 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_zree_core_checksum_func_indent_line(
     ): Int
+    external fun uniffi_zree_core_checksum_func_inline_spans(
+    ): Int
     external fun uniffi_zree_core_checksum_func_is_git_repo(
+    ): Int
+    external fun uniffi_zree_core_checksum_func_line_block(
     ): Int
     external fun uniffi_zree_core_checksum_func_list_action(
     ): Int
@@ -877,8 +881,12 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_indent_line(`line`: RustBuffer.ByValue,`outdent`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_zree_core_fn_func_inline_spans(`line`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_is_git_repo(`root`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
+    external fun uniffi_zree_core_fn_func_line_block(`line`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_list_action(`line`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_set_git_ca_bundle(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1015,7 +1023,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_func_indent_line() and 0xFFFF) != 57015) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_zree_core_checksum_func_inline_spans() and 0xFFFF) != 29170) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_zree_core_checksum_func_is_git_repo() and 0xFFFF) != 9204) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_func_line_block() and 0xFFFF) != 61777) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_func_list_action() and 0xFFFF) != 23922) {
@@ -2943,6 +2957,49 @@ public object FfiConverterTypeHit: FfiConverterRustBuffer<Hit> {
 
 
 
+data class InlineSpan (
+    var `start`: kotlin.UInt
+    , 
+    var `end`: kotlin.UInt
+    , 
+    var `kind`: SpanKind
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeInlineSpan: FfiConverterRustBuffer<InlineSpan> {
+    override fun read(buf: ByteBuffer): InlineSpan {
+        return InlineSpan(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterTypeSpanKind.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: InlineSpan) = (
+            FfiConverterUInt.allocationSize(value.`start`) +
+            FfiConverterUInt.allocationSize(value.`end`) +
+            FfiConverterTypeSpanKind.allocationSize(value.`kind`)
+    )
+
+    override fun write(value: InlineSpan, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`start`, buf)
+            FfiConverterUInt.write(value.`end`, buf)
+            FfiConverterTypeSpanKind.write(value.`kind`, buf)
+    }
+}
+
+
+
 data class NoteMeta (
     /**
      * Vault-relative path with `/` separators, e.g. `foo.md`
@@ -4118,6 +4175,45 @@ public object FfiConverterTypeSortOrder: FfiConverterRustBuffer<SortOrder> {
 
 
 
+/**
+ * Inline styling found in one line, with **byte** offsets into that line.
+ */
+
+enum class SpanKind {
+    
+    BOLD,
+    ITALIC,
+    STRIKE,
+    CODE;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSpanKind: FfiConverterRustBuffer<SpanKind> {
+    override fun read(buf: ByteBuffer) = try {
+        SpanKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: SpanKind) = 4UL
+
+    override fun write(value: SpanKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 /**
  * @suppress
@@ -4330,6 +4426,34 @@ public object FfiConverterSequenceTypeHit: FfiConverterRustBuffer<List<Hit>> {
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeInlineSpan: FfiConverterRustBuffer<List<InlineSpan>> {
+    override fun read(buf: ByteBuffer): List<InlineSpan> {
+        val len = buf.getInt()
+        return List<InlineSpan>(len) {
+            FfiConverterTypeInlineSpan.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<InlineSpan>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeInlineSpan.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<InlineSpan>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeInlineSpan.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeNoteMeta: FfiConverterRustBuffer<List<NoteMeta>> {
     override fun read(buf: ByteBuffer): List<NoteMeta> {
         val len = buf.getInt()
@@ -4508,6 +4632,20 @@ public object FfiConverterSequenceTypeInline: FfiConverterRustBuffer<List<Inline
     
 
         /**
+         * Inline styling spans in a line (byte offsets into that line).
+         */ fun `inlineSpans`(`line`: kotlin.String): List<InlineSpan> {
+            return FfiConverterSequenceTypeInlineSpan.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_func_inline_spans(
+    
+        
+        FfiConverterString.lower(`line`),_status)
+}
+    )
+    }
+    
+
+        /**
          * True when the folder is a Git working copy.
          */ fun `isGitRepo`(`root`: kotlin.String): kotlin.Boolean {
             return FfiConverterBoolean.lift(
@@ -4516,6 +4654,20 @@ public object FfiConverterSequenceTypeInline: FfiConverterRustBuffer<List<Inline
     
         
         FfiConverterString.lower(`root`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Block kind of a single line (used for incremental editor styling).
+         */ fun `lineBlock`(`line`: kotlin.String): Block {
+            return FfiConverterTypeBlock.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_func_line_block(
+    
+        
+        FfiConverterString.lower(`line`),_status)
 }
     )
     }

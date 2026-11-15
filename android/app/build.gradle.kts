@@ -57,7 +57,7 @@ tasks.register("checkCoreFreshness") {
             throw GradleException("libzree_core.so missing — run android/scripts/build-core.sh")
         }
         val newestSource = coreSrc.walkTopDown()
-            .filter { it.isFile && it.extension == "rs" }
+            .filter { it.isFile && it.extension == "rs" && it.path.contains("/src/") }
             .maxOfOrNull { it.lastModified() } ?: 0L
         if (newestSource > coreSo.lastModified()) {
             throw GradleException(
