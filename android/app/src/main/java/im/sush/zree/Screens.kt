@@ -45,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import uniffi.zree_core.ConflictChoice
 import uniffi.zree_core.TagCount
 
 // ---------------------------------------------------------------- setup
@@ -178,6 +179,27 @@ fun ListScreen(vm: ZreeViewModel, state: UiState) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
         )
+
+        if (state.conflicts.isNotEmpty() || state.merging) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .clickable { vm.openConflicts() }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    if (state.conflicts.isEmpty()) "マージを確定してください"
+                    else "衝突 ${state.conflicts.size} 件 — タップして解決",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                Spacer(Modifier.weight(1f))
+                Text("解決 ›", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer)
+            }
+        }
 
         TagStrip(state.tags, state.activeTags, vm::toggleTag)
         HorizontalDivider()
@@ -375,4 +397,80 @@ private fun AutoSyncDialog(vm: ZreeViewModel, state: UiState, onDismiss: () -> U
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("閉じる") } },
     )
+}
+
+// ---------------------------------------------------------------- conflicts
+
+@Composable
+fun ConflictsScreen(vm: ZreeViewModel, state: UiState) {
+    BackHandler { vm.closeConflicts() }
+
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = vm::closeConflicts) { Text("← 一覧") }
+            Text(
+                "衝突 ${state.conflicts.size} 件",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
+        HorizontalDivider()
+
+        Text(
+            "同じノートが複数の端末で変更されました。残す内容を選んでください。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+
+        if (state.conflicts.isNotEmpty()) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(onClick = { vm.resolveAll(ConflictChoice.MINE) }) { Text("全て自分") }
+                OutlinedButton(onClick = { vm.resolveAll(ConflictChoice.THEIRS) }) { Text("全て相手") }
+            }
+        }
+
+        LazyColumn(Modifier.weight(1f)) {
+            items(state.conflicts, key = { it }) { path ->
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text(
+                        path,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { vm.resolveConflict(path, ConflictChoice.MINE) }) { Text("自分") }
+                        TextButton(onClick = { vm.resolveConflict(path, ConflictChoice.THEIRS) }) { Text("相手") }
+                        TextButton(onClick = { vm.resolveConflict(path, ConflictChoice.BOTH) }) { Text("両方") }
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+            }
+        }
+
+        if (state.conflicts.isEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "解決済み。コミットしてpushします。",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.weight(1f))
+                Button(onClick = vm::finishMerge, enabled = !state.busy) { Text("マージ確定") }
+            }
+        }
+    }
 }

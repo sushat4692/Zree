@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uniffi.zree_core.Block
+import uniffi.zree_core.ConflictChoice
 import uniffi.zree_core.GitRepo
 import uniffi.zree_core.GitStatus
 import uniffi.zree_core.NoteMeta
@@ -33,7 +34,7 @@ data class Row(
     val mtimeMs: Long,
 )
 
-enum class Screen { Setup, List, Editor }
+enum class Screen { Setup, List, Editor, Conflicts }
 
 data class UiState(
     val screen: Screen = Screen.Setup,
@@ -54,6 +55,8 @@ data class UiState(
     val autoSync: Boolean = true,
     val autoSyncMinutes: Int = 5,
     val lastSyncAt: Long = 0L,
+    val conflicts: List<String> = emptyList(),
+    val merging: Boolean = false,
     val message: String? = null,
     val error: String? = null,
 )
@@ -347,6 +350,8 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
                 busy = false,
                 lastSyncAt = now,
                 git = runCatching { r.status() }.getOrNull(),
+                conflicts = report.conflicts,
+                merging = runCatching { r.status() }.getOrNull()?.merging ?: false,
                 message = when {
                     report.conflicts.isNotEmpty() -> "衝突 ${report.conflicts.size} 件"
                     auto -> _state.value.message
@@ -408,6 +413,49 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             save()
             if (_state.value.autoSync) runSync(auto = true)
         }
+    }
+
+    // MARK: - conflicts
+
+    fun openConflicts() {
+        _state.value = _state.value.copy(screen = Screen.Conflicts)
+    }
+
+    fun closeConflicts() {
+        _state.value = _state.value.copy(screen = Screen.List)
+        refresh()
+    }
+
+    fun resolveConflict(path: String, choice: ConflictChoice) = io {
+        val r = repo ?: return@io
+        r.resolve(path, choice)
+        refreshConflicts(r)
+    }
+
+    fun resolveAll(choice: ConflictChoice) = io {
+        val r = repo ?: return@io
+        for (path in _state.value.conflicts) {
+            runCatching { r.resolve(path, choice) }
+        }
+        refreshConflicts(r)
+    }
+
+    fun finishMerge() = io {
+        val r = repo ?: return@io
+        r.commitMerge("zree: resolve conflicts")
+        runCatching { r.push() }
+        refreshConflicts(r)
+        refresh()
+        _state.value = _state.value.copy(screen = Screen.List, message = "衝突を解決してpushしました")
+    }
+
+    private suspend fun refreshConflicts(r: GitRepo) {
+        val st = r.status()
+        _state.value = _state.value.copy(
+            git = st,
+            conflicts = st.conflicts,
+            merging = st.merging,
+        )
     }
 
     fun dismissMessage() {

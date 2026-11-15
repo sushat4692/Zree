@@ -50,6 +50,10 @@ link fails; the fallback is to build OpenSSL ourselves without `no-stdio` and po
 Verified end to end on the device: clone a private GitHub repo with a PAT, edit a note,
 and the 1-minute auto-sync pushed `zree: autosync …` to the remote.
 
+Conflict path verified too: a divergent edit on the Mac produced `衝突 1 件` on the device,
+resolving with `相手` rewrote the file, and `マージ確定` produced `zree: resolve conflicts`
+and pushed it as a merge commit.
+
 Android 16 rail-guns (both fixed):
 - shared libraries must be 16 KB page aligned → `RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384"`
   plus JNA 5.17 and Compose BOM 2025.09 (which also raised compileSdk/targetSdk to 35)
@@ -129,7 +133,8 @@ Still missing:
 - [x] rename on focus loss (no explicit button) — also changed on macOS for parity
 - [x] back gesture returns from the editor to the list instead of closing the app
 - [x] auto-sync timer (default 5 min, 1/5/10/15 or off) plus a flush when the app is backgrounded
-- [ ] conflict UI (conflicts are reported, not yet resolvable in the app)
+- [x] conflict UI: banner on the list, per-file `mine / theirs / both`, bulk actions,
+      then a merge commit and push
 - [ ] SAF import / export
 
 ## Phase 3 — Git

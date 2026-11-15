@@ -55,6 +55,7 @@ fun ZreeRoot(vm: ZreeViewModel) {
                         Screen.Setup -> SetupScreen(vm, state)
                         Screen.List -> ListScreen(vm, state)
                         Screen.Editor -> EditorScreen(vm, state)
+                        Screen.Conflicts -> ConflictsScreen(vm, state)
                     }
                 }
             }
