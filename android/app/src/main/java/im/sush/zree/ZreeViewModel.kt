@@ -22,6 +22,7 @@ import uniffi.zree_core.ConflictChoice
 import uniffi.zree_core.GitRepo
 import uniffi.zree_core.GitStatus
 import uniffi.zree_core.NoteMeta
+import uniffi.zree_core.SortOrder
 import uniffi.zree_core.TagCount
 import uniffi.zree_core.ZreeSession
 import uniffi.zree_core.isGitRepo
@@ -58,6 +59,7 @@ data class UiState(
     val autoSyncMinutes: Int = 5,
     val lastSyncAt: Long = 0L,
     val recentTrees: List<String> = emptyList(),
+    val sortOrder: SortOrder = SortOrder.UPDATED_DESC,
     val conflicts: List<String> = emptyList(),
     val merging: Boolean = false,
     val message: String? = null,
@@ -92,7 +94,11 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             autoSyncMinutes = prefs.getInt(KEY_AUTO_MIN, 5).coerceIn(1, 60),
             lastSyncAt = prefs.getLong(KEY_LAST_SYNC, 0L),
         )
-        _state.value = _state.value.copy(recentTrees = recentTrees())
+        _state.value = _state.value.copy(
+            recentTrees = recentTrees(),
+            sortOrder = runCatching { SortOrder.valueOf(prefs.getString(KEY_SORT, "UPDATED_DESC")!!) }
+                .getOrDefault(SortOrder.UPDATED_DESC),
+        )
         prefs.getString(KEY_VAULT, null)?.let { path ->
             if (File(path).isDirectory) openVault(path)
         }
@@ -172,11 +178,21 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
 
     // MARK: - listing
 
+    fun setSortOrder(order: SortOrder) {
+        prefs.edit().putString(KEY_SORT, order.name).apply()
+        _state.value = _state.value.copy(sortOrder = order)
+        refresh()
+    }
+
     fun refresh() = io {
         val s = session ?: return@io
-        val rows = s.search(_state.value.query, _state.value.activeTags.toList(), 0u).map {
-            Row(it.id, it.title, it.snippet, it.tags, it.mtimeMs)
+        val query = _state.value.query
+        val hits = if (query.isBlank() && _state.value.activeTags.isEmpty()) {
+            s.listRows(_state.value.sortOrder)
+        } else {
+            s.search(query, _state.value.activeTags.toList(), 0u)
         }
+        val rows = hits.map { Row(it.id, it.title, it.snippet, it.tags, it.mtimeMs) }
         val all = s.search("", emptyList(), 0u).size
         _state.value = _state.value.copy(rows = rows, allCount = all, tags = s.tags())
     }
@@ -658,5 +674,6 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         private const val KEY_AUTO_MIN = "autoSyncMinutes"
         private const val KEY_LAST_SYNC = "lastSyncAt"
         private const val KEY_RECENT = "recentTrees"
+        private const val KEY_SORT = "sortOrder"
     }
 }

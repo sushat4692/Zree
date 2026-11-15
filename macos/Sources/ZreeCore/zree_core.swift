@@ -934,6 +934,11 @@ public protocol ZreeSessionProtocol: AnyObject, Sendable {
     
     func list() throws  -> [NoteMeta]
     
+    /**
+     * The whole list in the requested order (used when nothing is being searched).
+     */
+    func listRows(order: SortOrder)  -> [Hit]
+    
     func read(id: String) throws  -> String
     
     /**
@@ -1107,6 +1112,19 @@ open func list()throws  -> [NoteMeta]  {
         uniffiCallStatus in
     uniffi_zree_core_fn_method_zreesession_list(
             self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * The whole list in the requested order (used when nothing is being searched).
+     */
+open func listRows(order: SortOrder) -> [Hit]  {
+    return try!  FfiConverterSequenceTypeHit.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_zreesession_list_rows(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeSortOrder_lower(order),uniffiCallStatus
     )
 })
 }
@@ -2683,6 +2701,89 @@ public func FfiConverterTypePullOutcome_lower(_ value: PullOutcome) -> RustBuffe
 }
 
 
+
+/**
+ * Order for the note list (search results keep relevance order).
+ */
+
+public enum SortOrder: Equatable, Hashable {
+    
+    case updatedDesc
+    case updatedAsc
+    case titleAsc
+    case titleDesc
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension SortOrder: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSortOrder: FfiConverterRustBuffer {
+    typealias SwiftType = SortOrder
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SortOrder {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .updatedDesc
+        
+        case 2: return .updatedAsc
+        
+        case 3: return .titleAsc
+        
+        case 4: return .titleDesc
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: SortOrder, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .updatedDesc:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .updatedAsc:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .titleAsc:
+            writeInt(&buf, Int32(3))
+        
+        
+        case .titleDesc:
+            writeInt(&buf, Int32(4))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSortOrder_lift(_ buf: RustBuffer) throws -> SortOrder {
+    return try FfiConverterTypeSortOrder.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSortOrder_lower(_ value: SortOrder) -> RustBuffer {
+    return FfiConverterTypeSortOrder.lower(value)
+}
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -3144,6 +3245,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_list() != 15367) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_zreesession_list_rows() != 55436) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_read() != 27926) {

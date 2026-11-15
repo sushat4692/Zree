@@ -470,7 +470,7 @@ fn notes_can_be_sorted_four_ways() {
     let index = Index::build(&vault).unwrap();
 
     let titles = |order| -> Vec<String> {
-        index.notes(order).into_iter().map(|n| n.title).collect()
+        index.list_rows(order).into_iter().map(|n| n.title).collect()
     };
 
     let mut title_asc = titles(SortOrder::TitleAsc);
@@ -478,11 +478,15 @@ fn notes_can_be_sorted_four_ways() {
     expected.sort();
     assert_eq!(title_asc, expected);
 
+    // every row carries a snippet for the list
+    assert!(index.list_rows(SortOrder::UpdatedDesc).iter().any(|r| !r.snippet.is_empty()));
+
     title_asc.reverse();
     assert_eq!(titles(SortOrder::TitleDesc), title_asc);
 
-    // updated orders are each other's reverse (no ties in the fixture)
-    let mut updated = titles(SortOrder::UpdatedDesc);
-    updated.reverse();
-    assert_eq!(titles(SortOrder::UpdatedAsc), updated);
+    // updated orders are monotonic in mtime
+    let desc = index.list_rows(SortOrder::UpdatedDesc);
+    assert!(desc.windows(2).all(|w| w[0].mtime_ms >= w[1].mtime_ms));
+    let asc = index.list_rows(SortOrder::UpdatedAsc);
+    assert!(asc.windows(2).all(|w| w[0].mtime_ms <= w[1].mtime_ms));
 }

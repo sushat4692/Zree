@@ -3,6 +3,22 @@ import SwiftUI
 
 /// Plain NSTextView: the most reliable Japanese IME path on macOS,
 /// and it stays fast on long notes.
+/// NSTextView with its own undo manager.
+///
+/// The window's undo stack outlives the view (SwiftUI rebuilds the representable and
+/// AppKit keeps registrations around), which crashed in -[NSUndoManager undoNestedGroup]
+/// when ⌘Z fired after a note change. A manager owned by the view cannot outlive it,
+/// and it is cleared whenever a note is loaded.
+final class ZreeTextView: NSTextView {
+    let localUndo = UndoManager()
+
+    override var undoManager: UndoManager? { localUndo }
+
+    func resetUndo() {
+        localUndo.removeAllActions()
+    }
+}
+
 struct MarkdownEditor: NSViewRepresentable {
     @Binding var text: String
     var font: NSFont
@@ -14,11 +30,21 @@ struct MarkdownEditor: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scroll = NSTextView.scrollableTextView()
+        let scroll = NSScrollView()
         scroll.hasVerticalScroller = true
         scroll.drawsBackground = true
+        scroll.autohidesScrollers = true
 
-        guard let textView = scroll.documentView as? NSTextView else { return scroll }
+        let textView = ZreeTextView(frame: .zero)
+        textView.minSize = NSSize(width: 0, height: 0)
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        scroll.documentView = textView
+
         context.coordinator.app = app
         textView.delegate = context.coordinator
         textView.isRichText = false
@@ -40,6 +66,10 @@ struct MarkdownEditor: NSViewRepresentable {
         return scroll
     }
 
+    static func dismantleNSView(_ scroll: NSScrollView, coordinator: Coordinator) {
+        (scroll.documentView as? ZreeTextView)?.resetUndo()
+    }
+
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.parent = self
         context.coordinator.app = app
@@ -52,11 +82,11 @@ struct MarkdownEditor: NSViewRepresentable {
             // ranges from the previous note; pressing ⌘Z then crashed in
             // -[NSUndoManager undoNestedGroup]. Loading a note is not an edit, so
             // drop the stack around the change.
-            textView.undoManager?.removeAllActions()
+            (textView as? ZreeTextView)?.resetUndo()
             let selected = textView.selectedRange()
             textView.string = text
             textView.setSelectedRange(NSRange(location: min(selected.location, text.utf16.count), length: 0))
-            textView.undoManager?.removeAllActions()
+            (textView as? ZreeTextView)?.resetUndo()
             textView.breakUndoCoalescing()
         }
     }

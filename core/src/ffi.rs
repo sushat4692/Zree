@@ -92,8 +92,8 @@ impl ZreeSession {
     }
 
     /// The whole list in the requested order (used when nothing is being searched).
-    pub fn list_sorted(&self, order: crate::search::SortOrder) -> Vec<NoteMeta> {
-        self.current_index().notes(order)
+    pub fn list_rows(&self, order: crate::search::SortOrder) -> Vec<Hit> {
+        self.current_index().list_rows(order)
     }
 
     /// Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".

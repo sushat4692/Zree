@@ -729,6 +729,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_list(
     ): Int
+    external fun uniffi_zree_core_checksum_method_zreesession_list_rows(
+    ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_read(
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_reindex(
@@ -834,6 +836,8 @@ internal object UniffiLib {
     external fun uniffi_zree_core_fn_method_zreesession_inline(`ptr`: Long,`text`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_list(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_zree_core_fn_method_zreesession_list_rows(`ptr`: Long,`order`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_read(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1073,6 +1077,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_list() and 0xFFFF) != 15367) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_list_rows() and 0xFFFF) != 55436) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_read() and 0xFFFF) != 27926) {
@@ -2101,6 +2108,11 @@ public interface ZreeSessionInterface {
     
     fun `list`(): List<NoteMeta>
     
+    /**
+     * The whole list in the requested order (used when nothing is being searched).
+     */
+    fun `listRows`(`order`: SortOrder): List<Hit>
+    
     fun `read`(`id`: kotlin.String): kotlin.String
     
     /**
@@ -2338,6 +2350,23 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
     UniffiLib.uniffi_zree_core_fn_method_zreesession_list(
         it,
         _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The whole list in the requested order (used when nothing is being searched).
+     */override fun `listRows`(`order`: SortOrder): List<Hit> {
+            return FfiConverterSequenceTypeHit.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_method_zreesession_list_rows(
+        it,
+        
+        FfiConverterTypeSortOrder.lower(`order`),_status)
 }
     }
     )
@@ -3908,6 +3937,45 @@ public object FfiConverterTypePullOutcome : FfiConverterRustBuffer<PullOutcome>{
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Order for the note list (search results keep relevance order).
+ */
+
+enum class SortOrder {
+    
+    UPDATED_DESC,
+    UPDATED_ASC,
+    TITLE_ASC,
+    TITLE_DESC;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSortOrder: FfiConverterRustBuffer<SortOrder> {
+    override fun read(buf: ByteBuffer) = try {
+        SortOrder.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: SortOrder) = 4UL
+
+    override fun write(value: SortOrder, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 

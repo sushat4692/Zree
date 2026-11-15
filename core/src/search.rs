@@ -143,9 +143,21 @@ impl Index {
         hits
     }
 
-    /// All notes in the requested order (no relevance scoring).
-    pub fn notes(&self, order: SortOrder) -> Vec<NoteMeta> {
-        let mut out: Vec<NoteMeta> = self.entries.iter().map(|e| e.meta.clone()).collect();
+    /// All notes in the requested order, as list rows (snippet included, score 0).
+    pub fn list_rows(&self, order: SortOrder) -> Vec<Hit> {
+        let mut out: Vec<Hit> = self
+            .entries
+            .iter()
+            .map(|e| Hit {
+                id: e.meta.id.clone(),
+                title: e.meta.title.clone(),
+                snippet: first_line(&e.body),
+                score: 0,
+                tags: e.meta.tags.clone(),
+                mtime_ms: e.meta.mtime_ms,
+            })
+            .collect();
+
         match order {
             SortOrder::UpdatedDesc => {
                 out.sort_by(|a, b| b.mtime_ms.cmp(&a.mtime_ms).then(a.title.cmp(&b.title)))

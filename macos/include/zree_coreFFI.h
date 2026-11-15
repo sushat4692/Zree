@@ -378,6 +378,11 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_inline(uint64_t ptr, RustBuffe
 RustBuffer uniffi_zree_core_fn_method_zreesession_list(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_LIST_ROWS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_LIST_ROWS
+RustBuffer uniffi_zree_core_fn_method_zreesession_list_rows(uint64_t ptr, RustBuffer order, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_READ
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_READ
 RustBuffer uniffi_zree_core_fn_method_zreesession_read(uint64_t ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
@@ -897,6 +902,12 @@ uint16_t uniffi_zree_core_checksum_method_zreesession_inline(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_LIST
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_LIST
 uint16_t uniffi_zree_core_checksum_method_zreesession_list(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_LIST_ROWS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_LIST_ROWS
+uint16_t uniffi_zree_core_checksum_method_zreesession_list_rows(void
     
 );
 #endif
