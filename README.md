@@ -96,7 +96,8 @@ The rules live in the core, so Android behaves identically.
 - [x] Standard Markdown links that navigate between notes
 - [x] Git sync (commit/pull/push, fast-forward, merge) with a conflict UI
 - [x] Clone onboarding, Keychain-backed PAT, pull on launch
-- [~] Android: runs on a device — clone/setup, list, search, tags, editor with autosave, manual sync
+- [x] Android: clone/setup, tree switching, list, search, tags, editor with autosave and IME,
+      preview with link navigation, auto-sync, conflict UI, SAF import/export
 - [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)
 
 ## Tests

@@ -94,6 +94,9 @@ cargo run --release --example probe -- /path/to/vault
 - [x] Git sync (libgit2) with conflict UI
 - [x] Clone onboarding, Keychain-stored PAT, pull on launch
 - [x] Auto-sync every 5 minutes by default (commit → pull → push), plus a final sync on quit
-- [~] Android: runs on a real device — setup/clone, list, search, tag filter, editor with
-      autosave, manual sync. No preview pane, no conflict UI, no auto-sync timer yet
+- [x] Android: runs on a device — setup/clone, tree switching, list, search, tag filter,
+      editor with autosave and IME, preview with link navigation, auto-sync (verified
+      pushing to GitHub), conflict UI, SAF import/export
+- [x] Editor assists shared by both platforms: list continuation, outdent, Tab/Shift-Tab,
+      tag completion, block buttons, bold toggle
 - [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)
