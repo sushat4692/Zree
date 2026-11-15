@@ -173,6 +173,92 @@ pub struct SyncReport {
     pub conflicts: Vec<String>,
 }
 
+/// Point libgit2's TLS backend at a PEM bundle.
+///
+/// macOS uses SecureTransport and ignores this; Android links OpenSSL, which has
+/// no default trust store, so the app must supply one before cloning/fetching.
+#[uniffi::export]
+pub fn set_git_ca_bundle(path: String) -> Result<(), NoteError> {
+    #[cfg(target_os = "android")]
+    {
+        // OpenSSL is built with no-stdio on Android, so libgit2 cannot load a CA
+        // file. Parse the bundle and register each certificate in memory using
+        // libgit2's internal OpenSSL hook.
+        return android_ca::install(&path);
+    }
+
+    #[cfg(not(target_os = "android"))]
+    {
+        // SAFETY: libgit2 copies the path into its global options.
+        unsafe { git2::opts::set_ssl_cert_file(&path) }.map_err(crate::git::git_err)
+    }
+}
+
+#[cfg(target_os = "android")]
+mod android_ca {
+    use crate::error::NoteError;
+    use std::ffi::{c_int, c_void, CString};
+
+    extern "C" {
+        // public libgit2 API; must run before touching the internal SSL context
+        fn git_libgit2_init() -> c_int;
+        // libgit2 internal (src/libgit2/streams/openssl.c): adds a certificate to
+        // the SSL context's trust store. Not in the public API, but statically
+        // linked into this library, so it resolves at link time.
+        fn git_openssl__add_x509_cert(cert: *mut openssl_sys::X509) -> c_int;
+    }
+
+    /// OpenSSL is built with `no-stdio` for Android, so libgit2 cannot read a CA
+    /// file. Parse the bundle in memory instead and register every certificate.
+    pub fn install(path: &str) -> Result<(), NoteError> {
+        // libgit2 creates its OpenSSL context during git_libgit2_init(); without
+        // this the internal cert hook dereferences a null context.
+        unsafe { git_libgit2_init() };
+
+        let pem = std::fs::read(path).map_err(NoteError::from)?;
+        let bio = unsafe {
+            openssl_sys::BIO_new_mem_buf(pem.as_ptr() as *const c_void, pem.len() as c_int)
+        };
+        if bio.is_null() {
+            return Err(NoteError::Git("CAバンドルを読めません".into()));
+        }
+
+        // keep the file path alive for error messages only
+        let _ = CString::new(path).ok();
+
+        let mut added = 0usize;
+        loop {
+            let cert = unsafe {
+                openssl_sys::PEM_read_bio_X509(
+                    bio,
+                    std::ptr::null_mut(),
+                    None,
+                    std::ptr::null_mut(),
+                )
+            };
+            if cert.is_null() {
+                break;
+            }
+            let rc = unsafe { git_openssl__add_x509_cert(cert) };
+            // libgit2's store took its own reference
+            unsafe { openssl_sys::X509_free(cert) };
+            if rc < 0 {
+                unsafe { openssl_sys::BIO_free_all(bio) };
+                return Err(NoteError::Git(format!(
+                    "libgit2 rejected certificate #{added}"
+                )));
+            }
+            added += 1;
+        }
+        unsafe { openssl_sys::BIO_free_all(bio) };
+
+        if added == 0 {
+            return Err(NoteError::Git("CAバンドルに証明書がありません".into()));
+        }
+        Ok(())
+    }
+}
+
 /// True when the folder is a Git working copy.
 #[uniffi::export]
 pub fn is_git_repo(root: String) -> bool {

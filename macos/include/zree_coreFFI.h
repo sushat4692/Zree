@@ -433,6 +433,11 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_write(uint64_t ptr, RustBuffer
 int8_t uniffi_zree_core_fn_func_is_git_repo(RustBuffer root, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_SET_GIT_CA_BUNDLE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_SET_GIT_CA_BUNDLE
+void uniffi_zree_core_fn_func_set_git_ca_bundle(RustBuffer path, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_FFI_ZREE_CORE_RUSTBUFFER_ALLOC
 #define UNIFFI_FFIDEF_FFI_ZREE_CORE_RUSTBUFFER_ALLOC
 RustBuffer ffi_zree_core_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
@@ -696,6 +701,12 @@ void ffi_zree_core_rust_future_complete_void(uint64_t handle, RustCallStatus *_N
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_IS_GIT_REPO
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_IS_GIT_REPO
 uint16_t uniffi_zree_core_checksum_func_is_git_repo(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_SET_GIT_CA_BUNDLE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_SET_GIT_CA_BUNDLE
+uint16_t uniffi_zree_core_checksum_func_set_git_ca_bundle(void
     
 );
 #endif

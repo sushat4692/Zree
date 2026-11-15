@@ -24,6 +24,8 @@ docs/android.md  Android plan and open decisions
 ```
 
 The macOS app is built with SwiftPM and ad-hoc signing — no Xcode project.
+The link needs OpenSSL (a side effect of git2's `https` feature); Homebrew's
+`openssl@3`/`openssl@4` is used automatically, override with `ZREE_OPENSSL_LIB`.
 
 ## macOS
 

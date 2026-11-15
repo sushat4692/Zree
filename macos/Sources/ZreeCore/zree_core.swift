@@ -2443,6 +2443,19 @@ public func isGitRepo(root: String) -> Bool  {
     )
 })
 }
+/**
+ * Point libgit2's TLS backend at a PEM bundle.
+ *
+ * macOS uses SecureTransport and ignores this; Android links OpenSSL, which has
+ * no default trust store, so the app must supply one before cloning/fetching.
+ */
+public func setGitCaBundle(path: String)throws   {try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_set_git_ca_bundle(
+        FfiConverterString.lower(path),uniffiCallStatus
+    )
+}
+}
 
 private enum InitializationResult {
     case ok
@@ -2460,6 +2473,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.contractVersionMismatch
     }
     if (uniffi_zree_core_checksum_func_is_git_repo() != 9204) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_func_set_git_ca_bundle() != 19378) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_gitrepo_commit_all() != 52900) {

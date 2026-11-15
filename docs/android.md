@@ -27,6 +27,29 @@ Installed (command-line tools only, no Android Studio download):
   (`log: [smoke: commit from device]`)
 - **not yet verified**: Japanese IME in `BasicTextField` (comes with the real editor)
 
+### TLS trust store (the second big landmine)
+
+`openssl-src` **forces `no-stdio` for Android**, so the vendored OpenSSL cannot open
+any file. libgit2 loads CA certificates from a file, which therefore fails with
+`x509 certificate routines::BIO lib`. `SSL_CERT_FILE`, `set_ssl_cert_file` and a
+certificate directory all fail for the same reason.
+
+Workaround (in `core/src/ffi.rs`, Android only):
+
+1. the app concatenates the system roots into `filesDir/ca-bundle.pem`
+   (`CaBundle.kt`; ~120 certificates)
+2. the core calls `git_libgit2_init()` first — libgit2 creates its `SSL_CTX` there,
+   and skipping this segfaults
+3. each PEM certificate is parsed in memory (`PEM_read_bio_X509`) and registered with
+   libgit2's internal `git_openssl__add_x509_cert()`
+
+That last symbol is **not public API**. If a libgit2 upgrade removes or hides it, the
+link fails; the fallback is to build OpenSSL ourselves without `no-stdio` and point
+`OPENSSL_DIR` at it.
+
+Verified end to end on the device: clone a private GitHub repo with a PAT, edit a note,
+and the 1-minute auto-sync pushed `zree: autosync …` to the remote.
+
 Android 16 rail-guns (both fixed):
 - shared libraries must be 16 KB page aligned → `RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384"`
   plus JNA 5.17 and Compose BOM 2025.09 (which also raised compileSdk/targetSdk to 35)
@@ -105,8 +128,8 @@ Still missing:
 - [x] link navigation from the preview
 - [x] rename on focus loss (no explicit button) — also changed on macOS for parity
 - [x] back gesture returns from the editor to the list instead of closing the app
-- [ ] auto-sync timer (Android currently syncs on open and on demand)
-- [ ] conflict UI
+- [x] auto-sync timer (default 5 min, 1/5/10/15 or off) plus a flush when the app is backgrounded
+- [ ] conflict UI (conflicts are reported, not yet resolvable in the app)
 - [ ] SAF import / export
 
 ## Phase 3 — Git

@@ -19,7 +19,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Switch
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -100,6 +102,9 @@ fun SetupScreen(vm: ZreeViewModel, state: UiState) {
                 Text(state.message ?: "処理中…", style = MaterialTheme.typography.bodySmall)
             }
         }
+        state.error?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        }
         state.vaultPath?.let {
             Text("Vault: $it", style = MaterialTheme.typography.bodySmall)
         }
@@ -110,6 +115,12 @@ fun SetupScreen(vm: ZreeViewModel, state: UiState) {
 
 @Composable
 fun ListScreen(vm: ZreeViewModel, state: UiState) {
+    var showSettings by remember { mutableStateOf(false) }
+
+    if (showSettings) {
+        AutoSyncDialog(vm, state) { showSettings = false }
+    }
+
     Column(Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -140,21 +151,33 @@ fun ListScreen(vm: ZreeViewModel, state: UiState) {
             )
             Spacer(Modifier.width(8.dp))
             TextButton(onClick = vm::sync, enabled = !state.busy) { Text("同期") }
+            TextButton(onClick = { showSettings = true }) { Text("⋯") }
         }
 
-        state.git?.let { git ->
-            Text(
-                buildString {
+        val autoLabel = if (state.autoSync) {
+            val last = if (state.lastSyncAt > 0) {
+                java.text.SimpleDateFormat("HH:mm", java.util.Locale.US).format(java.util.Date(state.lastSyncAt))
+            } else "—"
+            "自動 ${state.autoSyncMinutes}分 · 最終 $last"
+        } else {
+            "自動同期オフ"
+        }
+        Text(
+            buildString {
+                state.git?.let { git ->
                     append(git.branch)
                     if (git.ahead != 0u) append("  ↑${git.ahead}")
                     if (git.behind != 0u) append("  ↓${git.behind}")
                     if (git.changed != 0u) append("  ●${git.changed}")
                     if (git.conflicts.isNotEmpty()) append("  ⚠${git.conflicts.size}")
-                },
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-        }
+                    append("   ")
+                }
+                append(autoLabel)
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+        )
 
         TagStrip(state.tags, state.activeTags, vm::toggleTag)
         HorizontalDivider()
@@ -302,4 +325,54 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
             )
         }
     }
+}
+
+@Composable
+private fun AutoSyncDialog(vm: ZreeViewModel, state: UiState, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("自動同期") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("commit → pull → push を定期実行", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = state.autoSync,
+                        onCheckedChange = { vm.setAutoSync(it, state.autoSyncMinutes) },
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(1, 5, 10, 15).forEach { minutes ->
+                        val on = state.autoSyncMinutes == minutes
+                        Text(
+                            "${minutes}分",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (on) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .background(
+                                    if (on) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.surfaceVariant,
+                                    RoundedCornerShape(50),
+                                )
+                                .clickable(enabled = state.autoSync) {
+                                    vm.setAutoSync(true, minutes)
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+                Text(
+                    "変更があるときだけコミットします。衝突を検出したら停止します。" +
+                        "アプリを閉じる（バックグラウンドへ）際にも1回同期します。",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { vm.sync(); onDismiss() }) { Text("今すぐ同期") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("閉じる") } },
+    )
 }

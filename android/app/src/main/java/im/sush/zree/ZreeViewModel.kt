@@ -4,10 +4,12 @@ import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +22,7 @@ import uniffi.zree_core.NoteMeta
 import uniffi.zree_core.TagCount
 import uniffi.zree_core.ZreeSession
 import uniffi.zree_core.isGitRepo
+import uniffi.zree_core.setGitCaBundle
 import java.io.File
 
 data class Row(
@@ -48,6 +51,9 @@ data class UiState(
     val bitmaps: Map<String, Bitmap> = emptyMap(),
     val git: GitStatus? = null,
     val busy: Boolean = false,
+    val autoSync: Boolean = true,
+    val autoSyncMinutes: Int = 5,
+    val lastSyncAt: Long = 0L,
     val message: String? = null,
     val error: String? = null,
 )
@@ -61,12 +67,25 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     private var seenMtime = 0L
     private var saveJob: Job? = null
     private var previewJob: Job? = null
+    private var autoSyncJob: Job? = null
+    private var consecutiveFailures = 0
     private var dirty = false
 
     private val _state = MutableStateFlow(UiState())
     val state = _state.asStateFlow()
 
     init {
+        // must happen before any TLS call
+        CaBundle.ensure(app)?.let { path ->
+            runCatching { setGitCaBundle(path) }
+                .onSuccess { Log.i("Zree", "CA bundle installed: $path") }
+                .onFailure { Log.e("Zree", "CA bundle rejected: $path", it) }
+        }
+        _state.value = _state.value.copy(
+            autoSync = prefs.getBoolean(KEY_AUTO_ON, true),
+            autoSyncMinutes = prefs.getInt(KEY_AUTO_MIN, 5).coerceIn(1, 60),
+            lastSyncAt = prefs.getLong(KEY_LAST_SYNC, 0L),
+        )
         prefs.getString(KEY_VAULT, null)?.let { path ->
             if (File(path).isDirectory) openVault(path)
         }
@@ -116,6 +135,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         )
         refresh()
         autoPullOnOpen()
+        restartAutoSync()
     }
 
     // MARK: - listing
@@ -306,21 +326,87 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(git = runCatching { r.status() }.getOrNull())
     }
 
-    fun sync() = io {
-        val r = repo ?: return@io
+    fun sync() = io { runSync(auto = false) }
+
+    private suspend fun runSync(auto: Boolean) {
+        val r = repo ?: return
         save()
-        _state.value = _state.value.copy(busy = true, message = "同期中…")
+        if (!auto) _state.value = _state.value.copy(busy = true, message = "同期中…")
         try {
-            val report = r.sync("zree: sync from android")
+            val message = if (auto) {
+                "zree: autosync ${java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.US).format(java.util.Date())}"
+            } else {
+                "zree: sync from android"
+            }
+            val report = r.sync(message)
+            consecutiveFailures = 0
+            val now = System.currentTimeMillis()
+            prefs.edit().putLong(KEY_LAST_SYNC, now).apply()
+            refresh()
             _state.value = _state.value.copy(
                 busy = false,
-                message = if (report.conflicts.isEmpty()) "同期しました" else "衝突 ${report.conflicts.size} 件",
-                error = if (report.conflicts.isEmpty()) null else "衝突を解決してください: ${report.conflicts.joinToString(", ")}",
+                lastSyncAt = now,
+                git = runCatching { r.status() }.getOrNull(),
+                message = when {
+                    report.conflicts.isNotEmpty() -> "衝突 ${report.conflicts.size} 件"
+                    auto -> _state.value.message
+                    else -> "同期しました"
+                },
+                error = if (report.conflicts.isEmpty()) _state.value.error
+                else "衝突を解決してください: ${report.conflicts.joinToString(", ")}",
             )
-            refresh()
-            _state.value = _state.value.copy(git = r.status())
         } catch (t: Throwable) {
-            _state.value = _state.value.copy(busy = false, message = null, error = t.message ?: t.toString())
+            consecutiveFailures += 1
+            if (auto && consecutiveFailures >= 3) {
+                setAutoSync(false, _state.value.autoSyncMinutes)
+                _state.value = _state.value.copy(
+                    busy = false,
+                    message = null,
+                    error = "自動同期を停止しました（3回連続で失敗）: ${t.message ?: t}",
+                )
+            } else {
+                _state.value = _state.value.copy(
+                    busy = false,
+                    message = null,
+                    error = t.message ?: t.toString(),
+                )
+            }
+        }
+    }
+
+    // MARK: - auto sync
+
+    fun setAutoSync(enabled: Boolean, minutes: Int) {
+        prefs.edit()
+            .putBoolean(KEY_AUTO_ON, enabled)
+            .putInt(KEY_AUTO_MIN, minutes)
+            .apply()
+        _state.value = _state.value.copy(autoSync = enabled, autoSyncMinutes = minutes)
+        restartAutoSync()
+    }
+
+    private fun restartAutoSync() {
+        autoSyncJob?.cancel()
+        autoSyncJob = null
+        consecutiveFailures = 0
+        val st = _state.value
+        if (!st.autoSync || repo == null) return
+        val period = st.autoSyncMinutes.coerceIn(1, 60) * 60_000L
+        autoSyncJob = viewModelScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                delay(period)
+                val git = runCatching { repo?.status() }.getOrNull() ?: continue
+                if (git.merging || git.conflicts.isNotEmpty()) continue
+                runSync(auto = true)
+            }
+        }
+    }
+
+    /** Best-effort flush when the app leaves the foreground. */
+    fun onAppBackground() {
+        viewModelScope.launch(Dispatchers.IO) {
+            save()
+            if (_state.value.autoSync) runSync(auto = true)
         }
     }
 
@@ -333,8 +419,20 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     private fun io(block: suspend () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching { block() }.onFailure { t ->
-                _state.value = _state.value.copy(busy = false, message = null, error = t.message ?: t.toString())
+                Log.e(TAG, "operation failed", t)
+                _state.value = _state.value.copy(busy = false, message = null, error = friendly(t))
             }
+        }
+    }
+
+    private fun friendly(t: Throwable): String {
+        val msg = t.message ?: t.toString()
+        return when {
+            msg.contains("no TLS stream", true) || msg.contains("TLS", true) -> "TLSエラー: $msg"
+            msg.contains("authentication", true) || msg.contains("401", true) ->
+                "認証に失敗しました（トークンを確認してください）: $msg"
+            msg.contains("not found", true) || msg.contains("404", true) -> "リポジトリが見つかりません: $msg"
+            else -> msg
         }
     }
 
@@ -345,6 +443,10 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     companion object {
+        private const val TAG = "Zree"
         private const val KEY_VAULT = "vaultPath"
+        private const val KEY_AUTO_ON = "autoSyncEnabled"
+        private const val KEY_AUTO_MIN = "autoSyncMinutes"
+        private const val KEY_LAST_SYNC = "lastSyncAt"
     }
 }

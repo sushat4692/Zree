@@ -677,6 +677,8 @@ internal object IntegrityCheckingUniffiLib {
     internal fun ensureInitialized() = Unit
     external fun uniffi_zree_core_checksum_func_is_git_repo(
     ): Int
+    external fun uniffi_zree_core_checksum_func_set_git_ca_bundle(
+    ): Int
     external fun uniffi_zree_core_checksum_method_gitrepo_commit_all(
     ): Int
     external fun uniffi_zree_core_checksum_method_gitrepo_commit_merge(
@@ -839,6 +841,8 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_is_git_repo(`root`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
+    external fun uniffi_zree_core_fn_func_set_git_ca_bundle(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
     external fun ffi_zree_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun ffi_zree_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -959,6 +963,9 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_func_is_git_repo() and 0xFFFF) != 9204) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_func_set_git_ca_bundle() and 0xFFFF) != 19378) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_gitrepo_commit_all() and 0xFFFF) != 52900) {
@@ -3762,6 +3769,23 @@ public object FfiConverterSequenceTypeInline: FfiConverterRustBuffer<List<Inline
 }
     )
     }
+    
+
+        /**
+         * Point libgit2's TLS backend at a PEM bundle.
+         *
+         * macOS uses SecureTransport and ignores this; Android links OpenSSL, which has
+         * no default trust store, so the app must supply one before cloning/fetching.
+         */
+    @Throws(NoteException::class) fun `setGitCaBundle`(`path`: kotlin.String)
+        = 
+    uniffiRustCallWithError(NoteException) { _status ->
+    UniffiLib.uniffi_zree_core_fn_func_set_git_ca_bundle(
+    
+        
+        FfiConverterString.lower(`path`),_status)
+}
+    
     
 
 

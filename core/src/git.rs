@@ -520,6 +520,6 @@ fn cred(auth: &GitAuth, user_from_url: Option<&str>, allowed: CredentialType) ->
     git2::Cred::default()
 }
 
-fn git_err(e: git2::Error) -> NoteError {
+pub(crate) fn git_err(e: git2::Error) -> NoteError {
     NoteError::Git(e.message().to_string())
 }
