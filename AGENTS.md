@@ -110,6 +110,6 @@ cargo run --release --example probe -- /path/to/vault
 - [x] macOS undo: ⌘Z works; the editor keeps its view identity so toggling the preview
       no longer drops the history, and registrations are cleared on note load
 - [ ] Android build of the latest work is not installed on the device (it was offline)
-- [ ] Cache the Git first-added walk (1877 commits) instead of recomputing per open
-- [ ] macOS toolbar could take shortcuts (⌘B etc.)
-- [ ] Backlinks, templates and automatic tagging are still future work
+- [x] Git first-added walk is cached in `.git/zree-created-times.tsv`, incremental per HEAD
+- [x] macOS 書式 menu shortcuts (⌘B, ⇧⌘7/8/9, ⇧⌘X, ⇧⌘H, ⇧⌘Q, ⌘[ / ⌘])
+- [ ] Future: backlinks, templates, automatic tagging
