@@ -225,3 +225,29 @@ fn resolves_markdown_links_in_every_notation() {
     assert_eq!(vault.resolve_link("sub/メモ.md", "存在しない.md"), None);
     assert_eq!(vault.resolve_link("sub/メモ.md", "#見出しだけ"), None);
 }
+
+#[test]
+fn inline_markers_consume_the_whole_delimiter() {
+    assert_eq!(markdown::parse_inline("**a**"), vec![Inline::Bold("a".into())]);
+    assert_eq!(markdown::parse_inline("~~a~~"), vec![Inline::Strike("a".into())]);
+    assert_eq!(markdown::parse_inline("`a`"), vec![Inline::Code("a".into())]);
+    assert_eq!(markdown::parse_inline("*a*"), vec![Inline::Italic("a".into())]);
+
+    let source = "- **太字**と~~打消し~~と `code`";
+    let spans = markdown::parse_inline(source);
+    assert!(spans.iter().any(|s| matches!(s, Inline::Bold(t) if t == "太字")));
+    assert!(spans.iter().any(|s| matches!(s, Inline::Strike(t) if t == "打消し")));
+    assert!(spans.iter().any(|s| matches!(s, Inline::Code(t) if t == "code")));
+
+    let leftover: String = spans
+        .iter()
+        .filter_map(|s| match s {
+            Inline::Text(t) => Some(t.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert!(
+        !leftover.contains('*') && !leftover.contains('~') && !leftover.contains('`'),
+        "stray markers survived: {leftover:?}"
+    );
+}

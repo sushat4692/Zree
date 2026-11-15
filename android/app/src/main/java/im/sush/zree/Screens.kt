@@ -1,5 +1,6 @@
 package im.sush.zree
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -239,6 +241,10 @@ private fun TagStrip(tags: List<TagCount>, active: Set<String>, onToggle: (Strin
 fun EditorScreen(vm: ZreeViewModel, state: UiState) {
     var title by remember(state.selectedId) { mutableStateOf(state.title) }
 
+    // Back returns to the list (and saves); closing the app is not what a back
+    // press inside the editor should do.
+    BackHandler(enabled = true) { vm.backToList() }
+
     Column(Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -259,27 +265,41 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 4.dp),
+                    .padding(horizontal = 4.dp)
+                    // rename when the field loses focus (no explicit button)
+                    .onFocusChanged { focus ->
+                        if (!focus.isFocused) vm.rename(title)
+                    },
             )
-            TextButton(onClick = { vm.rename(title) }) { Text("改名") }
+            TextButton(onClick = vm::togglePreview) {
+                Text(if (state.preview) "編集" else "プレビュー")
+            }
         }
         HorizontalDivider()
 
-        // The editor itself: a plain text field, so the platform IME handles
-        // Japanese input exactly as it does in any other Android app.
-        BasicTextField(
-            value = state.draft,
-            onValueChange = vm::setDraft,
-            textStyle = TextStyle(
-                fontSize = 15.sp,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurface,
-            ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-        )
+        if (state.preview) {
+            PreviewList(
+                blocks = state.pblocks,
+                bitmaps = state.bitmaps,
+                onLink = vm::openLink,
+            )
+        } else {
+            // The editor itself: a plain text field, so the platform IME handles
+            // Japanese input exactly as it does in any other Android app.
+            BasicTextField(
+                value = state.draft,
+                onValueChange = vm::setDraft,
+                textStyle = TextStyle(
+                    fontSize = 15.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+            )
+        }
     }
 }

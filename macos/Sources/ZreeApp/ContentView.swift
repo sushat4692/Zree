@@ -246,6 +246,10 @@ struct Header: View {
             .font(.system(size: 15, weight: .semibold))
             .focused($titleFocused)
             .onSubmit { app.renameSelected() }
+            .onChange(of: titleFocused) { _, focused in
+                // commit the rename when the field loses focus (no explicit button)
+                if !focused { app.renameSelected() }
+            }
 
             Spacer()
 

@@ -2,6 +2,8 @@ package im.sush.zree
 
 import android.app.Application
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uniffi.zree_core.Block
 import uniffi.zree_core.GitRepo
 import uniffi.zree_core.GitStatus
 import uniffi.zree_core.NoteMeta
@@ -40,6 +43,9 @@ data class UiState(
     val selectedId: String? = null,
     val title: String = "",
     val draft: String = "",
+    val preview: Boolean = false,
+    val pblocks: List<PBlock> = emptyList(),
+    val bitmaps: Map<String, Bitmap> = emptyMap(),
     val git: GitStatus? = null,
     val busy: Boolean = false,
     val message: String? = null,
@@ -54,6 +60,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     private var repo: GitRepo? = null
     private var seenMtime = 0L
     private var saveJob: Job? = null
+    private var previewJob: Job? = null
     private var dirty = false
 
     private val _state = MutableStateFlow(UiState())
@@ -137,7 +144,12 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     // MARK: - editing
 
     fun openNote(id: String) = io {
-        val s = session ?: return@io
+        save()
+        openNoteInternal(id)
+    }
+
+    private suspend fun openNoteInternal(id: String) {
+        val s = session ?: return
         val body = s.read(id)
         val row = _state.value.rows.firstOrNull { it.id == id }
         seenMtime = row?.mtimeMs ?: 0L
@@ -147,7 +159,59 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             selectedId = id,
             title = row?.title ?: id.removeSuffix(".md"),
             draft = body,
+            pblocks = emptyList(),
+            bitmaps = emptyMap(),
         )
+        if (_state.value.preview) refreshPreview()
+    }
+
+    fun togglePreview() {
+        val on = !_state.value.preview
+        _state.value = _state.value.copy(preview = on)
+        if (on) refreshPreview()
+    }
+
+    private fun refreshPreview() = io {
+        val s = session ?: return@io
+        val vault = _state.value.vaultPath
+        val bitmaps = HashMap<String, Bitmap>()
+
+        val blocks = s.blocksOf(_state.value.draft).map { b ->
+            when (b) {
+                is Block.Blank -> PBlock.Blank
+                is Block.Heading -> PBlock.Heading(b.level.toInt(), s.inline(b.text))
+                is Block.ListItem ->
+                    PBlock.Item(b.indent.toInt(), b.ordered, b.checked, s.inline(b.text))
+                is Block.Quote -> PBlock.Quote(s.inline(b.text))
+                is Block.Code -> PBlock.Code(b.lang, b.text)
+                is Block.Paragraph -> PBlock.Para(s.inline(b.text))
+                is Block.Image -> {
+                    val path = resolveAsset(vault, b.src)
+                    if (path != null && path !in bitmaps) {
+                        BitmapFactory.decodeFile(path)?.let { bitmaps[path] = it }
+                    }
+                    PBlock.Image(path, b.alt)
+                }
+            }
+        }
+        _state.value = _state.value.copy(pblocks = blocks, bitmaps = bitmaps)
+    }
+
+    private fun resolveAsset(vault: String?, src: String): String? {
+        if (vault == null || src.isBlank()) return null
+        val direct = File(vault, src)
+        if (direct.isFile) return direct.absolutePath
+        val byName = File(vault, File(src).name)
+        return if (byName.isFile) byName.absolutePath else null
+    }
+
+    /** Follow a Markdown link inside the preview. */
+    fun openLink(href: String) = io {
+        val s = session ?: return@io
+        val from = _state.value.selectedId ?: return@io
+        val target = s.resolveLink(from, href) ?: return@io
+        save()
+        openNoteInternal(target)
     }
 
     fun setDraft(text: String) {
@@ -157,6 +221,13 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         saveJob = viewModelScope.launch {
             delay(700)
             save()
+        }
+        if (_state.value.preview) {
+            previewJob?.cancel()
+            previewJob = viewModelScope.launch {
+                delay(400)
+                refreshPreview()
+            }
         }
     }
 
@@ -185,7 +256,13 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             save()
             withContext(Dispatchers.IO) { refresh() }
-            _state.value = _state.value.copy(screen = Screen.List, selectedId = null, draft = "")
+            _state.value = _state.value.copy(
+                screen = Screen.List,
+                selectedId = null,
+                draft = "",
+                pblocks = emptyList(),
+                bitmaps = emptyMap(),
+            )
         }
     }
 

@@ -239,7 +239,7 @@ pub fn parse_inline(s: &str) -> Vec<Inline> {
             }
         }
         if b[i] == '`' {
-            if let Some((tok, next)) = parse_delimited(&b, i, '`', '`', |v| Inline::Code(v)) {
+            if let Some((tok, next)) = parse_delimited(&b, i + 1, '`', 1, Inline::Code) {
                 flush!();
                 out.push(tok);
                 i = next;
@@ -247,7 +247,7 @@ pub fn parse_inline(s: &str) -> Vec<Inline> {
             }
         }
         if b[i] == '~' && i + 1 < b.len() && b[i + 1] == '~' {
-            if let Some((tok, next)) = parse_delimited(&b, i + 2, '~', '~', |v| Inline::Strike(v)) {
+            if let Some((tok, next)) = parse_delimited(&b, i + 2, '~', 2, Inline::Strike) {
                 flush!();
                 out.push(tok);
                 i = next;
@@ -255,7 +255,7 @@ pub fn parse_inline(s: &str) -> Vec<Inline> {
             }
         }
         if b[i] == '*' && i + 1 < b.len() && b[i + 1] == '*' {
-            if let Some((tok, next)) = parse_delimited(&b, i + 2, '*', '*', |v| Inline::Bold(v)) {
+            if let Some((tok, next)) = parse_delimited(&b, i + 2, '*', 2, Inline::Bold) {
                 flush!();
                 out.push(tok);
                 i = next;
@@ -263,7 +263,7 @@ pub fn parse_inline(s: &str) -> Vec<Inline> {
             }
         }
         if b[i] == '*' {
-            if let Some((tok, next)) = parse_delimited(&b, i + 1, '*', '*', |v| Inline::Italic(v)) {
+            if let Some((tok, next)) = parse_delimited(&b, i + 1, '*', 1, Inline::Italic) {
                 flush!();
                 out.push(tok);
                 i = next;
@@ -280,21 +280,19 @@ pub fn parse_inline(s: &str) -> Vec<Inline> {
 fn parse_delimited(
     b: &[char],
     start: usize,
-    open: char,
     close: char,
+    width: usize,
     wrap: impl Fn(String) -> Inline,
 ) -> Option<(Inline, usize)> {
-    if b.get(start) == Some(&open) {
-        return None; // empty span
-    }
     let mut j = start;
-    while j < b.len() {
-        if b[j] == close {
+    while j + width <= b.len() {
+        let is_close = (0..width).all(|k| b[j + k] == close);
+        if is_close {
             let inner: String = b[start..j].iter().collect();
-            if !inner.is_empty() {
-                return Some((wrap(inner), j + 1));
+            if inner.is_empty() {
+                return None;
             }
-            return None;
+            return Some((wrap(inner), j + width));
         }
         j += 1;
     }
