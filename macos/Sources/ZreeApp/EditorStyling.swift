@@ -59,7 +59,6 @@ enum EditorStyling {
         if textView.hasMarkedText() { return }
 
         let text = storage.string as NSString
-        let caretLine = lineNumber(in: text, at: textView.selectedRange().location)
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineHeightMultiple = max(0.8, lineHeight)
@@ -84,7 +83,7 @@ enum EditorStyling {
             let end = newline.location == NSNotFound ? text.length : newline.location
             let lineRange = NSRange(location: index, length: end - index)
 
-            if line != caretLine, lineRange.length > 0 {
+            if lineRange.length > 0 {
                 let style = styles[line]
 
                 if let style, style.isRule {
@@ -128,13 +127,22 @@ enum EditorStyling {
     private static func style(for block: Block, baseFont: NSFont) -> (line: Int, style: Style)? {
         switch block {
         case let .heading(level, _, line):
-            // Same point size: growing a heading shifts every following line and makes
-            // the caret jump around while typing. Weight (and colour for h1/h2) says
-            // "heading" without moving anything.
-            let font = NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
+            // Headings really are bigger — that is the whole point of rendering them.
+            // The size must not depend on the caret, though (see the loop below), or the
+            // document reflows every time the caret moves.
+            let scale: CGFloat = switch level {
+            case 1: 1.6
+            case 2: 1.4
+            case 3: 1.22
+            default: 1.1
+            }
+            let font = NSFontManager.shared.convert(
+                NSFont(descriptor: baseFont.fontDescriptor, size: baseFont.pointSize * scale)
+                    ?? NSFont.systemFont(ofSize: baseFont.pointSize * scale),
+                toHaveTrait: .boldFontMask
+            )
             let color: NSColor = level <= 2 ? ZreePalette.headingAccent : .labelColor
-            let hashes = Int(level) + 1   // markers plus the space
-            return (Int(line), Style(font: font, color: color, markerLength: hashes))
+            return (Int(line), Style(font: font, color: color, markerLength: Int(level) + 1))
 
         case let .listItem(_, _, _, text, line):
             let marker = text.isEmpty ? 1 : 2   // "- " / "1. " — the muted part

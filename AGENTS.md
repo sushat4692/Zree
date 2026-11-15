@@ -105,6 +105,14 @@ cargo run --release --example probe -- /path/to/vault
 - [x] macOS: per-pane fonts (family / size / line height) in Settings, editor toolbar
 - [x] Android editor logic covered by JVM tests against the real core
 
+## Editor rendering (macOS)
+
+The editor renders Markdown in place: headings are larger and bold, list/quote markers
+muted, inline bold/italic/strike/code styled, `---` drawn as a rule by a custom
+NSLayoutManager. **Styling never depends on the caret position** — a heading is the same
+size whether or not the caret is on it; otherwise the document reflows while typing.
+Markers are never hidden. Only attributes change, so undo/IME/caret are unaffected.
+
 ## Known follow-ups
 
 - [x] macOS undo: ⌘Z works; the editor keeps its view identity so toggling the preview
