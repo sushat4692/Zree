@@ -36,6 +36,29 @@ struct ZreeMain: App {
                 Button("再インデックス") { app.reindex() }
                     .keyboardShortcut("r", modifiers: [.command, .shift])
             }
+            CommandMenu("書式") {
+                Button("太字") { EditorCommands.toggleInline("**") }
+                    .keyboardShortcut("b", modifiers: .command)
+                Divider()
+                Button("箇条書き") { EditorCommands.block(.bullet) }
+                    .keyboardShortcut("8", modifiers: [.command, .shift])
+                Button("番号付きリスト") { EditorCommands.block(.ordered) }
+                    .keyboardShortcut("7", modifiers: [.command, .shift])
+                Button("チェックボックス") { EditorCommands.block(.task) }
+                    .keyboardShortcut("9", modifiers: [.command, .shift])
+                Button("チェックを切り替え") { EditorCommands.toggleTask() }
+                    .keyboardShortcut("x", modifiers: [.command, .shift])
+                Button("見出し") { EditorCommands.block(.heading) }
+                    .keyboardShortcut("h", modifiers: [.command, .shift])
+                Button("引用") { EditorCommands.block(.quote) }
+                    .keyboardShortcut("q", modifiers: [.command, .shift])
+                Divider()
+                Button("インデント") { EditorCommands.indent(outdent: false) }
+                    .keyboardShortcut("]", modifiers: .command)
+                Button("インデントを戻す") { EditorCommands.indent(outdent: true) }
+                    .keyboardShortcut("[", modifiers: .command)
+            }
+
             CommandGroup(after: .textEditing) {
                 Button("プレビュー切り替え") { app.preview.toggle() }
                     .keyboardShortcut("p", modifiers: [.command, .shift])

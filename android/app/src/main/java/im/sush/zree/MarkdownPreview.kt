@@ -92,6 +92,7 @@ fun spansToAnnotated(
 fun PreviewList(
     blocks: List<PBlock>,
     bitmaps: Map<String, Bitmap>,
+    scale: Float = 1f,
     onLink: (String) -> Unit,
 ) {
     val linkColor = MaterialTheme.colorScheme.primary
@@ -108,16 +109,16 @@ fun PreviewList(
                 is PBlock.Heading -> Text(
                     text = spansToAnnotated(block.spans, linkColor, onLink),
                     fontSize = when (block.level) {
-                        1 -> 25.sp
-                        2 -> 21.sp
-                        3 -> 18.sp
-                        4 -> 16.sp
-                        else -> 15.sp
+                        1 -> (25 * scale).sp
+                        2 -> (21 * scale).sp
+                        3 -> (18 * scale).sp
+                        4 -> (16 * scale).sp
+                        else -> (15 * scale).sp
                     },
                     lineHeight = when (block.level) {
-                        1 -> 31.sp
-                        2 -> 27.sp
-                        else -> 23.sp
+                        1 -> (31 * scale).sp
+                        2 -> (27 * scale).sp
+                        else -> (23 * scale).sp
                     },
                     fontWeight = if (block.level <= 2) FontWeight.Bold else FontWeight.SemiBold,
                     modifier = Modifier.padding(
@@ -165,7 +166,7 @@ fun PreviewList(
                     Text(
                         text = spansToAnnotated(block.spans, linkColor, onLink),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 23.sp,
+                        lineHeight = (23 * scale).sp,
                         modifier = Modifier.padding(start = 10.dp),
                     )
                 }
@@ -181,7 +182,7 @@ fun PreviewList(
                     Text(
                         block.text,
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
+                        fontSize = (13 * scale).sp,
                     )
                 }
 
@@ -212,7 +213,7 @@ fun PreviewList(
 
                 is PBlock.Para -> Text(
                     text = spansToAnnotated(block.spans, linkColor, onLink),
-                    lineHeight = 23.sp,
+                    lineHeight = (23 * scale).sp,
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }

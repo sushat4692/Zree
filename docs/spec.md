@@ -49,10 +49,17 @@ Inline tags only; no frontmatter.
 the list is unfiltered; a search keeps relevance order. Both apps persist the choice.
 
 Creation time: from the filesystem where the platform has it (APFS), otherwise from the first
-Git commit that added the file (Android's ext4/f2fs has no birth time). The app asks Git once per
-tree open and fills the gaps, so both devices sort the same way.
+Git commit that added the file (Android's ext4/f2fs has no birth time). The Git lookup is cached
+in `.git/zree-created-times.tsv` keyed by HEAD, so later opens only walk the new commits.
 
 Deletion always asks for confirmation first; the note then moves to `.trash/`.
+
+## 3c. Display settings
+
+- macOS: font family / size / line height, independently for the editor and the preview
+- Android: editor font size, editor line height, preview scale
+
+Both persist their own settings; there is no cross-device sync for them.
 
 ## 4. Search
 

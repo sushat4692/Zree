@@ -35,6 +35,7 @@ import uniffi.zree_core.completionContext
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -402,6 +403,7 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
             PreviewList(
                 blocks = state.pblocks,
                 bitmaps = state.bitmaps,
+                scale = state.previewScale,
                 onLink = vm::openLink,
             )
         } else {
@@ -457,6 +459,18 @@ private fun AutoSyncDialog(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                HorizontalDivider()
+                Text("表示", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                LabeledSlider("本文サイズ", state.editorFontSize, 12f, 22f, "${state.editorFontSize.toInt()}") {
+                    vm.setEditorFontSize(it)
+                }
+                LabeledSlider("行間", state.editorLineHeight, 1.1f, 2.2f, String.format("%.2f", state.editorLineHeight)) {
+                    vm.setEditorLineHeight(it)
+                }
+                LabeledSlider("プレビュー倍率", state.previewScale, 0.8f, 1.5f, String.format("%.2f", state.previewScale)) {
+                    vm.setPreviewScale(it)
+                }
+
                 HorizontalDivider()
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { vm.showSetup(); onDismiss() }) { Text("ツリーを切り替え…") }
@@ -642,7 +656,8 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
                     }
                 },
                 textStyle = TextStyle(
-                    fontSize = 15.sp,
+                    fontSize = state.editorFontSize.sp,
+                    lineHeight = (state.editorFontSize * state.editorLineHeight).sp,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurface,
                 ),
@@ -761,5 +776,26 @@ private fun SortMenu(state: UiState, onSelect: (SortOrder) -> Unit) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun LabeledSlider(
+    label: String,
+    value: Float,
+    from: Float,
+    to: Float,
+    display: String,
+    onChange: (Float) -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(96.dp))
+        Slider(
+            value = value,
+            onValueChange = onChange,
+            valueRange = from..to,
+            modifier = Modifier.weight(1f),
+        )
+        Text(display, style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(44.dp))
     }
 }

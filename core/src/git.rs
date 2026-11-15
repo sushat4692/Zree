@@ -436,17 +436,54 @@ impl Git {
         })
     }
 
+    /// Path of the local cache for `first_added_times` (inside `.git`, so it is
+    /// never committed and never shows up in the tree).
+    fn created_times_cache(&self) -> std::path::PathBuf {
+        self.repo.path().join("zree-created-times.tsv")
+    }
+
     /// When each tracked `.md` file first appeared in history. Filesystems on
     /// Android do not store a creation time, so Git is the portable answer.
+    ///
+    /// The result is cached in `.git/zree-created-times.tsv`, keyed by HEAD, and the
+    /// walk only covers commits added since the cached HEAD.
     pub fn first_added_times(&self) -> Result<Vec<(String, i64)>, NoteError> {
+        let head = self
+            .repo
+            .head()
+            .ok()
+            .and_then(|h| h.target())
+            .map(|o| o.to_string())
+            .unwrap_or_default();
+
+        let cache_path = self.created_times_cache();
+        let cached = std::fs::read_to_string(&cache_path)
+            .ok()
+            .and_then(|raw| parse_created_cache(&raw));
+
+        if let Some((cached_head, entries)) = &cached {
+            if cached_head == &head && !head.is_empty() {
+                return Ok(sort_times(entries.clone()));
+            }
+        }
+
+        let mut seen: std::collections::HashMap<String, i64> =
+            cached.as_ref().map(|(_, e)| e.clone()).unwrap_or_default();
+        let base = cached.as_ref().map(|(h, _)| h.clone()).filter(|h| !h.is_empty());
+
         let mut walk = self.repo.revwalk().map_err(git_err)?;
         if walk.push_head().is_err() {
             return Ok(Vec::new());
         }
+        if let Some(base) = &base {
+            if let Ok(oid) = git2::Oid::from_str(base) {
+                // everything reachable from the cached HEAD was already scanned
+                let _ = walk.hide(oid);
+            }
+        }
         walk.set_sorting(git2::Sort::TOPOLOGICAL | git2::Sort::REVERSE)
             .map_err(git_err)?;
 
-        let mut seen: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
         for oid in walk {
             let oid = oid.map_err(git_err)?;
             let commit = self.repo.find_commit(oid).map_err(git_err)?;
@@ -473,8 +510,10 @@ impl Git {
             }
         }
 
-        Ok(seen.into_iter().collect())
+        let _ = write_created_cache(&cache_path, &head, &seen);
+        Ok(sort_times(seen))
     }
+
 
     pub fn conflicts(&self) -> Result<Vec<String>, NoteError> {
         let index = self.repo.index().map_err(git_err)?;
@@ -559,6 +598,42 @@ impl Git {
             .or_else(|_| git2::Signature::now("Zree", "zree@localhost"))
             .map_err(git_err)
     }
+}
+
+type CreatedMap = std::collections::HashMap<String, i64>;
+
+fn sort_times(map: CreatedMap) -> Vec<(String, i64)> {
+    let mut out: Vec<(String, i64)> = map.into_iter().collect();
+    out.sort_by(|a, b| a.0.cmp(&b.0));
+    out
+}
+
+fn parse_created_cache(raw: &str) -> Option<(String, CreatedMap)> {
+    let mut lines = raw.lines();
+    let head = lines.next()?.trim().to_string();
+    let mut map = CreatedMap::new();
+    for line in lines {
+        let mut parts = line.splitn(2, '\t');
+        let path = parts.next()?;
+        let ms: i64 = parts.next()?.trim().parse().ok()?;
+        map.insert(path.to_string(), ms);
+    }
+    Some((head, map))
+}
+
+fn write_created_cache(path: &std::path::Path, head: &str, map: &CreatedMap) -> std::io::Result<()> {
+    let mut out = String::with_capacity(map.len() * 48);
+    out.push_str(head);
+    out.push('\n');
+    let mut entries: Vec<(&String, &i64)> = map.iter().collect();
+    entries.sort();
+    for (path, ms) in entries {
+        out.push_str(path);
+        out.push('\t');
+        out.push_str(&ms.to_string());
+        out.push('\n');
+    }
+    std::fs::write(path, out)
 }
 
 fn conflict_paths(index: &git2::Index) -> Vec<String> {

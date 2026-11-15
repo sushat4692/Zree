@@ -238,3 +238,35 @@ fn sync_only_pushes_when_there_is_something_to_push() {
     assert!(!pulled.pushed, "pulling does not require a push");
     assert_eq!(sandbox.remote_commit_count(), 3);
 }
+
+#[test]
+fn first_added_times_are_cached_in_dot_git() {
+    let sandbox = Sandbox::new();
+    let (a_dir, a) = sandbox.vault("a");
+    write(&a_dir.join("早い.md"), "1\n");
+    a.commit_all("first").unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(1100));
+    write(&a_dir.join("遅い.md"), "2\n");
+    a.commit_all("second").unwrap();
+
+    let first = a.first_added_times().unwrap();
+    let early = first.iter().find(|(p, _)| p == "早い.md").unwrap().1;
+    let late = first.iter().find(|(p, _)| p == "遅い.md").unwrap().1;
+    assert!(early < late, "earlier commit should have the smaller time");
+    assert!(a_dir.join(".git/zree-created-times.tsv").is_file());
+
+    // second call answers from the cache and agrees
+    let second = a.first_added_times().unwrap();
+    assert_eq!(first, second);
+
+    // a new commit only walks the delta and keeps earlier results
+    write(&a_dir.join("三つ目.md"), "3\n");
+    a.commit_all("third").unwrap();
+    let third = a.first_added_times().unwrap();
+    assert_eq!(third.len(), 3);
+    assert_eq!(
+        third.iter().find(|(p, _)| p == "早い.md").unwrap().1,
+        early,
+        "cached entries survive an incremental update"
+    );
+}

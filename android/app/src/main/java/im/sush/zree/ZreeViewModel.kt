@@ -60,6 +60,9 @@ data class UiState(
     val lastSyncAt: Long = 0L,
     val recentTrees: List<String> = emptyList(),
     val sortOrder: SortOrder = SortOrder.UPDATED_DESC,
+    val editorFontSize: Float = 15f,
+    val editorLineHeight: Float = 1.5f,
+    val previewScale: Float = 1f,
     val conflicts: List<String> = emptyList(),
     val merging: Boolean = false,
     val message: String? = null,
@@ -98,6 +101,9 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             recentTrees = recentTrees(),
             sortOrder = runCatching { SortOrder.valueOf(prefs.getString(KEY_SORT, "UPDATED_DESC")!!) }
                 .getOrDefault(SortOrder.UPDATED_DESC),
+            editorFontSize = prefs.getFloat(KEY_EDITOR_SIZE, 15f),
+            editorLineHeight = prefs.getFloat(KEY_EDITOR_LINE, 1.5f),
+            previewScale = prefs.getFloat(KEY_PREVIEW_SCALE, 1f),
         )
         prefs.getString(KEY_VAULT, null)?.let { path ->
             if (File(path).isDirectory) openVault(path)
@@ -191,6 +197,24 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // MARK: - listing
+
+    fun setEditorFontSize(size: Float) {
+        val v = size.coerceIn(12f, 22f)
+        prefs.edit().putFloat(KEY_EDITOR_SIZE, v).apply()
+        _state.value = _state.value.copy(editorFontSize = v)
+    }
+
+    fun setEditorLineHeight(height: Float) {
+        val v = height.coerceIn(1.1f, 2.2f)
+        prefs.edit().putFloat(KEY_EDITOR_LINE, v).apply()
+        _state.value = _state.value.copy(editorLineHeight = v)
+    }
+
+    fun setPreviewScale(scale: Float) {
+        val v = scale.coerceIn(0.8f, 1.5f)
+        prefs.edit().putFloat(KEY_PREVIEW_SCALE, v).apply()
+        _state.value = _state.value.copy(previewScale = v)
+    }
 
     fun setSortOrder(order: SortOrder) {
         prefs.edit().putString(KEY_SORT, order.name).apply()
@@ -690,5 +714,8 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         private const val KEY_LAST_SYNC = "lastSyncAt"
         private const val KEY_RECENT = "recentTrees"
         private const val KEY_SORT = "sortOrder"
+        private const val KEY_EDITOR_SIZE = "editorFontSize"
+        private const val KEY_EDITOR_LINE = "editorLineHeight"
+        private const val KEY_PREVIEW_SCALE = "previewScale"
     }
 }
