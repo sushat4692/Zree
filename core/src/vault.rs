@@ -9,7 +9,7 @@ pub const ASSETS_DIR: &str = "assets";
 pub const TRASH_DIR: &str = ".trash";
 const MAX_TITLE_CHARS: usize = 100;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct NoteMeta {
     /// Vault-relative path with `/` separators, e.g. `foo.md`
     pub id: String,

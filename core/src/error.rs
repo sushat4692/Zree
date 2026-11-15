@@ -1,11 +1,13 @@
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, uniffi::Error)]
+#[uniffi(flat_error)]
 pub enum NoteError {
     NotFound(String),
     InvalidTitle(String),
     AlreadyExists(String),
     Io(String),
+    Conflict(String),
 }
 
 impl fmt::Display for NoteError {
@@ -15,6 +17,7 @@ impl fmt::Display for NoteError {
             NoteError::InvalidTitle(s) => write!(f, "invalid title: {s}"),
             NoteError::AlreadyExists(s) => write!(f, "already exists: {s}"),
             NoteError::Io(s) => write!(f, "io error: {s}"),
+            NoteError::Conflict(s) => write!(f, "conflict: {s}"),
         }
     }
 }

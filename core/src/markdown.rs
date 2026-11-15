@@ -3,7 +3,7 @@
 //! The core does NOT produce HTML. It produces a token stream that the
 //! native UI (NSTextView / Compose TextField) renders directly.
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, uniffi::Enum)]
 pub enum Block {
     Blank,
     Heading {
@@ -38,7 +38,7 @@ pub enum Block {
     },
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, uniffi::Enum)]
 pub enum Inline {
     Text(String),
     Bold(String),

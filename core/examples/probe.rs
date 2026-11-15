@@ -15,8 +15,12 @@ fn main() {
     println!("index: {} entries ({:.0?})", index.len(), t1.elapsed());
 
     let tags = index.tags();
+    let shown: usize = std::env::args()
+        .nth(2)
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(5);
     println!("tags: {} unique", tags.len());
-    for t in tags.iter().take(5) {
+    for t in tags.iter().take(shown) {
         println!("   #{} x{}", t.tag, t.count);
     }
 

@@ -4,7 +4,10 @@
 //! It owns everything that must behave identically on both platforms:
 //! vault IO, Japanese search, tag extraction, Markdown tokenising and Git.
 
+uniffi::setup_scaffolding!();
+
 pub mod error;
+pub mod ffi;
 pub mod markdown;
 pub mod search;
 pub mod tags;

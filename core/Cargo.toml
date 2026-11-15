@@ -7,7 +7,12 @@ publish = false
 [lib]
 crate-type = ["lib", "staticlib", "cdylib"]
 
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+
 [dependencies]
+uniffi = { version = "0.32", features = ["cli"] }
 unicode-normalization = "0.1"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 

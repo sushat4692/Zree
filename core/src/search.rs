@@ -9,7 +9,7 @@ use crate::error::NoteError;
 use crate::vault::{NoteMeta, Vault};
 use unicode_normalization::UnicodeNormalization;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct Hit {
     pub id: String,
     pub title: String,
@@ -153,7 +153,7 @@ impl Index {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct TagCount {
     pub tag: String,
     pub count: u32,
