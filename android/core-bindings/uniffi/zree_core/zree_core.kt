@@ -677,6 +677,8 @@ internal object IntegrityCheckingUniffiLib {
     internal fun ensureInitialized() = Unit
     external fun uniffi_zree_core_checksum_func_completion_context(
     ): Int
+    external fun uniffi_zree_core_checksum_func_format_block(
+    ): Int
     external fun uniffi_zree_core_checksum_func_indent_line(
     ): Int
     external fun uniffi_zree_core_checksum_func_is_git_repo(
@@ -684,6 +686,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_zree_core_checksum_func_list_action(
     ): Int
     external fun uniffi_zree_core_checksum_func_set_git_ca_bundle(
+    ): Int
+    external fun uniffi_zree_core_checksum_func_toggle_task(
     ): Int
     external fun uniffi_zree_core_checksum_method_gitrepo_commit_all(
     ): Int
@@ -855,6 +859,8 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_completion_context(`beforeCursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_zree_core_fn_func_format_block(`line`: RustBuffer.ByValue,`kind`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_indent_line(`line`: RustBuffer.ByValue,`outdent`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_is_git_repo(`root`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -863,6 +869,8 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_set_git_ca_bundle(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
+    external fun uniffi_zree_core_fn_func_toggle_task(`line`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun ffi_zree_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun ffi_zree_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -985,6 +993,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_func_completion_context() and 0xFFFF) != 57142) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_zree_core_checksum_func_format_block() and 0xFFFF) != 2892) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_zree_core_checksum_func_indent_line() and 0xFFFF) != 57015) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -995,6 +1006,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_func_set_git_ca_bundle() and 0xFFFF) != 19378) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_func_toggle_task() and 0xFFFF) != 59847) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_gitrepo_commit_all() and 0xFFFF) != 52900) {
@@ -3228,6 +3242,46 @@ public object FfiConverterTypeBlock : FfiConverterRustBuffer<Block>{
 
 
 
+/**
+ * Block styles the editor toolbar can apply to the current line.
+ */
+
+enum class BlockKind {
+    
+    BULLET,
+    ORDERED,
+    TASK,
+    HEADING,
+    QUOTE;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeBlockKind: FfiConverterRustBuffer<BlockKind> {
+    override fun read(buf: ByteBuffer) = try {
+        BlockKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: BlockKind) = 4UL
+
+    override fun write(value: BlockKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 enum class CompletionKind {
     
@@ -4139,6 +4193,21 @@ public object FfiConverterSequenceTypeInline: FfiConverterRustBuffer<List<Inline
     
 
         /**
+         * Apply (or toggle off) a block style on the current line.
+         */ fun `formatBlock`(`line`: kotlin.String, `kind`: BlockKind): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_func_format_block(
+    
+        
+        FfiConverterString.lower(`line`),
+        FfiConverterTypeBlockKind.lower(`kind`),_status)
+}
+    )
+    }
+    
+
+        /**
          * Tab (indent) / Shift-Tab (outdent) on a list line.
          */ fun `indentLine`(`line`: kotlin.String, `outdent`: kotlin.Boolean): kotlin.String? {
             return FfiConverterOptionalString.lift(
@@ -4196,6 +4265,20 @@ public object FfiConverterSequenceTypeInline: FfiConverterRustBuffer<List<Inline
         FfiConverterString.lower(`path`),_status)
 }
     
+    
+
+        /**
+         * Flip a task checkbox, converting a plain line into an unchecked task.
+         */ fun `toggleTask`(`line`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_func_toggle_task(
+    
+        
+        FfiConverterString.lower(`line`),_status)
+}
+    )
+    }
     
 
 

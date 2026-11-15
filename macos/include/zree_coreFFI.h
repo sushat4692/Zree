@@ -443,6 +443,11 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_write(uint64_t ptr, RustBuffer
 RustBuffer uniffi_zree_core_fn_func_completion_context(RustBuffer before_cursor, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_FORMAT_BLOCK
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_FORMAT_BLOCK
+RustBuffer uniffi_zree_core_fn_func_format_block(RustBuffer line, RustBuffer kind, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_INDENT_LINE
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_INDENT_LINE
 RustBuffer uniffi_zree_core_fn_func_indent_line(RustBuffer line, int8_t outdent, RustCallStatus *_Nonnull out_status
@@ -461,6 +466,11 @@ RustBuffer uniffi_zree_core_fn_func_list_action(RustBuffer line, RustCallStatus 
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_SET_GIT_CA_BUNDLE
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_SET_GIT_CA_BUNDLE
 void uniffi_zree_core_fn_func_set_git_ca_bundle(RustBuffer path, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_TOGGLE_TASK
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_TOGGLE_TASK
+RustBuffer uniffi_zree_core_fn_func_toggle_task(RustBuffer line, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_ZREE_CORE_RUSTBUFFER_ALLOC
@@ -729,6 +739,12 @@ uint16_t uniffi_zree_core_checksum_func_completion_context(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_FORMAT_BLOCK
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_FORMAT_BLOCK
+uint16_t uniffi_zree_core_checksum_func_format_block(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_INDENT_LINE
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_INDENT_LINE
 uint16_t uniffi_zree_core_checksum_func_indent_line(void
@@ -750,6 +766,12 @@ uint16_t uniffi_zree_core_checksum_func_list_action(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_SET_GIT_CA_BUNDLE
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_SET_GIT_CA_BUNDLE
 uint16_t uniffi_zree_core_checksum_func_set_git_ca_bundle(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_TOGGLE_TASK
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_TOGGLE_TASK
+uint16_t uniffi_zree_core_checksum_func_toggle_task(void
     
 );
 #endif

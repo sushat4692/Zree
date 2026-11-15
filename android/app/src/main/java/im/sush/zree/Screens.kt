@@ -27,7 +27,10 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import uniffi.zree_core.CompletionKind
 import uniffi.zree_core.ListAction
+import uniffi.zree_core.BlockKind
 import uniffi.zree_core.completionContext
+import uniffi.zree_core.formatBlock
+import uniffi.zree_core.toggleTask
 import uniffi.zree_core.indentLine
 import uniffi.zree_core.listAction
 import androidx.compose.foundation.text.KeyboardOptions
@@ -572,16 +575,21 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
         vm.setDraft(text)
     }
 
-    fun applyLinePrefix(prefix: String) {
+    fun rewriteCurrentLine(transform: (String) -> String) {
         val caret = value.selection.start.coerceIn(0, value.text.length)
         val range = lineRange(value.text, caret)
         val line = value.text.substring(range.first, range.last)
-        if (line.startsWith(prefix)) return
-        val stripped = line.trimStart(' ')
-        val text = value.text.substring(0, range.first) + prefix + stripped + value.text.substring(range.last)
-        value = TextFieldValue(text, TextRange(range.first + prefix.length + stripped.length))
+        val rewritten = runCatching { transform(line) }.getOrNull() ?: return
+        if (rewritten == line) return
+        val text = value.text.substring(0, range.first) + rewritten + value.text.substring(range.last)
+        val target = range.first + rewritten.length
+        value = TextFieldValue(text, TextRange(target))
         vm.setDraft(text)
     }
+
+    fun applyBlock(kind: BlockKind) = rewriteCurrentLine { formatBlock(it, kind) }
+
+    fun applyTaskToggle() = rewriteCurrentLine { toggleTask(it) }
 
     fun wrap(marks: String) {
         val sel = value.selection
@@ -650,9 +658,12 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
         EditorToolbar(
             onOutdent = { applyIndent(true) },
             onIndent = { applyIndent(false) },
-            onBullet = { applyLinePrefix("- ") },
-            onCheckbox = { applyLinePrefix("- [ ] ") },
-            onHeading = { applyLinePrefix("# ") },
+            onBullet = { applyBlock(BlockKind.BULLET) },
+            onOrdered = { applyBlock(BlockKind.ORDERED) },
+            onTask = { applyBlock(BlockKind.TASK) },
+            onHeading = { applyBlock(BlockKind.HEADING) },
+            onQuote = { applyBlock(BlockKind.QUOTE) },
+            onToggleTask = { applyTaskToggle() },
             onBold = { wrap("**") },
         )
     }
@@ -663,8 +674,11 @@ private fun EditorToolbar(
     onOutdent: () -> Unit,
     onIndent: () -> Unit,
     onBullet: () -> Unit,
-    onCheckbox: () -> Unit,
+    onOrdered: () -> Unit,
+    onTask: () -> Unit,
     onHeading: () -> Unit,
+    onQuote: () -> Unit,
+    onToggleTask: () -> Unit,
     onBold: () -> Unit,
 ) {
     Row(
@@ -680,8 +694,11 @@ private fun EditorToolbar(
             "⇤" to onOutdent,
             "⇥" to onIndent,
             "•" to onBullet,
-            "☐" to onCheckbox,
+            "1." to onOrdered,
+            "☐" to onTask,
+            "☑" to onToggleTask,
             "H" to onHeading,
+            "❝" to onQuote,
             "B" to onBold,
         ).forEach { (label, action) ->
             Text(

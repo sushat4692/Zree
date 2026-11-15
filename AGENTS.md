@@ -66,6 +66,13 @@ android/ Android skeleton + generated Kotlin bindings (no SDK yet)
 docs/    spec shared by both platforms, plus the Android plan
 ```
 
+## Ground rules
+
+**Never drive the phone.** Do not use `adb shell input` (taps, keys, swipes) or wake the screen:
+the device is in daily use and every injected event lands in whatever app is in front. Verify on
+the device only by asking the owner to try it, or by reading state the app itself wrote (files,
+logcat) without sending input.
+
 ## Commands
 
 ```bash

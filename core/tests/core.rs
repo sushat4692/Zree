@@ -389,3 +389,38 @@ fn indent_commands_move_list_lines_one_level() {
     assert!(indent_list_line("ただの段落", false).is_none());
     assert!(indent_list_line("# 見出し", false).is_none());
 }
+
+#[test]
+fn block_buttons_replace_and_toggle() {
+    use zree_core::complete::{format_block, toggle_task, BlockKind};
+
+    // replace the existing block instead of stacking markers
+    assert_eq!(format_block("- foo", BlockKind::Task), "- [ ] foo");
+    assert_eq!(format_block("- foo", BlockKind::Heading), "# foo");
+    assert_eq!(format_block("# foo", BlockKind::Bullet), "- foo");
+    assert_eq!(format_block("1. foo", BlockKind::Quote), "> foo");
+    assert_eq!(format_block("> foo", BlockKind::Ordered), "1. foo");
+    assert_eq!(format_block("foo", BlockKind::Bullet), "- foo");
+    assert_eq!(format_block("foo", BlockKind::Ordered), "1. foo");
+    assert_eq!(format_block("foo", BlockKind::Task), "- [ ] foo");
+
+    // pressing the same block removes it
+    assert_eq!(format_block("- foo", BlockKind::Bullet), "foo");
+    assert_eq!(format_block("* foo", BlockKind::Bullet), "foo");
+    assert_eq!(format_block("# foo", BlockKind::Heading), "foo");
+    assert_eq!(format_block("> foo", BlockKind::Quote), "foo");
+    assert_eq!(format_block("1. foo", BlockKind::Ordered), "foo");
+    assert_eq!(format_block("- [ ] foo", BlockKind::Task), "foo");
+
+    // indentation survives
+    assert_eq!(format_block("  - foo", BlockKind::Heading), "  # foo");
+    assert_eq!(format_block("  - foo", BlockKind::Bullet), "  foo");
+
+    // checkbox toggle
+    assert_eq!(toggle_task("- [ ] foo"), "- [x] foo");
+    assert_eq!(toggle_task("- [x] foo"), "- [ ] foo");
+    assert_eq!(toggle_task("- foo"), "- [ ] foo");
+    assert_eq!(toggle_task("# foo"), "- [ ] foo");
+    assert_eq!(toggle_task("foo"), "- [ ] foo");
+    assert_eq!(toggle_task("  - [x] foo"), "  - [ ] foo");
+}

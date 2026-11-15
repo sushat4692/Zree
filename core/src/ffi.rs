@@ -183,6 +183,18 @@ pub fn list_action(line: String) -> crate::complete::ListAction {
     crate::complete::list_action(&line)
 }
 
+/// Apply (or toggle off) a block style on the current line.
+#[uniffi::export]
+pub fn format_block(line: String, kind: crate::complete::BlockKind) -> String {
+    crate::complete::format_block(&line, kind)
+}
+
+/// Flip a task checkbox, converting a plain line into an unchecked task.
+#[uniffi::export]
+pub fn toggle_task(line: String) -> String {
+    crate::complete::toggle_task(&line)
+}
+
 /// Tab (indent) / Shift-Tab (outdent) on a list line.
 #[uniffi::export]
 pub fn indent_line(line: String, outdent: bool) -> Option<String> {

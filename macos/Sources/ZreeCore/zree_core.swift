@@ -1969,6 +1969,96 @@ public func FfiConverterTypeBlock_lower(_ value: Block) -> RustBuffer {
 
 
 
+/**
+ * Block styles the editor toolbar can apply to the current line.
+ */
+
+public enum BlockKind: Equatable, Hashable {
+    
+    case bullet
+    case ordered
+    case task
+    case heading
+    case quote
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension BlockKind: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeBlockKind: FfiConverterRustBuffer {
+    typealias SwiftType = BlockKind
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlockKind {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .bullet
+        
+        case 2: return .ordered
+        
+        case 3: return .task
+        
+        case 4: return .heading
+        
+        case 5: return .quote
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: BlockKind, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .bullet:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .ordered:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .task:
+            writeInt(&buf, Int32(3))
+        
+        
+        case .heading:
+            writeInt(&buf, Int32(4))
+        
+        
+        case .quote:
+            writeInt(&buf, Int32(5))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBlockKind_lift(_ buf: RustBuffer) throws -> BlockKind {
+    return try FfiConverterTypeBlockKind.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBlockKind_lower(_ value: BlockKind) -> RustBuffer {
+    return FfiConverterTypeBlockKind.lower(value)
+}
+
+
+
 
 public enum CompletionKind: Equatable, Hashable {
     
@@ -2814,6 +2904,18 @@ public func completionContext(beforeCursor: String) -> CompletionContext?  {
 })
 }
 /**
+ * Apply (or toggle off) a block style on the current line.
+ */
+public func formatBlock(line: String, kind: BlockKind) -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_format_block(
+        FfiConverterString.lower(line),
+        FfiConverterTypeBlockKind_lower(kind),uniffiCallStatus
+    )
+})
+}
+/**
  * Tab (indent) / Shift-Tab (outdent) on a list line.
  */
 public func indentLine(line: String, outdent: Bool) -> String?  {
@@ -2860,6 +2962,17 @@ public func setGitCaBundle(path: String)throws   {try rustCallWithError(FfiConve
     )
 }
 }
+/**
+ * Flip a task checkbox, converting a plain line into an unchecked task.
+ */
+public func toggleTask(line: String) -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_toggle_task(
+        FfiConverterString.lower(line),uniffiCallStatus
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -2879,6 +2992,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_zree_core_checksum_func_completion_context() != 57142) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_zree_core_checksum_func_format_block() != 2892) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_zree_core_checksum_func_indent_line() != 57015) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -2889,6 +3005,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_func_set_git_ca_bundle() != 19378) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_func_toggle_task() != 59847) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_gitrepo_commit_all() != 52900) {

@@ -87,6 +87,160 @@ fn split_checkbox(s: &str) -> (Option<bool>, &str) {
     (None, s)
 }
 
+/// Block styles the editor toolbar can apply to the current line.
+#[derive(Debug, Clone, PartialEq, uniffi::Enum)]
+pub enum BlockKind {
+    Bullet,
+    Ordered,
+    Task,
+    Heading,
+    Quote,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum LineKind {
+    Plain,
+    Bullet(char),
+    Ordered(u32),
+    Task,
+    Heading(u8),
+    Quote,
+}
+
+struct ParsedLine {
+    indent: String,
+    kind: LineKind,
+    checked: Option<bool>,
+    content: String,
+}
+
+fn parse_line(line: &str) -> ParsedLine {
+    let indent: String = line.chars().take_while(|c| *c == ' ' || *c == '\t').collect();
+    let rest = &line[indent.len()..];
+
+    let base = ParsedLine {
+        indent: indent.clone(),
+        kind: LineKind::Plain,
+        checked: None,
+        content: rest.to_string(),
+    };
+
+    // heading
+    let hashes = rest.chars().take_while(|c| *c == '#').count();
+    if (1..=6).contains(&hashes) {
+        let after = &rest[hashes..];
+        if let Some(text) = after.strip_prefix(' ') {
+            return ParsedLine {
+                indent,
+                kind: LineKind::Heading(hashes as u8),
+                checked: None,
+                content: text.to_string(),
+            };
+        }
+    }
+
+    // quote
+    if let Some(text) = rest.strip_prefix("> ") {
+        return ParsedLine { indent, kind: LineKind::Quote, checked: None, content: text.to_string() };
+    }
+
+    // task / bullet
+    for bullet in ['-', '*', '+'] {
+        if let Some(after) = rest.strip_prefix(bullet) {
+            if let Some(after_space) = after.strip_prefix(' ') {
+                if let Some((checked, body)) = task_state(after_space) {
+                    return ParsedLine {
+                        indent,
+                        kind: LineKind::Task,
+                        checked: Some(checked),
+                        content: body.to_string(),
+                    };
+                }
+                if let Some(body) = after_space.strip_prefix("[ ] ").or(after_space.strip_prefix("[x] ")) {
+                    return ParsedLine {
+                        indent,
+                        kind: LineKind::Task,
+                        checked: Some(false),
+                        content: body.to_string(),
+                    };
+                }
+                return ParsedLine {
+                    indent,
+                    kind: LineKind::Bullet(bullet),
+                    checked: None,
+                    content: after_space.to_string(),
+                };
+            }
+        }
+    }
+
+    // ordered
+    let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+    if !digits.is_empty() {
+        if let Some(body) = rest[digits.len()..].strip_prefix(". ") {
+            return ParsedLine {
+                indent,
+                kind: LineKind::Ordered(digits.parse().unwrap_or(1)),
+                checked: None,
+                content: body.to_string(),
+            };
+        }
+    }
+
+    base
+}
+
+fn task_state(s: &str) -> Option<(bool, &str)> {
+    if let Some(r) = s.strip_prefix("[ ] ") {
+        return Some((false, r));
+    }
+    if let Some(r) = s.strip_prefix("[x] ").or_else(|| s.strip_prefix("[X] ")) {
+        return Some((true, r));
+    }
+    None
+}
+
+fn marker_of(kind: &BlockKind) -> &'static str {
+    match kind {
+        BlockKind::Bullet => "- ",
+        BlockKind::Ordered => "1. ",
+        BlockKind::Task => "- [ ] ",
+        BlockKind::Heading => "# ",
+        BlockKind::Quote => "> ",
+    }
+}
+
+fn matches(parsed: &ParsedLine, kind: &BlockKind) -> bool {
+    matches!(
+        (&parsed.kind, kind),
+        (LineKind::Bullet(_), BlockKind::Bullet)
+            | (LineKind::Ordered(_), BlockKind::Ordered)
+            | (LineKind::Task, BlockKind::Task)
+            | (LineKind::Heading(_), BlockKind::Heading)
+            | (LineKind::Quote, BlockKind::Quote)
+    )
+}
+
+/// Replace the block marker on this line. Pressing the button for the block the
+/// line already uses removes the marker instead, so the buttons behave as toggles.
+pub fn format_block(line: &str, kind: BlockKind) -> String {
+    let parsed = parse_line(line);
+    if matches(&parsed, &kind) {
+        return format!("{}{}", parsed.indent, parsed.content);
+    }
+    format!("{}{}{}", parsed.indent, marker_of(&kind), parsed.content)
+}
+
+/// Flip a task checkbox, converting a non-task line into an unchecked task.
+pub fn toggle_task(line: &str) -> String {
+    let parsed = parse_line(line);
+    if let (LineKind::Task, Some(checked)) = (&parsed.kind, parsed.checked) {
+        let mark = if checked { "[ ]" } else { "[x]" };
+        return format!("{}- {mark} {}", parsed.indent, parsed.content);
+    }
+    format!("{}- [ ] {}", parsed.indent, parsed.content)
+}
+
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
 pub enum CompletionKind {
     Tag,
