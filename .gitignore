@@ -14,3 +14,9 @@ macos/Frameworks
 /android/build
 
 .DS_Store
+
+# android
+android/local.properties
+android/app/build
+android/.kotlin
+android/app/src/main/jniLibs/**/*.so

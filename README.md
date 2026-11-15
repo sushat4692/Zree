@@ -18,8 +18,9 @@ Identifier: `im.sush.zree`
 ```
 core/          Rust: vault IO / Japanese search / tags / markdown tokenizer / git (uniffi)
 macos/         SwiftUI app (NSTextView = the OS text system, so IME just works)
-android/       Kotlin + Compose (not started)
+android/       Kotlin + Compose (skeleton; SDK not installed yet)
 docs/spec.md   the contract both platforms must follow
+docs/android.md  Android plan and open decisions
 ```
 
 The macOS app is built with SwiftPM and ad-hoc signing — no Xcode project.
@@ -71,7 +72,7 @@ open build/Zree.app
 - [x] Standard Markdown links that navigate between notes
 - [x] Git sync (commit/pull/push, fast-forward, merge) with a conflict UI
 - [x] Clone onboarding, Keychain-backed PAT, pull on launch
-- [ ] Android
+- [~] Android: skeleton + generated Kotlin bindings; build spike blocked on the SDK
 - [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)
 
 ## Tests

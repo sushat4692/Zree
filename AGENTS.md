@@ -61,8 +61,8 @@ Frontmatter editing, link graph / backlinks (for now), plugin system, tables, ma
 ```
 core/    Rust: vault IO / search / tags / markdown tokenizer / git (libgit2)
 macos/   SwiftUI (SwiftPM, no Xcode project)
-android/ not started
-docs/    spec shared by both platforms
+android/ Android skeleton + generated Kotlin bindings (no SDK yet)
+docs/    spec shared by both platforms, plus the Android plan
 ```
 
 ## Commands
@@ -82,5 +82,6 @@ cargo run --release --example probe -- /path/to/vault
 - [x] Markdown link navigation (`zree://note?id=` intercepted by the preview)
 - [x] Git sync (libgit2) with conflict UI
 - [x] Clone onboarding, Keychain-stored PAT, pull on launch
-- [ ] Android
+- [~] Android: Phase 0 done (bindings, Gradle skeleton, plan in docs/android.md);
+      Phase 1 (SDK install + libgit2 cross-compile spike) blocked on the SDK
 - [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)
