@@ -174,7 +174,7 @@ struct MarkdownEditor: NSViewRepresentable {
                 )
             }
             restyleTask = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: work)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.06, execute: work)
         }
 
         var restyleTask: DispatchWorkItem?

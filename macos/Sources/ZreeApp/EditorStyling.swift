@@ -205,14 +205,26 @@ enum EditorStyling {
     }
 
     /// 1-based line number of a UTF-16 offset.
-    private static func lineNumber(in text: NSString, at location: Int) -> Int {
-        guard location > 0, location <= text.length else { return 1 }
-        var count = 1
-        let before = text.substring(to: location) as NSString
-        before.enumerateSubstrings(
-            in: NSRange(location: 0, length: before.length),
-            options: [.byLines, .substringNotRequired]
-        ) { _, _, _, _ in count += 1 }
-        return count
+    ///
+    /// Counts newlines strictly *before* the caret: a newline at the caret means the
+    /// caret already sits at the end of that line, which is where `.byLines` used to
+    /// add a line and push the styling onto the wrong row.
+    static func lineNumber(in text: NSString, at location: Int) -> Int {
+        let clamped = max(0, min(location, text.length))
+        guard clamped > 0 else { return 1 }
+
+        var line = 1
+        var index = 0
+        while index < clamped {
+            let found = text.range(
+                of: "\n",
+                options: [],
+                range: NSRange(location: index, length: clamped - index)
+            )
+            if found.location == NSNotFound { break }
+            line += 1
+            index = found.location + 1
+        }
+        return line
     }
 }
