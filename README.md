@@ -39,8 +39,12 @@ The link needs OpenSSL (a side effect of git2's `https` feature); Homebrew's
 ```bash
 ./macos/scripts/sync-core.sh   # build Rust → generate Swift bindings → XCFramework
 ./macos/scripts/bundle.sh      # produces build/Zree.app (compiles the icon with actool)
+./macos/scripts/dmg.sh         # build/Zree.dmg, with an Applications shortcut
 open build/Zree.app
 ```
+
+The app is ad-hoc signed, so another Mac will ask on first launch (right-click → Open, or
+`xattr -dr com.apple.quarantine /Applications/Zree.app`).
 
 The wordmark ships in two variants and follows the colour scheme
 (`docs/assets/zree-logo.png` on light, `zree-logo-on-dark.png` on dark).
