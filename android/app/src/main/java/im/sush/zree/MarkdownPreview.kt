@@ -55,6 +55,7 @@ sealed interface PBlock {
     data class Code(val lang: String, val text: String) : PBlock
     data class Image(val path: String?, val alt: String) : PBlock
     data class Para(val spans: List<Inline>) : PBlock
+    data object Rule : PBlock
 }
 
 fun spansToAnnotated(
@@ -203,6 +204,11 @@ fun PreviewList(
                         )
                     }
                 }
+
+                is PBlock.Rule -> HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
 
                 is PBlock.Para -> Text(
                     text = spansToAnnotated(block.spans, linkColor, onLink),

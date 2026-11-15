@@ -490,3 +490,27 @@ fn notes_can_be_sorted_four_ways() {
     let asc = index.list_rows(SortOrder::UpdatedAsc);
     assert!(asc.windows(2).all(|w| w[0].mtime_ms <= w[1].mtime_ms));
 }
+
+#[test]
+fn thematic_breaks_are_rules_not_paragraphs() {
+    for source in ["---", "***", "___", " - - - ", "----"] {
+        let blocks = markdown::parse_blocks(source);
+        assert!(
+            matches!(blocks.as_slice(), [Block::Rule { .. }]),
+            "{source:?} should be a rule, got {blocks:?}"
+        );
+    }
+    // not rules
+    assert!(matches!(
+        markdown::parse_blocks("- item").as_slice(),
+        [Block::ListItem { .. }]
+    ));
+    assert!(matches!(
+        markdown::parse_blocks("--").as_slice(),
+        [Block::Paragraph { .. }]
+    ));
+    assert!(matches!(
+        markdown::parse_blocks("**bold**").as_slice(),
+        [Block::Paragraph { .. }]
+    ));
+}

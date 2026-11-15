@@ -32,6 +32,10 @@ pub enum Block {
         text: String,
         line: u32,
     },
+    /// `---`, `***` or `___` on a line of its own.
+    Rule {
+        line: u32,
+    },
     Paragraph {
         text: String,
         line: u32,
@@ -103,6 +107,12 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
             }
         }
 
+        // thematic break: three or more of -, * or _ (spaces allowed between)
+        if is_rule(trimmed) {
+            out.push(Block::Rule { line: line_no });
+            continue;
+        }
+
         // quote
         if let Some(rest) = trimmed.strip_prefix("> ") {
             out.push(Block::Quote {
@@ -161,6 +171,27 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
         });
     }
     out
+}
+
+fn is_rule(line: &str) -> bool {
+    let mut marks = 0usize;
+    let mut kind: Option<char> = None;
+    for c in line.chars() {
+        match c {
+            ' ' | '\t' => continue,
+            '-' | '*' | '_' => {
+                if let Some(k) = kind {
+                    if k != c {
+                        return false;
+                    }
+                }
+                kind = Some(c);
+                marks += 1;
+            }
+            _ => return false,
+        }
+    }
+    marks >= 3
 }
 
 fn list_marker(s: &str) -> (bool, bool, &str) {

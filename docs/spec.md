@@ -68,7 +68,8 @@ The index is held fully in memory and rebuilt lazily after mutations (fine up to
 
 ## 5. Markdown
 
-Supported blocks: headings (`#`–`######`, space required after the hashes), bullet lists
+Supported blocks: headings (`#`–`######`, space required after the hashes), thematic breaks
+(`---`, `***`, `___` on a line of their own, rendered as a divider), bullet lists
 (`-` `*` `+`, 2 spaces per indent level), ordered lists, checkboxes (`[ ]` `[x]`), blockquotes (`> `),
 fenced code, images, paragraphs.
 Supported inline: `**bold**`, `*italic*`, `~~strike~~`, `` `code` ``, `[text](url)`, `![alt](src)`.

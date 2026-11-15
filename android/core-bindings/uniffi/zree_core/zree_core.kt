@@ -3251,6 +3251,18 @@ sealed class Block {
         companion object
     }
     
+    /**
+     * `---`, `***` or `___` on a line of its own.
+     */
+    data class Rule(
+        val `line`: kotlin.UInt) : Block()
+        
+    {
+        
+
+        companion object
+    }
+    
     data class Paragraph(
         val `text`: kotlin.String, 
         val `line`: kotlin.UInt) : Block()
@@ -3304,7 +3316,10 @@ public object FfiConverterTypeBlock : FfiConverterRustBuffer<Block>{
                 FfiConverterString.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            7 -> Block.Paragraph(
+            7 -> Block.Rule(
+                FfiConverterUInt.read(buf),
+                )
+            8 -> Block.Paragraph(
                 FfiConverterString.read(buf),
                 FfiConverterUInt.read(buf),
                 )
@@ -3365,6 +3380,13 @@ public object FfiConverterTypeBlock : FfiConverterRustBuffer<Block>{
                 + FfiConverterUInt.allocationSize(value.`line`)
             )
         }
+        is Block.Rule -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`line`)
+            )
+        }
         is Block.Paragraph -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
@@ -3417,8 +3439,13 @@ public object FfiConverterTypeBlock : FfiConverterRustBuffer<Block>{
                 FfiConverterUInt.write(value.`line`, buf)
                 Unit
             }
-            is Block.Paragraph -> {
+            is Block.Rule -> {
                 buf.putInt(7)
+                FfiConverterUInt.write(value.`line`, buf)
+                Unit
+            }
+            is Block.Paragraph -> {
+                buf.putInt(8)
                 FfiConverterString.write(value.`text`, buf)
                 FfiConverterUInt.write(value.`line`, buf)
                 Unit

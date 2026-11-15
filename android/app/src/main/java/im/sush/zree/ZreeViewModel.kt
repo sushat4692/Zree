@@ -281,6 +281,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
                 is Block.Quote -> PBlock.Quote(s.inline(b.text))
                 is Block.Code -> PBlock.Code(b.lang, b.text)
                 is Block.Paragraph -> PBlock.Para(s.inline(b.text))
+                is Block.Rule -> PBlock.Rule
                 is Block.Image -> {
                     val path = resolveAsset(vault, b.src)
                     if (path != null && path !in bitmaps) {

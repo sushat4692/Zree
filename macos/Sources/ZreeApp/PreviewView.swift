@@ -100,6 +100,10 @@ struct PreviewView: View {
             }
             .padding(.vertical, 5)
 
+        case .rule:
+            Divider()
+                .padding(.vertical, app.previewFontSize * 0.6)
+
         case let .paragraph(text, _):
             Text(app.attributed(text))
                 .fixedSize(horizontal: false, vertical: true)

@@ -2033,6 +2033,11 @@ public enum Block: Equatable, Hashable {
     )
     case code(lang: String, text: String, line: UInt32
     )
+    /**
+     * `---`, `***` or `___` on a line of its own.
+     */
+    case rule(line: UInt32
+    )
     case paragraph(text: String, line: UInt32
     )
 
@@ -2073,7 +2078,10 @@ public struct FfiConverterTypeBlock: FfiConverterRustBuffer {
         case 6: return .code(lang: try FfiConverterString.read(from: &buf), text: try FfiConverterString.read(from: &buf), line: try FfiConverterUInt32.read(from: &buf)
         )
         
-        case 7: return .paragraph(text: try FfiConverterString.read(from: &buf), line: try FfiConverterUInt32.read(from: &buf)
+        case 7: return .rule(line: try FfiConverterUInt32.read(from: &buf)
+        )
+        
+        case 8: return .paragraph(text: try FfiConverterString.read(from: &buf), line: try FfiConverterUInt32.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -2124,8 +2132,13 @@ public struct FfiConverterTypeBlock: FfiConverterRustBuffer {
             FfiConverterUInt32.write(line, into: &buf)
             
         
-        case let .paragraph(text,line):
+        case let .rule(line):
             writeInt(&buf, Int32(7))
+            FfiConverterUInt32.write(line, into: &buf)
+            
+        
+        case let .paragraph(text,line):
+            writeInt(&buf, Int32(8))
             FfiConverterString.write(text, into: &buf)
             FfiConverterUInt32.write(line, into: &buf)
             
