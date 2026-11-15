@@ -41,7 +41,9 @@ swift android/scripts/make-icons.swift
 
 - `res/mipmap-*/ic_launcher.png` are the legacy bitmaps, kept only as a fallback
 
-Splash screen (`res/values/themes.xml`, mint background) uses the wordmark:
+Splash screen uses the wordmark: mint background with the dark logo in light mode
+(`res/values/themes.xml`), ink background with the white-text logo in dark mode
+(`res/values-night/themes.xml`).
 
 ```bash
 swift android/scripts/make-splash-logo.swift   # pads docs/assets/zree-logo.png onto a square

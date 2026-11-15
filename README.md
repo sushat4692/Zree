@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="docs/assets/zree-logo.png" width="380" alt="Zree — zero-friction Markdown tree">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/zree-logo-on-dark.png">
+    <img src="docs/assets/zree-logo.png" width="380" alt="Zree — zero-friction Markdown tree">
+  </picture>
 </p>
 
 # Zree
@@ -38,6 +41,9 @@ The link needs OpenSSL (a side effect of git2's `https` feature); Homebrew's
 ./macos/scripts/bundle.sh      # produces build/Zree.app (compiles the icon with actool)
 open build/Zree.app
 ```
+
+The wordmark ships in two variants and follows the colour scheme
+(`docs/assets/zree-logo.png` on light, `zree-logo-on-dark.png` on dark).
 
 The app icon is an Icon Composer bundle (`macos/Resources/Zree.icon`), compiled at bundle
 time; the Android icon is generated from the same source. The UI palette is sampled from it
