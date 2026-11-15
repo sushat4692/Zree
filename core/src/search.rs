@@ -17,6 +17,7 @@ pub struct Hit {
     pub score: i32,
     pub tags: Vec<String>,
     pub mtime_ms: i64,
+    pub created_ms: i64,
 }
 
 /// Order for the note list (search results keep relevance order).
@@ -24,6 +25,8 @@ pub struct Hit {
 pub enum SortOrder {
     UpdatedDesc,
     UpdatedAsc,
+    CreatedDesc,
+    CreatedAsc,
     TitleAsc,
     TitleDesc,
 }
@@ -65,6 +68,21 @@ impl Index {
         })
     }
 
+    /// Fill in creation times for notes that have none (Android), keyed by note id.
+    /// Returns how many entries were updated.
+    pub fn apply_created_times(&mut self, times: &[(String, i64)]) -> usize {
+        let mut updated = 0;
+        for (id, ms) in times {
+            if let Some(entry) = self.entries.iter_mut().find(|e| &e.meta.id == id) {
+                if entry.meta.created_ms == 0 {
+                    entry.meta.created_ms = *ms;
+                    updated += 1;
+                }
+            }
+        }
+        updated
+    }
+
     pub fn len(&self) -> usize {
         self.entries.len()
     }
@@ -98,6 +116,7 @@ impl Index {
                     score: 0,
                     tags: e.meta.tags.clone(),
                     mtime_ms: e.meta.mtime_ms,
+                    created_ms: e.meta.created_ms,
                 });
                 continue;
             }
@@ -133,6 +152,7 @@ impl Index {
                 score,
                 tags: e.meta.tags.clone(),
                 mtime_ms: e.meta.mtime_ms,
+                created_ms: e.meta.created_ms,
             });
         }
 
@@ -155,6 +175,7 @@ impl Index {
                 score: 0,
                 tags: e.meta.tags.clone(),
                 mtime_ms: e.meta.mtime_ms,
+                created_ms: e.meta.created_ms,
             })
             .collect();
 
@@ -165,6 +186,18 @@ impl Index {
             SortOrder::UpdatedAsc => {
                 out.sort_by(|a, b| a.mtime_ms.cmp(&b.mtime_ms).then(a.title.cmp(&b.title)))
             }
+            SortOrder::CreatedDesc => out.sort_by(|a, b| {
+                b.created_ms
+                    .cmp(&a.created_ms)
+                    .then(b.mtime_ms.cmp(&a.mtime_ms))
+                    .then(a.title.cmp(&b.title))
+            }),
+            SortOrder::CreatedAsc => out.sort_by(|a, b| {
+                a.created_ms
+                    .cmp(&b.created_ms)
+                    .then(a.mtime_ms.cmp(&b.mtime_ms))
+                    .then(a.title.cmp(&b.title))
+            }),
             SortOrder::TitleAsc => out.sort_by(|a, b| a.title.cmp(&b.title)),
             SortOrder::TitleDesc => out.sort_by(|a, b| b.title.cmp(&a.title)),
         }

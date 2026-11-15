@@ -74,6 +74,8 @@ struct SidebarView: View {
                 Menu {
                     Button("更新が新しい順") { app.sortOrder = .updatedDesc }
                     Button("更新が古い順") { app.sortOrder = .updatedAsc }
+                    Button("作成が新しい順") { app.sortOrder = .createdDesc }
+                    Button("作成が古い順") { app.sortOrder = .createdAsc }
                     Button("タイトル順 A→Z") { app.sortOrder = .titleAsc }
                     Button("タイトル順 Z→A") { app.sortOrder = .titleDesc }
                 } label: {
@@ -263,6 +265,7 @@ struct DetailView: View {
 struct Header: View {
     @Environment(AppState.self) private var app
     @FocusState private var titleFocused: Bool
+    @State private var confirmDelete = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -296,12 +299,22 @@ struct Header: View {
             .help("プレビュー (⇧⌘P)")
 
             Button {
-                app.trashSelected()
+                confirmDelete = true
             } label: {
                 Image(systemName: "trash")
             }
             .buttonStyle(.borderless)
             .help("ゴミ箱へ移動")
+            .confirmationDialog(
+                "「\(app.titleDraft)」をゴミ箱へ移動しますか？",
+                isPresented: $confirmDelete,
+                titleVisibility: .visible
+            ) {
+                Button("ゴミ箱へ移動", role: .destructive) { app.trashSelected() }
+                Button("キャンセル", role: .cancel) {}
+            } message: {
+                Text("元に戻すには .trash フォルダから取り出してください。")
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)

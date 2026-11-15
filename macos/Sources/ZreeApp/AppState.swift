@@ -85,6 +85,8 @@ final class AppState {
         switch sortOrder {
         case .updatedDesc: "updatedDesc"
         case .updatedAsc: "updatedAsc"
+        case .createdDesc: "createdDesc"
+        case .createdAsc: "createdAsc"
         case .titleAsc: "titleAsc"
         case .titleDesc: "titleDesc"
         }
@@ -94,6 +96,8 @@ final class AppState {
         switch sortOrder {
         case .updatedDesc: "更新順 ↓"
         case .updatedAsc: "更新順 ↑"
+        case .createdDesc: "作成順 ↓"
+        case .createdAsc: "作成順 ↑"
         case .titleAsc: "名前順 A→Z"
         case .titleDesc: "名前順 Z→A"
         }
@@ -134,6 +138,8 @@ final class AppState {
 
         switch defaults.string(forKey: Keys.sortOrder) {
         case "updatedAsc": sortOrder = .updatedAsc
+        case "createdDesc": sortOrder = .createdDesc
+        case "createdAsc": sortOrder = .createdAsc
         case "titleAsc": sortOrder = .titleAsc
         case "titleDesc": sortOrder = .titleDesc
         default: break
@@ -178,6 +184,7 @@ final class AppState {
             errorMessage = nil
             setupGit()
             refreshAll()
+            backfillCreatedTimes()
             let last = defaults.string(forKey: Keys.lastNote)
             if let last, rows.contains(where: { $0.id == last }) {
                 select(last)
@@ -681,6 +688,20 @@ final class AppState {
             refreshAll()
         } catch {
             errorMessage = describe(error)
+        }
+    }
+
+    /// Note creation times come from Git: APFS has a birth time, but we use one
+    /// rule on both platforms so the order agrees across devices.
+    private func backfillCreatedTimes() {
+        guard let repo = git else { return }
+        Task.detached { [weak self] in
+            let times = try? repo.firstAddedTimes()
+            await MainActor.run {
+                guard let self, let times, !times.isEmpty, let session = self.session else { return }
+                _ = session.applyCreatedTimes(times: times)
+                self.reloadRows()
+            }
         }
     }
 

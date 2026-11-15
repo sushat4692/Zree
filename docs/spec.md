@@ -45,8 +45,14 @@ Inline tags only; no frontmatter.
 
 ## 3b. List order
 
-`SortOrder`: updated (newest/oldest first) or title (A→Z / Z→A). It only applies when the
-list is unfiltered; a search keeps relevance order. Both apps persist the choice.
+`SortOrder`: updated, created (newest/oldest first) or title (A→Z / Z→A). It only applies when
+the list is unfiltered; a search keeps relevance order. Both apps persist the choice.
+
+Creation time: from the filesystem where the platform has it (APFS), otherwise from the first
+Git commit that added the file (Android's ext4/f2fs has no birth time). The app asks Git once per
+tree open and fills the gaps, so both devices sort the same way.
+
+Deletion always asks for confirmation first; the note then moves to `.trash/`.
 
 ## 4. Search
 

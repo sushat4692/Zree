@@ -347,6 +347,19 @@ private fun TagStrip(tags: List<TagCount>, active: Set<String>, onToggle: (Strin
 @Composable
 fun EditorScreen(vm: ZreeViewModel, state: UiState) {
     var title by remember(state.selectedId) { mutableStateOf(state.title) }
+    var showDelete by remember { mutableStateOf(false) }
+
+    if (showDelete) {
+        AlertDialog(
+            onDismissRequest = { showDelete = false },
+            title = { Text("ノートを削除") },
+            text = { Text("「${state.title}」をゴミ箱（.trash）へ移動します。よろしいですか？") },
+            confirmButton = {
+                TextButton(onClick = { showDelete = false; vm.trashCurrent() }) { Text("削除") }
+            },
+            dismissButton = { TextButton(onClick = { showDelete = false }) { Text("キャンセル") } },
+        )
+    }
 
     // Back returns to the list (and saves); closing the app is not what a back
     // press inside the editor should do.
@@ -378,6 +391,7 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
                         if (!focus.isFocused) vm.rename(title)
                     },
             )
+            TextButton(onClick = { showDelete = true }) { Text("削除") }
             TextButton(onClick = vm::togglePreview) {
                 Text(if (state.preview) "編集" else "プレビュー")
             }
@@ -720,6 +734,8 @@ private fun SortMenu(state: UiState, onSelect: (SortOrder) -> Unit) {
             text = when (state.sortOrder) {
                 SortOrder.UPDATED_DESC -> "更新順↓"
                 SortOrder.UPDATED_ASC -> "更新順↑"
+                SortOrder.CREATED_DESC -> "作成順↓"
+                SortOrder.CREATED_ASC -> "作成順↑"
                 SortOrder.TITLE_ASC -> "名前順↑"
                 SortOrder.TITLE_DESC -> "名前順↓"
             },
@@ -734,6 +750,8 @@ private fun SortMenu(state: UiState, onSelect: (SortOrder) -> Unit) {
             listOf(
                 SortOrder.UPDATED_DESC to "更新が新しい順",
                 SortOrder.UPDATED_ASC to "更新が古い順",
+                SortOrder.CREATED_DESC to "作成が新しい順",
+                SortOrder.CREATED_ASC to "作成が古い順",
                 SortOrder.TITLE_ASC to "タイトル順 (A→Z)",
                 SortOrder.TITLE_DESC to "タイトル順 (Z→A)",
             ).forEach { (order, label) ->

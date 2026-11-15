@@ -436,6 +436,46 @@ impl Git {
         })
     }
 
+    /// When each tracked `.md` file first appeared in history. Filesystems on
+    /// Android do not store a creation time, so Git is the portable answer.
+    pub fn first_added_times(&self) -> Result<Vec<(String, i64)>, NoteError> {
+        let mut walk = self.repo.revwalk().map_err(git_err)?;
+        if walk.push_head().is_err() {
+            return Ok(Vec::new());
+        }
+        walk.set_sorting(git2::Sort::TOPOLOGICAL | git2::Sort::REVERSE)
+            .map_err(git_err)?;
+
+        let mut seen: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+        for oid in walk {
+            let oid = oid.map_err(git_err)?;
+            let commit = self.repo.find_commit(oid).map_err(git_err)?;
+            let tree = commit.tree().map_err(git_err)?;
+            let parent_tree = commit.parent(0).ok().and_then(|p| p.tree().ok());
+
+            let diff = self
+                .repo
+                .diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), None)
+                .map_err(git_err)?;
+            let ms = commit.time().seconds() * 1000;
+
+            for delta in diff.deltas() {
+                if delta.status() != git2::Delta::Added {
+                    continue;
+                }
+                let Some(path) = delta.new_file().path().and_then(|p| p.to_str()) else {
+                    continue;
+                };
+                if !path.to_lowercase().ends_with(".md") {
+                    continue;
+                }
+                seen.entry(path.to_string()).or_insert(ms);
+            }
+        }
+
+        Ok(seen.into_iter().collect())
+    }
+
     pub fn conflicts(&self) -> Result<Vec<String>, NoteError> {
         let index = self.repo.index().map_err(git_err)?;
         Ok(conflict_paths(&index))

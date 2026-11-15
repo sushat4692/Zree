@@ -18,6 +18,9 @@ pub struct NoteMeta {
     /// Absolute path on disk.
     pub path: String,
     pub mtime_ms: i64,
+    /// Creation time from the filesystem when the platform supports it (APFS does,
+    /// Android's ext4/f2fs does not — the app fills those from Git).
+    pub created_ms: i64,
     pub bytes: u64,
     pub tags: Vec<String>,
 }
@@ -83,6 +86,12 @@ impl Vault {
             path: path.display().to_string(),
             mtime_ms: meta
                 .modified()
+                .ok()
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_millis() as i64)
+                .unwrap_or(0),
+            created_ms: meta
+                .created()
                 .ok()
                 .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
                 .map(|d| d.as_millis() as i64)

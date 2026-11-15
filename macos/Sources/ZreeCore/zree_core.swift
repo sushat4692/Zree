@@ -625,6 +625,8 @@ public protocol GitRepoProtocol: AnyObject, Sendable {
     
     func fetch() throws 
     
+    func firstAddedTimes() throws  -> [CreatedAt]
+    
     func log(limit: UInt32) throws  -> [CommitInfo]
     
     func pull() throws  -> PullOutcome
@@ -774,6 +776,15 @@ open func fetch()throws   {try rustCallWithError(FfiConverterTypeNoteError_lift)
 }
 }
     
+open func firstAddedTimes()throws  -> [CreatedAt]  {
+    return try  FfiConverterSequenceTypeCreatedAt.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_first_added_times(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
 open func log(limit: UInt32)throws  -> [CommitInfo]  {
     return try  FfiConverterSequenceTypeCommitInfo.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
@@ -914,6 +925,12 @@ public func FfiConverterTypeGitRepo_lower(_ value: GitRepo) -> UInt64 {
 public protocol ZreeSessionProtocol: AnyObject, Sendable {
     
     /**
+     * Fill creation times for notes the filesystem could not date (Android),
+     * typically from `GitRepo.firstAddedTimes()`.
+     */
+    func applyCreatedTimes(times: [CreatedAt])  -> UInt32
+    
+    /**
      * Markdown token stream for a note on disk.
      */
     func blocks(id: String) throws  -> [Block]
@@ -1046,6 +1063,20 @@ public static func `open`(root: String)throws  -> ZreeSession  {
 }
     
 
+    
+    /**
+     * Fill creation times for notes the filesystem could not date (Android),
+     * typically from `GitRepo.firstAddedTimes()`.
+     */
+open func applyCreatedTimes(times: [CreatedAt]) -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_zreesession_apply_created_times(
+            self.uniffiCloneHandle(),
+        FfiConverterSequenceTypeCreatedAt.lower(times),uniffiCallStatus
+    )
+})
+}
     
     /**
      * Markdown token stream for a note on disk.
@@ -1446,6 +1477,60 @@ public func FfiConverterTypeCompletionContext_lower(_ value: CompletionContext) 
 }
 
 
+public struct CreatedAt: Equatable, Hashable {
+    public var id: String
+    public var ms: Int64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, ms: Int64) {
+        self.id = id
+        self.ms = ms
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension CreatedAt: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCreatedAt: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CreatedAt {
+        return
+            try CreatedAt(
+                id: FfiConverterString.read(from: &buf), 
+                ms: FfiConverterInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CreatedAt, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterInt64.write(value.ms, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCreatedAt_lift(_ buf: RustBuffer) throws -> CreatedAt {
+    return try FfiConverterTypeCreatedAt.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCreatedAt_lower(_ value: CreatedAt) -> RustBuffer {
+    return FfiConverterTypeCreatedAt.lower(value)
+}
+
+
 public struct GitStatus: Equatable, Hashable {
     public var isRepo: Bool
     public var branch: String
@@ -1535,16 +1620,18 @@ public struct Hit: Equatable, Hashable {
     public var score: Int32
     public var tags: [String]
     public var mtimeMs: Int64
+    public var createdMs: Int64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: String, title: String, snippet: String, score: Int32, tags: [String], mtimeMs: Int64) {
+    public init(id: String, title: String, snippet: String, score: Int32, tags: [String], mtimeMs: Int64, createdMs: Int64) {
         self.id = id
         self.title = title
         self.snippet = snippet
         self.score = score
         self.tags = tags
         self.mtimeMs = mtimeMs
+        self.createdMs = createdMs
     }
 
     
@@ -1568,7 +1655,8 @@ public struct FfiConverterTypeHit: FfiConverterRustBuffer {
                 snippet: FfiConverterString.read(from: &buf), 
                 score: FfiConverterInt32.read(from: &buf), 
                 tags: FfiConverterSequenceString.read(from: &buf), 
-                mtimeMs: FfiConverterInt64.read(from: &buf)
+                mtimeMs: FfiConverterInt64.read(from: &buf), 
+                createdMs: FfiConverterInt64.read(from: &buf)
         )
     }
 
@@ -1579,6 +1667,7 @@ public struct FfiConverterTypeHit: FfiConverterRustBuffer {
         FfiConverterInt32.write(value.score, into: &buf)
         FfiConverterSequenceString.write(value.tags, into: &buf)
         FfiConverterInt64.write(value.mtimeMs, into: &buf)
+        FfiConverterInt64.write(value.createdMs, into: &buf)
     }
 }
 
@@ -1612,6 +1701,11 @@ public struct NoteMeta: Equatable, Hashable {
      */
     public var path: String
     public var mtimeMs: Int64
+    /**
+     * Creation time from the filesystem when the platform supports it (APFS does,
+     * Android's ext4/f2fs does not — the app fills those from Git).
+     */
+    public var createdMs: Int64
     public var bytes: UInt64
     public var tags: [String]
 
@@ -1626,11 +1720,16 @@ public struct NoteMeta: Equatable, Hashable {
          */title: String, 
         /**
          * Absolute path on disk.
-         */path: String, mtimeMs: Int64, bytes: UInt64, tags: [String]) {
+         */path: String, mtimeMs: Int64, 
+        /**
+         * Creation time from the filesystem when the platform supports it (APFS does,
+         * Android's ext4/f2fs does not — the app fills those from Git).
+         */createdMs: Int64, bytes: UInt64, tags: [String]) {
         self.id = id
         self.title = title
         self.path = path
         self.mtimeMs = mtimeMs
+        self.createdMs = createdMs
         self.bytes = bytes
         self.tags = tags
     }
@@ -1655,6 +1754,7 @@ public struct FfiConverterTypeNoteMeta: FfiConverterRustBuffer {
                 title: FfiConverterString.read(from: &buf), 
                 path: FfiConverterString.read(from: &buf), 
                 mtimeMs: FfiConverterInt64.read(from: &buf), 
+                createdMs: FfiConverterInt64.read(from: &buf), 
                 bytes: FfiConverterUInt64.read(from: &buf), 
                 tags: FfiConverterSequenceString.read(from: &buf)
         )
@@ -1665,6 +1765,7 @@ public struct FfiConverterTypeNoteMeta: FfiConverterRustBuffer {
         FfiConverterString.write(value.title, into: &buf)
         FfiConverterString.write(value.path, into: &buf)
         FfiConverterInt64.write(value.mtimeMs, into: &buf)
+        FfiConverterInt64.write(value.createdMs, into: &buf)
         FfiConverterUInt64.write(value.bytes, into: &buf)
         FfiConverterSequenceString.write(value.tags, into: &buf)
     }
@@ -2710,6 +2811,8 @@ public enum SortOrder: Equatable, Hashable {
     
     case updatedDesc
     case updatedAsc
+    case createdDesc
+    case createdAsc
     case titleAsc
     case titleDesc
 
@@ -2737,9 +2840,13 @@ public struct FfiConverterTypeSortOrder: FfiConverterRustBuffer {
         
         case 2: return .updatedAsc
         
-        case 3: return .titleAsc
+        case 3: return .createdDesc
         
-        case 4: return .titleDesc
+        case 4: return .createdAsc
+        
+        case 5: return .titleAsc
+        
+        case 6: return .titleDesc
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -2757,12 +2864,20 @@ public struct FfiConverterTypeSortOrder: FfiConverterRustBuffer {
             writeInt(&buf, Int32(2))
         
         
-        case .titleAsc:
+        case .createdDesc:
             writeInt(&buf, Int32(3))
         
         
-        case .titleDesc:
+        case .createdAsc:
             writeInt(&buf, Int32(4))
+        
+        
+        case .titleAsc:
+            writeInt(&buf, Int32(5))
+        
+        
+        case .titleDesc:
+            writeInt(&buf, Int32(6))
         
         }
     }
@@ -2901,6 +3016,31 @@ fileprivate struct FfiConverterSequenceTypeCommitInfo: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeCommitInfo.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeCreatedAt: FfiConverterRustBuffer {
+    typealias SwiftType = [CreatedAt]
+
+    public static func write(_ value: [CreatedAt], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeCreatedAt.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [CreatedAt] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [CreatedAt]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeCreatedAt.read(from: &buf))
         }
         return seq
     }
@@ -3202,6 +3342,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_zree_core_checksum_method_gitrepo_fetch() != 57050) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_zree_core_checksum_method_gitrepo_first_added_times() != 28357) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_zree_core_checksum_method_gitrepo_log() != 7945) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3227,6 +3370,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_gitrepo_sync() != 48534) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_zreesession_apply_created_times() != 3069) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_blocks() != 2554) {

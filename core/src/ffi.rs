@@ -96,6 +96,16 @@ impl ZreeSession {
         self.current_index().list_rows(order)
     }
 
+    /// Fill creation times for notes the filesystem could not date (Android),
+    /// typically from `GitRepo.firstAddedTimes()`.
+    pub fn apply_created_times(&self, times: Vec<crate::ffi::CreatedAt>) -> u32 {
+        let pairs: Vec<(String, i64)> = times.into_iter().map(|t| (t.id, t.ms)).collect();
+        let mut index = self.index.lock().unwrap();
+        let updated = index.apply_created_times(&pairs);
+        *self.dirty.lock().unwrap() = false;
+        updated as u32
+    }
+
     /// Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
     pub fn suggest_tags(&self, prefix: String, limit: u32) -> Vec<String> {
         self.current_index().suggest_tags(&prefix, limit as usize)
@@ -310,6 +320,12 @@ pub fn is_git_repo(root: String) -> bool {
     crate::git::Git::is_repo(&root)
 }
 
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct CreatedAt {
+    pub id: String,
+    pub ms: i64,
+}
+
 #[derive(uniffi::Object)]
 pub struct GitRepo {
     inner: Mutex<crate::git::Git>,
@@ -383,6 +399,11 @@ impl GitRepo {
 
     pub fn conflicts(&self) -> Result<Vec<String>, NoteError> {
         self.inner.lock().unwrap().conflicts()
+    }
+
+    pub fn first_added_times(&self) -> Result<Vec<CreatedAt>, NoteError> {
+        let times = self.inner.lock().unwrap().first_added_times()?;
+        Ok(times.into_iter().map(|(id, ms)| CreatedAt { id, ms }).collect())
     }
 
     pub fn resolve(&self, path: String, choice: crate::git::ConflictChoice) -> Result<(), NoteError> {
