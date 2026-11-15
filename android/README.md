@@ -26,6 +26,21 @@ cd android && ./gradlew :app:assembleDebug
 
 `local.properties` (with `sdk.dir=`) must exist for Gradle; it is gitignored.
 
+## Launcher icon
+
+Adaptive icon (API 26+, and minSdk is 26):
+
+- `res/drawable/ic_launcher_background.xml` — vector gradient matching the Icon Composer
+  background (top `#FAFAF6` → bottom `#DCEBE0`)
+- `res/mipmap-*dpi/ic_launcher_foreground.png` — the tree layer, regenerated from the
+  macOS icon source with:
+
+```bash
+swift android/scripts/make-icons.swift
+```
+
+- `res/mipmap-*/ic_launcher.png` are the legacy bitmaps, kept only as a fallback
+
 ## Native dependencies
 
 The core links libgit2. Cross-compiling it for Android is the risky step; if it fails,
