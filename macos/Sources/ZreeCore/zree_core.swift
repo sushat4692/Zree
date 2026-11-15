@@ -615,6 +615,302 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
+public protocol GitRepoProtocol: AnyObject, Sendable {
+    
+    func commitAll(message: String) throws  -> String?
+    
+    func commitMerge(message: String) throws 
+    
+    func conflicts() throws  -> [String]
+    
+    func fetch() throws 
+    
+    func log(limit: UInt32) throws  -> [CommitInfo]
+    
+    func pull() throws  -> PullOutcome
+    
+    func push() throws 
+    
+    func remoteUrl()  -> String
+    
+    func resolve(path: String, choice: ConflictChoice) throws 
+    
+    func setAuth(username: String?, token: String?) 
+    
+    func setRemote(url: String) throws 
+    
+    func status() throws  -> GitStatus
+    
+    /**
+     * commit → pull → push. Conflicts stop the push and are returned.
+     */
+    func sync(message: String) throws  -> SyncReport
+    
+}
+open class GitRepo: GitRepoProtocol, @unchecked Sendable {
+    fileprivate let handle: UInt64
+
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoHandle {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noHandle: NoHandle) {
+        self.handle = 0
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_zree_core_fn_clone_gitrepo(self.handle, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
+        try! rustCall { uniffi_zree_core_fn_free_gitrepo(handle, $0) }
+    }
+
+    
+    /**
+     * Clone `url` into `path` and return a handle.
+     */
+public static func clone(url: String, path: String, username: String?, token: String?)throws  -> GitRepo  {
+    return try  FfiConverterTypeGitRepo_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_constructor_gitrepo_clone(
+        FfiConverterString.lower(url),
+        FfiConverterString.lower(path),
+        FfiConverterOptionString.lower(username),
+        FfiConverterOptionString.lower(token),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Open the repository in `root`, initialising one if there is none.
+     */
+public static func ensure(root: String)throws  -> GitRepo  {
+    return try  FfiConverterTypeGitRepo_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_constructor_gitrepo_ensure(
+        FfiConverterString.lower(root),uniffiCallStatus
+    )
+})
+}
+    
+public static func `open`(root: String, username: String?, token: String?)throws  -> GitRepo  {
+    return try  FfiConverterTypeGitRepo_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_constructor_gitrepo_open(
+        FfiConverterString.lower(root),
+        FfiConverterOptionString.lower(username),
+        FfiConverterOptionString.lower(token),uniffiCallStatus
+    )
+})
+}
+    
+
+    
+open func commitAll(message: String)throws  -> String?  {
+    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_commit_all(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(message),uniffiCallStatus
+    )
+})
+}
+    
+open func commitMerge(message: String)throws   {try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_commit_merge(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(message),uniffiCallStatus
+    )
+}
+}
+    
+open func conflicts()throws  -> [String]  {
+    return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_conflicts(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+open func fetch()throws   {try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_fetch(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+}
+}
+    
+open func log(limit: UInt32)throws  -> [CommitInfo]  {
+    return try  FfiConverterSequenceTypeCommitInfo.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_log(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(limit),uniffiCallStatus
+    )
+})
+}
+    
+open func pull()throws  -> PullOutcome  {
+    return try  FfiConverterTypePullOutcome_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_pull(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+open func push()throws   {try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_push(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+}
+}
+    
+open func remoteUrl() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_remote_url(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+open func resolve(path: String, choice: ConflictChoice)throws   {try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_resolve(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(path),
+        FfiConverterTypeConflictChoice_lower(choice),uniffiCallStatus
+    )
+}
+}
+    
+open func setAuth(username: String?, token: String?)  {try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_set_auth(
+            self.uniffiCloneHandle(),
+        FfiConverterOptionString.lower(username),
+        FfiConverterOptionString.lower(token),uniffiCallStatus
+    )
+}
+}
+    
+open func setRemote(url: String)throws   {try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_set_remote(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(url),uniffiCallStatus
+    )
+}
+}
+    
+open func status()throws  -> GitStatus  {
+    return try  FfiConverterTypeGitStatus_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_status(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * commit → pull → push. Conflicts stop the push and are returned.
+     */
+open func sync(message: String)throws  -> SyncReport  {
+    return try  FfiConverterTypeSyncReport_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_gitrepo_sync(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(message),uniffiCallStatus
+    )
+})
+}
+    
+
+    
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGitRepo: FfiConverter {
+    typealias FfiType = UInt64
+    typealias SwiftType = GitRepo
+
+    public static func lift(_ handle: UInt64) throws -> GitRepo {
+        return GitRepo(unsafeFromHandle: handle)
+    }
+
+    public static func lower(_ value: GitRepo) -> UInt64 {
+        return value.uniffiCloneHandle()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GitRepo {
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
+    }
+
+    public static func write(_ value: GitRepo, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGitRepo_lift(_ handle: UInt64) throws -> GitRepo {
+    return try FfiConverterTypeGitRepo.lift(handle)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGitRepo_lower(_ value: GitRepo) -> UInt64 {
+    return FfiConverterTypeGitRepo.lower(value)
+}
+
+
+
+
+
+
 public protocol ZreeSessionProtocol: AnyObject, Sendable {
     
     /**
@@ -968,6 +1264,150 @@ public func FfiConverterTypeZreeSession_lower(_ value: ZreeSession) -> UInt64 {
 
 
 
+public struct CommitInfo: Equatable, Hashable {
+    public var id: String
+    public var summary: String
+    public var author: String
+    public var timeMs: Int64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, summary: String, author: String, timeMs: Int64) {
+        self.id = id
+        self.summary = summary
+        self.author = author
+        self.timeMs = timeMs
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension CommitInfo: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCommitInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CommitInfo {
+        return
+            try CommitInfo(
+                id: FfiConverterString.read(from: &buf), 
+                summary: FfiConverterString.read(from: &buf), 
+                author: FfiConverterString.read(from: &buf), 
+                timeMs: FfiConverterInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CommitInfo, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterString.write(value.summary, into: &buf)
+        FfiConverterString.write(value.author, into: &buf)
+        FfiConverterInt64.write(value.timeMs, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCommitInfo_lift(_ buf: RustBuffer) throws -> CommitInfo {
+    return try FfiConverterTypeCommitInfo.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCommitInfo_lower(_ value: CommitInfo) -> RustBuffer {
+    return FfiConverterTypeCommitInfo.lower(value)
+}
+
+
+public struct GitStatus: Equatable, Hashable {
+    public var isRepo: Bool
+    public var branch: String
+    public var upstream: String
+    public var ahead: UInt32
+    public var behind: UInt32
+    public var changed: UInt32
+    public var conflicts: [String]
+    public var remoteUrl: String
+    public var merging: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(isRepo: Bool, branch: String, upstream: String, ahead: UInt32, behind: UInt32, changed: UInt32, conflicts: [String], remoteUrl: String, merging: Bool) {
+        self.isRepo = isRepo
+        self.branch = branch
+        self.upstream = upstream
+        self.ahead = ahead
+        self.behind = behind
+        self.changed = changed
+        self.conflicts = conflicts
+        self.remoteUrl = remoteUrl
+        self.merging = merging
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension GitStatus: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGitStatus: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GitStatus {
+        return
+            try GitStatus(
+                isRepo: FfiConverterBool.read(from: &buf), 
+                branch: FfiConverterString.read(from: &buf), 
+                upstream: FfiConverterString.read(from: &buf), 
+                ahead: FfiConverterUInt32.read(from: &buf), 
+                behind: FfiConverterUInt32.read(from: &buf), 
+                changed: FfiConverterUInt32.read(from: &buf), 
+                conflicts: FfiConverterSequenceString.read(from: &buf), 
+                remoteUrl: FfiConverterString.read(from: &buf), 
+                merging: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GitStatus, into buf: inout [UInt8]) {
+        FfiConverterBool.write(value.isRepo, into: &buf)
+        FfiConverterString.write(value.branch, into: &buf)
+        FfiConverterString.write(value.upstream, into: &buf)
+        FfiConverterUInt32.write(value.ahead, into: &buf)
+        FfiConverterUInt32.write(value.behind, into: &buf)
+        FfiConverterUInt32.write(value.changed, into: &buf)
+        FfiConverterSequenceString.write(value.conflicts, into: &buf)
+        FfiConverterString.write(value.remoteUrl, into: &buf)
+        FfiConverterBool.write(value.merging, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGitStatus_lift(_ buf: RustBuffer) throws -> GitStatus {
+    return try FfiConverterTypeGitStatus.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGitStatus_lower(_ value: GitStatus) -> RustBuffer {
+    return FfiConverterTypeGitStatus.lower(value)
+}
+
+
 public struct Hit: Equatable, Hashable {
     public var id: String
     public var title: String
@@ -1123,6 +1563,68 @@ public func FfiConverterTypeNoteMeta_lift(_ buf: RustBuffer) throws -> NoteMeta 
 #endif
 public func FfiConverterTypeNoteMeta_lower(_ value: NoteMeta) -> RustBuffer {
     return FfiConverterTypeNoteMeta.lower(value)
+}
+
+
+public struct SyncReport: Equatable, Hashable {
+    public var committed: String?
+    public var pull: PullOutcome
+    public var pushed: Bool
+    public var conflicts: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(committed: String?, pull: PullOutcome, pushed: Bool, conflicts: [String]) {
+        self.committed = committed
+        self.pull = pull
+        self.pushed = pushed
+        self.conflicts = conflicts
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension SyncReport: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSyncReport: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncReport {
+        return
+            try SyncReport(
+                committed: FfiConverterOptionString.read(from: &buf), 
+                pull: FfiConverterTypePullOutcome.read(from: &buf), 
+                pushed: FfiConverterBool.read(from: &buf), 
+                conflicts: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SyncReport, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.committed, into: &buf)
+        FfiConverterTypePullOutcome.write(value.pull, into: &buf)
+        FfiConverterBool.write(value.pushed, into: &buf)
+        FfiConverterSequenceString.write(value.conflicts, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSyncReport_lift(_ buf: RustBuffer) throws -> SyncReport {
+    return try FfiConverterTypeSyncReport.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSyncReport_lower(_ value: SyncReport) -> RustBuffer {
+    return FfiConverterTypeSyncReport.lower(value)
 }
 
 
@@ -1312,6 +1814,79 @@ public func FfiConverterTypeBlock_lower(_ value: Block) -> RustBuffer {
 
 
 
+public enum ConflictChoice: Equatable, Hashable {
+    
+    case mine
+    case theirs
+    case both
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension ConflictChoice: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeConflictChoice: FfiConverterRustBuffer {
+    typealias SwiftType = ConflictChoice
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConflictChoice {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .mine
+        
+        case 2: return .theirs
+        
+        case 3: return .both
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: ConflictChoice, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .mine:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .theirs:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .both:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConflictChoice_lift(_ buf: RustBuffer) throws -> ConflictChoice {
+    return try FfiConverterTypeConflictChoice.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeConflictChoice_lower(_ value: ConflictChoice) -> RustBuffer {
+    return FfiConverterTypeConflictChoice.lower(value)
+}
+
+
+
+
 public enum Inline: Equatable, Hashable {
     
     case text(String
@@ -1450,6 +2025,8 @@ enum NoteError: Swift.Error, Equatable, Hashable, Foundation.LocalizedError {
     
     case Conflict(message: String)
     
+    case Git(message: String)
+    
 
     
 
@@ -1499,6 +2076,10 @@ public struct FfiConverterTypeNoteError: FfiConverterRustBuffer {
             message: try FfiConverterString.read(from: &buf)
         )
         
+        case 6: return .Git(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -1520,6 +2101,8 @@ public struct FfiConverterTypeNoteError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(4))
         case .Conflict(_ /* message is ignored*/):
             writeInt(&buf, Int32(5))
+        case .Git(_ /* message is ignored*/):
+            writeInt(&buf, Int32(6))
 
         
         }
@@ -1540,6 +2123,92 @@ public func FfiConverterTypeNoteError_lift(_ buf: RustBuffer) throws -> NoteErro
 public func FfiConverterTypeNoteError_lower(_ value: NoteError) -> RustBuffer {
     return FfiConverterTypeNoteError.lower(value)
 }
+
+
+
+public enum PullOutcome: Equatable, Hashable {
+    
+    case upToDate
+    case fastForwarded(commits: UInt32
+    )
+    case mergedClean
+    case conflicts(paths: [String]
+    )
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension PullOutcome: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePullOutcome: FfiConverterRustBuffer {
+    typealias SwiftType = PullOutcome
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PullOutcome {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .upToDate
+        
+        case 2: return .fastForwarded(commits: try FfiConverterUInt32.read(from: &buf)
+        )
+        
+        case 3: return .mergedClean
+        
+        case 4: return .conflicts(paths: try FfiConverterSequenceString.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: PullOutcome, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .upToDate:
+            writeInt(&buf, Int32(1))
+        
+        
+        case let .fastForwarded(commits):
+            writeInt(&buf, Int32(2))
+            FfiConverterUInt32.write(commits, into: &buf)
+            
+        
+        case .mergedClean:
+            writeInt(&buf, Int32(3))
+        
+        
+        case let .conflicts(paths):
+            writeInt(&buf, Int32(4))
+            FfiConverterSequenceString.write(paths, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePullOutcome_lift(_ buf: RustBuffer) throws -> PullOutcome {
+    return try FfiConverterTypePullOutcome.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePullOutcome_lower(_ value: PullOutcome) -> RustBuffer {
+    return FfiConverterTypePullOutcome.lower(value)
+}
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1609,6 +2278,31 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeCommitInfo: FfiConverterRustBuffer {
+    typealias SwiftType = [CommitInfo]
+
+    public static func write(_ value: [CommitInfo], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeCommitInfo.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [CommitInfo] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [CommitInfo]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeCommitInfo.read(from: &buf))
         }
         return seq
     }
@@ -1738,6 +2432,17 @@ fileprivate struct FfiConverterSequenceTypeInline: FfiConverterRustBuffer {
         return seq
     }
 }
+/**
+ * True when the folder is a Git working copy.
+ */
+public func isGitRepo(root: String) -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_is_git_repo(
+        FfiConverterString.lower(root),uniffiCallStatus
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -1753,6 +2458,48 @@ private let initializationResult: InitializationResult = {
     let scaffolding_contract_version = ffi_zree_core_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if (uniffi_zree_core_checksum_func_is_git_repo() != 9204) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_commit_all() != 52900) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_commit_merge() != 59134) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_conflicts() != 2061) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_fetch() != 57050) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_log() != 7945) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_pull() != 52057) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_push() != 7843) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_remote_url() != 44149) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_resolve() != 16827) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_set_auth() != 31081) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_set_remote() != 64720) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_status() != 33761) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_gitrepo_sync() != 28853) {
+        return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_blocks() != 2554) {
         return InitializationResult.apiChecksumMismatch
@@ -1800,6 +2547,15 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_write() != 7119) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_constructor_gitrepo_clone() != 24733) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_constructor_gitrepo_ensure() != 58173) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_constructor_gitrepo_open() != 22404) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_constructor_zreesession_open() != 47313) {

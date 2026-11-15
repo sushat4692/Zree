@@ -8,6 +8,7 @@ uniffi::setup_scaffolding!();
 
 pub mod error;
 pub mod ffi;
+pub mod git;
 pub mod markdown;
 pub mod search;
 pub mod tags;

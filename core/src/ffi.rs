@@ -164,3 +164,118 @@ impl ZreeSession {
         guard
     }
 }
+
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct SyncReport {
+    pub committed: Option<String>,
+    pub pull: crate::git::PullOutcome,
+    pub pushed: bool,
+    pub conflicts: Vec<String>,
+}
+
+/// True when the folder is a Git working copy.
+#[uniffi::export]
+pub fn is_git_repo(root: String) -> bool {
+    crate::git::Git::is_repo(&root)
+}
+
+#[derive(uniffi::Object)]
+pub struct GitRepo {
+    inner: Mutex<crate::git::Git>,
+}
+
+#[uniffi::export]
+impl GitRepo {
+    #[uniffi::constructor]
+    pub fn open(root: String, username: Option<String>, token: Option<String>) -> Result<Arc<Self>, NoteError> {
+        let auth = crate::git::GitAuth { username, token };
+        let git = crate::git::Git::open(&root, auth)?;
+        Ok(Arc::new(GitRepo { inner: Mutex::new(git) }))
+    }
+
+    /// Open the repository in `root`, initialising one if there is none.
+    #[uniffi::constructor]
+    pub fn ensure(root: String) -> Result<Arc<Self>, NoteError> {
+        let git = if crate::git::Git::is_repo(&root) {
+            crate::git::Git::open(&root, crate::git::GitAuth::default())?
+        } else {
+            crate::git::Git::init(&root)?
+        };
+        Ok(Arc::new(GitRepo { inner: Mutex::new(git) }))
+    }
+
+    /// Clone `url` into `path` and return a handle.
+    #[uniffi::constructor]
+    pub fn clone(url: String, path: String, username: Option<String>, token: Option<String>) -> Result<Arc<Self>, NoteError> {
+        let auth = crate::git::GitAuth { username, token };
+        crate::git::Git::clone_into(&url, std::path::Path::new(&path), &auth)?;
+        let git = crate::git::Git::open(&path, auth)?;
+        Ok(Arc::new(GitRepo { inner: Mutex::new(git) }))
+    }
+
+    pub fn set_auth(&self, username: Option<String>, token: Option<String>) {
+        let mut guard = self.inner.lock().unwrap();
+        guard.set_auth(crate::git::GitAuth { username, token });
+    }
+
+    pub fn status(&self) -> Result<crate::git::GitStatus, NoteError> {
+        self.inner.lock().unwrap().status()
+    }
+
+    pub fn remote_url(&self) -> String {
+        self.inner.lock().unwrap().remote_url()
+    }
+
+    pub fn set_remote(&self, url: String) -> Result<(), NoteError> {
+        self.inner.lock().unwrap().set_remote(&url)
+    }
+
+    pub fn log(&self, limit: u32) -> Result<Vec<crate::git::CommitInfo>, NoteError> {
+        self.inner.lock().unwrap().log(limit)
+    }
+
+    pub fn commit_all(&self, message: String) -> Result<Option<String>, NoteError> {
+        self.inner.lock().unwrap().commit_all(&message)
+    }
+
+    pub fn fetch(&self) -> Result<(), NoteError> {
+        self.inner.lock().unwrap().fetch()
+    }
+
+    pub fn pull(&self) -> Result<crate::git::PullOutcome, NoteError> {
+        self.inner.lock().unwrap().pull()
+    }
+
+    pub fn push(&self) -> Result<(), NoteError> {
+        self.inner.lock().unwrap().push()
+    }
+
+    pub fn conflicts(&self) -> Result<Vec<String>, NoteError> {
+        self.inner.lock().unwrap().conflicts()
+    }
+
+    pub fn resolve(&self, path: String, choice: crate::git::ConflictChoice) -> Result<(), NoteError> {
+        self.inner.lock().unwrap().resolve(&path, choice)
+    }
+
+    pub fn commit_merge(&self, message: String) -> Result<(), NoteError> {
+        self.inner.lock().unwrap().commit_merge(&message)
+    }
+
+    /// commit → pull → push. Conflicts stop the push and are returned.
+    pub fn sync(&self, message: String) -> Result<SyncReport, NoteError> {
+        let guard = self.inner.lock().unwrap();
+        let committed = guard.commit_all(&message)?;
+        let pull = guard.pull()?;
+        let conflicts = match &pull {
+            crate::git::PullOutcome::Conflicts { paths } => paths.clone(),
+            _ => Vec::new(),
+        };
+        let mut pushed = false;
+        if conflicts.is_empty() {
+            guard.push()?;
+            pushed = true;
+        }
+        Ok(SyncReport { committed, pull, pushed, conflicts })
+    }
+}

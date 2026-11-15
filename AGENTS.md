@@ -59,7 +59,7 @@ frontmatterエディタ、リンクグラフ/バックリンク、プラグイ�
 ## 構成
 
 ```
-core/    Rust: Vault IO / 検索 / タグ / Markdownトークナイザ / (Git=未実装)
+core/    Rust: Vault IO / 検索 / タグ / Markdownトークナイザ / Git(libgit2)
 macos/   SwiftUI（SwiftPM、Xcodeプロジェクトなし）
 android/ 未着手
 docs/    仕様
@@ -80,6 +80,6 @@ cargo run --release --example probe -- /path/to/vault
 - [x] uniffi バインディング（Swift、Kotlinは生成可）
 - [x] macOS v0.1（検索・タグ絞り込み・編集・自動保存・プレビュー）
 - [x] Markdownリンクのクリック遷移（`zree://note?id=` をプレビューで受ける）
-- [ ] Git同期（libgit2）+ 衝突UI
+- [x] Git同期（libgit2）+ 衝突UI（commit/pull/push、衝突はデータとして返す）
 - [ ] Android
 - [ ] 画像記法の移行（`![[..]]` → `![](assets/..)`、6件）

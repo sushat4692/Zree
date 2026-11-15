@@ -8,6 +8,7 @@ pub enum NoteError {
     AlreadyExists(String),
     Io(String),
     Conflict(String),
+    Git(String),
 }
 
 impl fmt::Display for NoteError {
@@ -18,6 +19,7 @@ impl fmt::Display for NoteError {
             NoteError::AlreadyExists(s) => write!(f, "already exists: {s}"),
             NoteError::Io(s) => write!(f, "io error: {s}"),
             NoteError::Conflict(s) => write!(f, "conflict: {s}"),
+            NoteError::Git(s) => write!(f, "git: {s}"),
         }
     }
 }

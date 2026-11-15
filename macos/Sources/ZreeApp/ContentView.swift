@@ -20,6 +20,9 @@ struct ContentView: View {
                 ErrorBar(message: error)
             }
         }
+        .sheet(isPresented: Bindable(app).showSettings) {
+            GitSettingsSheet()
+        }
     }
 }
 
@@ -67,22 +70,7 @@ struct SidebarView: View {
             .listStyle(.sidebar)
         }
         .safeAreaInset(edge: .bottom) {
-            HStack {
-                Text(app.status)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button {
-                    app.chooseVault()
-                } label: {
-                    Image(systemName: "folder")
-                }
-                .buttonStyle(.borderless)
-                .help("Vaultを開く (⇧⌘O)")
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(.bar)
+            GitFooter()
         }
     }
 }
@@ -208,6 +196,10 @@ struct DetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if !app.conflicts.isEmpty || (app.gitStatus?.merging ?? false) {
+                ConflictBanner()
+                Divider()
+            }
             Header()
             Divider()
             if app.preview {

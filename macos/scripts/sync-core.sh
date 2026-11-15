@@ -3,6 +3,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
+# keep the Rust objects at the same deployment target as the app
+export MACOSX_DEPLOYMENT_TARGET=14.0
+
 CRATE=zree_core
 PKG=zree-core
 BIND=/tmp/zree-bind

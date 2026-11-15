@@ -21,6 +21,10 @@ struct ZreeMain: App {
                     .keyboardShortcut("o", modifiers: [.command, .shift])
             }
             CommandGroup(after: .saveItem) {
+                Button("同期 (commit → pull → push)") { app.sync() }
+                    .keyboardShortcut("u", modifiers: [.command, .shift])
+                Button("設定") { app.showSettings = true }
+                    .keyboardShortcut(",", modifiers: .command)
                 Button("保存") { app.saveNow() }
                     .keyboardShortcut("s", modifiers: .command)
                 Button("再インデックス") { app.reindex() }

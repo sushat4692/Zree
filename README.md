@@ -40,8 +40,18 @@ open build/Zree.app
 | ⌘S | 保存（600ms無操作でも自動保存） |
 | ⇧⌘P | プレビュー切り替え |
 | ⇧⌘O | Vaultを開く |
+| ⇧⌘U | 同期（commit → pull → push） |
+| ⌘, | 設定（リモートURL / トークン） |
 | ⇧⌘R | 再インデックス（git pull 後など） |
 | ⇧⌘F | Finderで表示 |
+
+## Git同期
+
+- リポジトリはVaultそのもの（`.git` を同居させる）
+- 同期 = commit（全変更）→ pull（ff かマージ）→ push。衝突時は push せず停止
+- 衝突は `自分 / 相手 / 両方` を選んで解決 → 「マージ確定」でコミット＆push
+- 認証: HTTPS + PAT、または ssh-agent
+- リモートURLとトークンは ⌘, の設定から
 
 ## 性能（実データ365ノート / 443KB）
 
@@ -57,7 +67,7 @@ open build/Zree.app
 - [x] uniffi バインディング（Swift、Kotlinは生成可能）
 - [x] macOS: 一覧・検索・タグ絞り込み・編集・自動保存・プレビュー
 - [x] ノート間リンク（標準Markdown `[表示名](ノート.md)` をクリックで遷移）
-- [ ] Git同期（libgit2）＋衝突UI
+- [x] Git同期（libgit2: commit/pull/push、fast-forward、マージ）＋衝突UI
 - [ ] Android
 
 ## テスト

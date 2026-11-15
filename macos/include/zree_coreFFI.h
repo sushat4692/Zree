@@ -243,6 +243,96 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureRes
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CLONE_GITREPO
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CLONE_GITREPO
+uint64_t uniffi_zree_core_fn_clone_gitrepo(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FREE_GITREPO
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FREE_GITREPO
+void uniffi_zree_core_fn_free_gitrepo(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CONSTRUCTOR_GITREPO_CLONE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CONSTRUCTOR_GITREPO_CLONE
+uint64_t uniffi_zree_core_fn_constructor_gitrepo_clone(RustBuffer url, RustBuffer path, RustBuffer username, RustBuffer token, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CONSTRUCTOR_GITREPO_ENSURE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CONSTRUCTOR_GITREPO_ENSURE
+uint64_t uniffi_zree_core_fn_constructor_gitrepo_ensure(RustBuffer root, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CONSTRUCTOR_GITREPO_OPEN
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CONSTRUCTOR_GITREPO_OPEN
+uint64_t uniffi_zree_core_fn_constructor_gitrepo_open(RustBuffer root, RustBuffer username, RustBuffer token, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_COMMIT_ALL
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_COMMIT_ALL
+RustBuffer uniffi_zree_core_fn_method_gitrepo_commit_all(uint64_t ptr, RustBuffer message, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_COMMIT_MERGE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_COMMIT_MERGE
+void uniffi_zree_core_fn_method_gitrepo_commit_merge(uint64_t ptr, RustBuffer message, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_CONFLICTS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_CONFLICTS
+RustBuffer uniffi_zree_core_fn_method_gitrepo_conflicts(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_FETCH
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_FETCH
+void uniffi_zree_core_fn_method_gitrepo_fetch(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_LOG
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_LOG
+RustBuffer uniffi_zree_core_fn_method_gitrepo_log(uint64_t ptr, uint32_t limit, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_PULL
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_PULL
+RustBuffer uniffi_zree_core_fn_method_gitrepo_pull(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_PUSH
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_PUSH
+void uniffi_zree_core_fn_method_gitrepo_push(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_REMOTE_URL
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_REMOTE_URL
+RustBuffer uniffi_zree_core_fn_method_gitrepo_remote_url(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_RESOLVE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_RESOLVE
+void uniffi_zree_core_fn_method_gitrepo_resolve(uint64_t ptr, RustBuffer path, RustBuffer choice, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_SET_AUTH
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_SET_AUTH
+void uniffi_zree_core_fn_method_gitrepo_set_auth(uint64_t ptr, RustBuffer username, RustBuffer token, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_SET_REMOTE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_SET_REMOTE
+void uniffi_zree_core_fn_method_gitrepo_set_remote(uint64_t ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_STATUS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_STATUS
+RustBuffer uniffi_zree_core_fn_method_gitrepo_status(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_SYNC
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_SYNC
+RustBuffer uniffi_zree_core_fn_method_gitrepo_sync(uint64_t ptr, RustBuffer message, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CLONE_ZREESESSION
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_CLONE_ZREESESSION
 uint64_t uniffi_zree_core_fn_clone_zreesession(uint64_t handle, RustCallStatus *_Nonnull out_status
@@ -336,6 +426,11 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_trash(uint64_t ptr, RustBuffer
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_WRITE
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_WRITE
 RustBuffer uniffi_zree_core_fn_method_zreesession_write(uint64_t ptr, RustBuffer id, RustBuffer body, int64_t seen_mtime_ms, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_IS_GIT_REPO
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_IS_GIT_REPO
+int8_t uniffi_zree_core_fn_func_is_git_repo(RustBuffer root, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_ZREE_CORE_RUSTBUFFER_ALLOC
@@ -598,6 +693,90 @@ void ffi_zree_core_rust_future_free_void(uint64_t handle
 void ffi_zree_core_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_IS_GIT_REPO
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_IS_GIT_REPO
+uint16_t uniffi_zree_core_checksum_func_is_git_repo(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_COMMIT_ALL
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_COMMIT_ALL
+uint16_t uniffi_zree_core_checksum_method_gitrepo_commit_all(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_COMMIT_MERGE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_COMMIT_MERGE
+uint16_t uniffi_zree_core_checksum_method_gitrepo_commit_merge(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_CONFLICTS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_CONFLICTS
+uint16_t uniffi_zree_core_checksum_method_gitrepo_conflicts(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_FETCH
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_FETCH
+uint16_t uniffi_zree_core_checksum_method_gitrepo_fetch(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_LOG
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_LOG
+uint16_t uniffi_zree_core_checksum_method_gitrepo_log(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_PULL
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_PULL
+uint16_t uniffi_zree_core_checksum_method_gitrepo_pull(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_PUSH
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_PUSH
+uint16_t uniffi_zree_core_checksum_method_gitrepo_push(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_REMOTE_URL
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_REMOTE_URL
+uint16_t uniffi_zree_core_checksum_method_gitrepo_remote_url(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_RESOLVE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_RESOLVE
+uint16_t uniffi_zree_core_checksum_method_gitrepo_resolve(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_SET_AUTH
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_SET_AUTH
+uint16_t uniffi_zree_core_checksum_method_gitrepo_set_auth(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_SET_REMOTE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_SET_REMOTE
+uint16_t uniffi_zree_core_checksum_method_gitrepo_set_remote(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_STATUS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_STATUS
+uint16_t uniffi_zree_core_checksum_method_gitrepo_status(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_SYNC
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_SYNC
+uint16_t uniffi_zree_core_checksum_method_gitrepo_sync(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_BLOCKS
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_BLOCKS
 uint16_t uniffi_zree_core_checksum_method_zreesession_blocks(void
@@ -691,6 +870,24 @@ uint16_t uniffi_zree_core_checksum_method_zreesession_trash(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_WRITE
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_WRITE
 uint16_t uniffi_zree_core_checksum_method_zreesession_write(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_CONSTRUCTOR_GITREPO_CLONE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_CONSTRUCTOR_GITREPO_CLONE
+uint16_t uniffi_zree_core_checksum_constructor_gitrepo_clone(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_CONSTRUCTOR_GITREPO_ENSURE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_CONSTRUCTOR_GITREPO_ENSURE
+uint16_t uniffi_zree_core_checksum_constructor_gitrepo_ensure(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_CONSTRUCTOR_GITREPO_OPEN
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_CONSTRUCTOR_GITREPO_OPEN
+uint16_t uniffi_zree_core_checksum_constructor_gitrepo_open(void
     
 );
 #endif

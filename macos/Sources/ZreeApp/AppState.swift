@@ -36,10 +36,21 @@ final class AppState {
     private var isLoading = false
     private var saveTask: Task<Void, Never>?
 
+    // Git
+    private(set) var git: GitRepo?
+    private(set) var gitStatus: GitStatus?
+    var conflicts: [String] = []
+    var gitBusy = false
+    var showSettings = false
+    var remoteDraft = ""
+    var tokenDraft = ""
+
     private let defaults = UserDefaults.standard
     private enum Keys {
         static let vault = "vaultPath"
         static let lastNote = "lastNoteID"
+        static let token = "gitToken"
+        static let username = "gitUsername"
     }
 
     // MARK: - Vault
@@ -75,6 +86,7 @@ final class AppState {
             seenMtime = 0
             isDirty = false
             errorMessage = nil
+            setupGit()
             refreshAll()
             let last = defaults.string(forKey: Keys.lastNote)
             if let last, rows.contains(where: { $0.id == last }) {
@@ -262,6 +274,119 @@ final class AppState {
         guard let vaultPath, let id = selectedID else { return }
         let url = URL(fileURLWithPath: vaultPath).appendingPathComponent(id)
         NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    // MARK: - Git
+
+    func setupGit() {
+        guard let vaultPath else {
+            git = nil
+            gitStatus = nil
+            return
+        }
+        if isGitRepo(root: vaultPath) {
+            git = try? GitRepo.open(
+                root: vaultPath,
+                username: defaults.string(forKey: Keys.username),
+                token: defaults.string(forKey: Keys.token)
+            )
+        } else {
+            git = nil
+        }
+        remoteDraft = git?.remoteUrl() ?? ""
+        tokenDraft = defaults.string(forKey: Keys.token) ?? ""
+        refreshGitStatus()
+    }
+
+    func refreshGitStatus() {
+        gitStatus = try? git?.status()
+        if let status = gitStatus, !status.conflicts.isEmpty {
+            conflicts = status.conflicts
+        }
+    }
+
+    func initGit() {
+        guard let vaultPath else { return }
+        do {
+            git = try GitRepo.ensure(root: vaultPath)
+            if !remoteDraft.isEmpty {
+                try git?.setRemote(url: remoteDraft)
+            }
+            setupGit()
+        } catch {
+            errorMessage = describe(error)
+        }
+    }
+
+    func applyGitSettings() {
+        guard let git else { return }
+        do {
+            if !remoteDraft.isEmpty {
+                try git.setRemote(url: remoteDraft)
+            }
+            try? git.setAuth(username: nil, token: tokenDraft.isEmpty ? nil : tokenDraft)
+            defaults.set(tokenDraft, forKey: Keys.token)
+            refreshGitStatus()
+            showSettings = false
+        } catch {
+            errorMessage = describe(error)
+        }
+    }
+
+    func sync() {
+        guard let git else { return }
+        saveNow()
+        gitBusy = true
+        defer { gitBusy = false }
+        do {
+            let report = try git.sync(message: "zree: sync from macOS")
+            conflicts = report.conflicts
+            refreshAll()
+            refreshGitStatus()
+        } catch {
+            errorMessage = describe(error)
+        }
+    }
+
+    func pullOnly() {
+        guard let git else { return }
+        saveNow()
+        gitBusy = true
+        defer { gitBusy = false }
+        do {
+            let outcome = try git.pull()
+            if case let .conflicts(paths) = outcome {
+                conflicts = paths
+            }
+            refreshAll()
+            refreshGitStatus()
+        } catch {
+            errorMessage = describe(error)
+        }
+    }
+
+    func resolveConflict(_ path: String, _ choice: ConflictChoice) {
+        guard let git else { return }
+        do {
+            try git.resolve(path: path, choice: choice)
+            conflicts = (try? git.conflicts()) ?? []
+            refreshAll()
+        } catch {
+            errorMessage = describe(error)
+        }
+    }
+
+    func finishMerge() {
+        guard let git else { return }
+        do {
+            try git.commitMerge(message: "zree: resolve conflicts")
+            conflicts = []
+            try git.push()
+            refreshAll()
+            refreshGitStatus()
+        } catch {
+            errorMessage = describe(error)
+        }
     }
 
     func reindex() {
