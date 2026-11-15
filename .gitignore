@@ -1,0 +1,7 @@
+/target
+**/target
+/build
+/macos/build
+/android/.gradle
+/android/build
+.DS_Store
