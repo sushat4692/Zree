@@ -46,8 +46,11 @@ enum EditorStyling {
         var isRule: Bool = false
     }
 
+    /// Style every line (used when a note is opened or re-read).
+    @MainActor
     static func restyle(
         _ textView: NSTextView,
+        app: AppState,
         blocks: [Block],
         baseFont: NSFont,
         baseColor: NSColor,
@@ -55,66 +58,33 @@ enum EditorStyling {
         mutedColor: NSColor
     ) {
         guard let storage = textView.textStorage, storage.length > 0 else { return }
-        // never touch attributes mid-composition: the IME owns that range
         if textView.hasMarkedText() { return }
-
-        let text = storage.string as NSString
-
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineHeightMultiple = max(0.8, lineHeight)
-        let baseAttributes: [NSAttributedString.Key: Any] = [
-            .font: baseFont,
-            .paragraphStyle: paragraph,
-            .foregroundColor: baseColor,
-        ]
 
         var styles: [Int: Style] = [:]
         for block in blocks { if let s = style(for: block, baseFont: baseFont) { styles[s.line] = s.style } }
 
         textView.undoManager?.disableUndoRegistration()
         storage.beginEditing()
-        storage.setAttributes(baseAttributes, range: NSRange(location: 0, length: storage.length))
+        storage.setAttributes(baseline(baseFont, baseColor, lineHeight), range: NSRange(location: 0, length: storage.length))
 
+        let text = storage.string as NSString
         var line = 1
         var index = 0
         while index <= text.length {
-            let remainder = NSRange(location: index, length: text.length - index)
-            let newline = text.range(of: "\n", options: [], range: remainder)
+            let newline = text.range(of: "\n", options: [], range: NSRange(location: index, length: text.length - index))
             let end = newline.location == NSNotFound ? text.length : newline.location
             let lineRange = NSRange(location: index, length: end - index)
-
             if lineRange.length > 0 {
-                let style = styles[line]
-
-                if let style, style.isRule {
-                    // drawn by ZreeLayoutManager; keep the characters but hide them
-                    storage.addAttribute(.zreeRule, value: true, range: lineRange)
-                    storage.addAttribute(.foregroundColor, value: NSColor.clear, range: lineRange)
-                } else {
-                    if let style {
-                        storage.addAttribute(.font, value: style.font, range: lineRange)
-                        if style.markerLength > 0 {
-                            let markerLength = min(style.markerLength, lineRange.length)
-                            storage.addAttribute(
-                                .foregroundColor,
-                                value: mutedColor,
-                                range: NSRange(location: lineRange.location, length: markerLength)
-                            )
-                        }
-                        if style.color != baseColor {
-                            storage.addAttribute(.foregroundColor, value: style.color, range: lineRange)
-                        }
-                    }
-                    // plain paragraphs get inline styling too
-                    applyInline(
-                        storage,
-                        line: text.substring(with: lineRange),
-                        lineRange: lineRange,
-                        baseFont: style?.font ?? baseFont
-                    )
-                }
+                applyLine(
+                    storage,
+                    lineRange: lineRange,
+                    line: text.substring(with: lineRange),
+                    style: styles[line],
+                    baseFont: baseFont,
+                    baseColor: baseColor,
+                    mutedColor: mutedColor
+                )
             }
-
             if newline.location == NSNotFound { break }
             index = end + 1
             line += 1
@@ -122,6 +92,114 @@ enum EditorStyling {
 
         storage.endEditing()
         textView.undoManager?.enableUndoRegistration()
+    }
+
+    /// Restyle only the lines touched by an edit.
+    ///
+    /// The document is parsed once when it is opened; from then on each keystroke
+    /// re-classifies the edited line (via the core's single-line parser) and rewrites
+    /// attributes for that line alone. A fence line falls back to a full restyle,
+    /// because it changes how every following line is classified.
+    @MainActor
+    static func restyleChangedLines(
+        _ textView: NSTextView,
+        app: AppState,
+        editedRange: NSRange,
+        baseFont: NSFont,
+        baseColor: NSColor,
+        lineHeight: Double,
+        mutedColor: NSColor
+    ) {
+        guard let storage = textView.textStorage, storage.length > 0 else { return }
+        if textView.hasMarkedText() { return }
+
+        let text = storage.string as NSString
+        let anchor = min(editedRange.location, text.length)
+        let lineRange = text.lineRange(for: NSRange(location: anchor, length: 0))
+        let lineText = text.substring(with: lineRange)
+
+        if lineText.trimmingCharacters(in: .whitespaces).hasPrefix("```")
+            || lineText.trimmingCharacters(in: .whitespaces).hasPrefix("~~~") {
+            restyle(
+                textView,
+                app: app,
+                blocks: app.blocks(of: textView.string),
+                baseFont: baseFont,
+                baseColor: baseColor,
+                lineHeight: lineHeight,
+                mutedColor: mutedColor
+            )
+            return
+        }
+
+        textView.undoManager?.disableUndoRegistration()
+        storage.beginEditing()
+
+        // a paste can touch several lines
+        let span = text.lineRange(for: editedRange)
+        var cursor = span.location
+        while cursor < span.location + span.length {
+            let one = text.lineRange(for: NSRange(location: cursor, length: 0))
+            let content = text.substring(with: one)
+            var style: Style?
+            let block = ZreeCore.lineBlock(line: content)
+            if case .blank = block { style = nil } else { style = self.style(for: block, baseFont: baseFont)?.style }
+
+            storage.setAttributes(baseline(baseFont, baseColor, lineHeight), range: one)
+            if one.length > 0 {
+                applyLine(
+                    storage,
+                    lineRange: one,
+                    line: content,
+                    style: style,
+                    baseFont: baseFont,
+                    baseColor: baseColor,
+                    mutedColor: mutedColor
+                )
+            }
+            cursor = one.location + one.length
+        }
+        storage.endEditing()
+        textView.undoManager?.enableUndoRegistration()
+    }
+
+    private static func baseline(_ font: NSFont, _ color: NSColor, _ lineHeight: Double) -> [NSAttributedString.Key: Any] {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineHeightMultiple = max(0.8, lineHeight)
+        return [.font: font, .paragraphStyle: paragraph, .foregroundColor: color]
+    }
+
+    private static func applyLine(
+        _ storage: NSTextStorage,
+        lineRange: NSRange,
+        line: String,
+        style: Style?,
+        baseFont: NSFont,
+        baseColor: NSColor,
+        mutedColor: NSColor
+    ) {
+        if let style, style.isRule {
+            storage.addAttribute(.zreeRule, value: true, range: lineRange)
+            storage.addAttribute(.foregroundColor, value: NSColor.clear, range: lineRange)
+            return
+        }
+
+        if let style {
+            storage.addAttribute(.font, value: style.font, range: lineRange)
+            if style.markerLength > 0 {
+                let markerLength = min(style.markerLength, lineRange.length)
+                storage.addAttribute(
+                    .foregroundColor,
+                    value: mutedColor,
+                    range: NSRange(location: lineRange.location, length: markerLength)
+                )
+            }
+            if style.color != baseColor {
+                storage.addAttribute(.foregroundColor, value: style.color, range: lineRange)
+            }
+        }
+
+        applyInline(storage, line: line, lineRange: lineRange, baseFont: style?.font ?? baseFont)
     }
 
     private static func style(for block: Block, baseFont: NSFont) -> (line: Int, style: Style)? {

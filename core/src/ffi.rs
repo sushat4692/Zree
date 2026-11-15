@@ -198,6 +198,12 @@ pub fn list_action(line: String) -> crate::complete::ListAction {
     crate::complete::list_action(&line)
 }
 
+/// Block kind of a single line (used for incremental editor styling).
+#[uniffi::export]
+pub fn line_block(line: String) -> Block {
+    crate::markdown::parse_line(&line)
+}
+
 /// Inline styling spans in a line (byte offsets into that line).
 #[uniffi::export]
 pub fn inline_spans(line: String) -> Vec<crate::complete::InlineSpan> {

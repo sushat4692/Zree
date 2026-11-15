@@ -3432,6 +3432,17 @@ public func isGitRepo(root: String) -> Bool  {
 })
 }
 /**
+ * Block kind of a single line (used for incremental editor styling).
+ */
+public func lineBlock(line: String) -> Block  {
+    return try!  FfiConverterTypeBlock_lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_line_block(
+        FfiConverterString.lower(line),uniffiCallStatus
+    )
+})
+}
+/**
  * Marker continuation when Return is pressed at the end of `line`.
  */
 public func listAction(line: String) -> ListAction  {
@@ -3509,6 +3520,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_func_is_git_repo() != 9204) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_func_line_block() != 61777) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_func_list_action() != 23922) {

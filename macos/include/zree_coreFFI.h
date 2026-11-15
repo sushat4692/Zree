@@ -478,6 +478,11 @@ RustBuffer uniffi_zree_core_fn_func_inline_spans(RustBuffer line, RustCallStatus
 int8_t uniffi_zree_core_fn_func_is_git_repo(RustBuffer root, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_LINE_BLOCK
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_LINE_BLOCK
+RustBuffer uniffi_zree_core_fn_func_line_block(RustBuffer line, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_LIST_ACTION
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_LIST_ACTION
 RustBuffer uniffi_zree_core_fn_func_list_action(RustBuffer line, RustCallStatus *_Nonnull out_status
@@ -785,6 +790,12 @@ uint16_t uniffi_zree_core_checksum_func_inline_spans(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_IS_GIT_REPO
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_IS_GIT_REPO
 uint16_t uniffi_zree_core_checksum_func_is_git_repo(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_LINE_BLOCK
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_LINE_BLOCK
+uint16_t uniffi_zree_core_checksum_func_line_block(void
     
 );
 #endif

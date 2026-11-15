@@ -555,3 +555,13 @@ fn inline_spans_point_at_the_content_only() {
     assert!(inline_spans("**未完了").is_empty());
     assert!(inline_spans("****").is_empty());
 }
+
+#[test]
+fn a_single_line_can_be_classified() {
+    assert!(matches!(markdown::parse_line("# 見出し"), Block::Heading { level: 1, .. }));
+    assert!(matches!(markdown::parse_line("- あ"), Block::ListItem { .. }));
+    assert!(matches!(markdown::parse_line("> あ"), Block::Quote { .. }));
+    assert!(matches!(markdown::parse_line("---"), Block::Rule { .. }));
+    assert!(matches!(markdown::parse_line(""), Block::Blank));
+    assert!(matches!(markdown::parse_line("ただの文"), Block::Paragraph { .. }));
+}

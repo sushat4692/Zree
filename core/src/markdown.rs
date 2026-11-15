@@ -243,6 +243,14 @@ fn standalone_image(s: &str) -> Option<(String, String)> {
     None
 }
 
+/// Classify a single line, for editors that restyle only what changed.
+pub fn parse_line(line: &str) -> Block {
+    parse_blocks(line)
+        .into_iter()
+        .find(|b| !matches!(b, Block::Blank))
+        .unwrap_or(Block::Blank)
+}
+
 /// Inline tokenizer. Supports `**bold**`, `*italic*`, `~~strike~~`, `` `code` ``,
 /// `![alt](src)`, `![[src]]`, `[text](url)`.
 pub fn parse_inline(s: &str) -> Vec<Inline> {

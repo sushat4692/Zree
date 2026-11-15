@@ -41,6 +41,7 @@ struct MarkdownEditor: NSViewRepresentable {
 
         context.coordinator.app = app
         textView.delegate = context.coordinator
+        textView.textStorage?.delegate = context.coordinator
         textView.isRichText = false
         textView.allowsUndo = true
         textView.usesFindBar = true
@@ -88,6 +89,7 @@ struct MarkdownEditor: NSViewRepresentable {
             textView.setSelectedRange(NSRange(location: min(selected.location, text.utf16.count), length: 0))
             textView.undoManager?.removeAllActions()
             textView.breakUndoCoalescing()
+            context.coordinator.restyleWholeDocument(textView)
         }
     }
 
@@ -120,7 +122,7 @@ struct MarkdownEditor: NSViewRepresentable {
         storage.endEditing()
     }
 
-    final class Coordinator: NSObject, NSTextViewDelegate {
+    final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate {
         var parent: MarkdownEditor
         var app: AppState?
 
@@ -153,6 +155,16 @@ struct MarkdownEditor: NSViewRepresentable {
             return !handleReturn(textView, at: affectedCharRange.location)
         }
 
+        func textStorage(
+            _ textStorage: NSTextStorage,
+            didProcessEditing editedMask: NSTextStorageEditActions,
+            range editedRange: NSRange,
+            changeInLength delta: Int
+        ) {
+            guard editedMask.contains(.editedCharacters) else { return }
+            pendingEditRange = editedRange
+        }
+
         @MainActor
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
@@ -164,9 +176,12 @@ struct MarkdownEditor: NSViewRepresentable {
             restyleTask?.cancel()
             let work = DispatchWorkItem { [weak self, weak textView] in
                 guard let self, let textView, let app = self.app else { return }
-                EditorStyling.restyle(
+                let edited = self.pendingEditRange ?? NSRange(location: textView.selectedRange().location, length: 0)
+                self.pendingEditRange = nil
+                EditorStyling.restyleChangedLines(
                     textView,
-                    blocks: app.blocks(of: textView.string),
+                    app: app,
+                    editedRange: edited,
                     baseFont: self.parent.font,
                     baseColor: ZreePalette.editorText,
                     lineHeight: self.parent.lineHeight,
@@ -174,7 +189,24 @@ struct MarkdownEditor: NSViewRepresentable {
                 )
             }
             restyleTask = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.06, execute: work)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.03, execute: work)
+        }
+
+        var pendingEditRange: NSRange?
+
+        /// The document was replaced (note opened / changed on disk): parse it once.
+        @MainActor
+        func restyleWholeDocument(_ textView: NSTextView) {
+            guard let app else { return }
+            EditorStyling.restyle(
+                textView,
+                app: app,
+                blocks: app.blocks(of: textView.string),
+                baseFont: parent.font,
+                baseColor: ZreePalette.editorText,
+                lineHeight: parent.lineHeight,
+                mutedColor: .tertiaryLabelColor
+            )
         }
 
         var restyleTask: DispatchWorkItem?
