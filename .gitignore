@@ -1,7 +1,16 @@
+# rust
 /target
 **/target
+
+# swift build products
+macos/.build
 /build
-/macos/build
+
+# generated binary framework (rebuilt by macos/scripts/sync-core.sh)
+macos/Frameworks
+
+# android
 /android/.gradle
 /android/build
+
 .DS_Store
