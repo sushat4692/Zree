@@ -603,6 +603,7 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
         mutableStateOf(TextFieldValue(state.draft, TextRange(state.draft.length)))
     }
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var pendingAssist by remember { mutableStateOf<EditText?>(null) }
 
     val scheme = MaterialTheme.colorScheme
     val transformation = remember(
@@ -651,6 +652,13 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
         suggestions = emptyList()
     }
 
+    LaunchedEffect(pendingAssist) {
+        val assisted = pendingAssist ?: return@LaunchedEffect
+        pendingAssist = null
+        value = TextFieldValue(assisted.text, TextRange(assisted.selStart, assisted.selEnd))
+        vm.setDraft(assisted.text)
+    }
+
     LaunchedEffect(state.selectedId) {
         if (value.text != state.draft) {
             value = TextFieldValue(state.draft, TextRange(state.draft.length))
@@ -684,19 +692,19 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
                 value = value,
                 onValueChange = { next ->
                     val old = current()
+                    // Accept what the IME produced first, and only then apply the assist in
+                    // a separate pass. Rewriting the text inside onValueChange desynced the
+                    // IME's own buffer: the next backspace re-sent the old content, which
+                    // read as "- " -> "-" -> "- " looping.
+                    value = next
+                    vm.setDraft(next.text)
+                    updateSuggestions(next.text, next.selection.start)
+
                     val assisted = EditorEdits.newline(
                         old,
                         EditText(next.text, next.selection.start, next.selection.end),
                     )
-                    if (assisted != null) {
-                        value = TextFieldValue(assisted.text, TextRange(assisted.selStart, assisted.selEnd))
-                        vm.setDraft(assisted.text)
-                        updateSuggestions(assisted.text, assisted.selStart)
-                    } else {
-                        value = next
-                        vm.setDraft(next.text)
-                        updateSuggestions(next.text, next.selection.start)
-                    }
+                    if (assisted != null) pendingAssist = assisted
                 },
                 textStyle = TextStyle(
                     fontSize = state.editorFontSize.sp,

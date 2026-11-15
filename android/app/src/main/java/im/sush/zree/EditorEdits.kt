@@ -56,9 +56,11 @@ object EditorEdits {
         val caret = next.selStart.coerceIn(0, text.length)
         if (caret == 0 || text[caret - 1] != '\n') return null
 
-        // the newline has to be new; a caret that was already after one is not a Return
-        val oldCaret = old.selStart.coerceIn(0, old.text.length)
-        if (oldCaret > 0 && old.text[oldCaret - 1] == '\n') return null
+        // Exactly one newline must have been added. Deleting the "-" of an empty item
+        // leaves the caret right after an existing newline, which used to look like a
+        // Return and re-inserted the marker (an endless "- " / "-" loop).
+        val addedNewlines = text.count { it == '\n' } - old.text.count { it == '\n' }
+        if (addedNewlines != 1) return null
 
         val lineEnd = caret - 1
         val lineStart = if (lineEnd == 0) 0 else {

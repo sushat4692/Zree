@@ -51,6 +51,19 @@ class EditorEditsTest {
     }
 
     @Test
+    fun deleting_the_marker_of_an_empty_item_is_not_a_return() {
+        // the loop: backspace removed "- " from the second line, leaving the caret just
+        // after the newline of the first line
+        val old = EditText.atEnd("- a\n- ")
+        val next = EditText("- a\n", 4, 4)
+        assertNull(EditorEdits.newline(old, next))
+
+        // deleting the dash as well
+        val next2 = EditText("- a\n", 4, 4)
+        assertNull(EditorEdits.newline(EditText("- a\n-", 5, 5), next2))
+    }
+
+    @Test
     fun return_after_an_existing_newline_is_not_a_new_return() {
         // typing a character right after a newline must not be treated as Return
         val old = EditText("- あ\n", 4, 4)
