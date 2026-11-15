@@ -28,6 +28,12 @@ enum ZreePalette {
         dark: NSColor(srgbRed: 0.894, green: 0.929, blue: 0.902, alpha: 1)
     )
 
+    /// Headings keep the body size, so colour carries the hierarchy instead.
+    static let headingAccent = dynamic(
+        light: NSColor(srgbRed: 0.180, green: 0.400, blue: 0.290, alpha: 1),
+        dark: NSColor(srgbRed: 0.600, green: 0.820, blue: 0.680, alpha: 1)
+    )
+
     static var accent: Color {
         Color(nsColor: dynamic(
             light: NSColor(srgbRed: 0.235, green: 0.490, blue: 0.341, alpha: 1),

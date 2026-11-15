@@ -127,18 +127,14 @@ enum EditorStyling {
 
     private static func style(for block: Block, baseFont: NSFont) -> (line: Int, style: Style)? {
         switch block {
-        case let .heading(level, text, line):
-            let scale: CGFloat = switch level {
-            case 1: 1.55
-            case 2: 1.35
-            case 3: 1.2
-            default: 1.1
-            }
-            let font = NSFont(descriptor: baseFont.fontDescriptor, size: baseFont.pointSize * scale)
-                ?? NSFont.boldSystemFont(ofSize: baseFont.pointSize * scale)
+        case let .heading(level, _, line):
+            // Same point size: growing a heading shifts every following line and makes
+            // the caret jump around while typing. Weight (and colour for h1/h2) says
+            // "heading" without moving anything.
+            let font = NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
+            let color: NSColor = level <= 2 ? ZreePalette.headingAccent : .labelColor
             let hashes = Int(level) + 1   // markers plus the space
-            _ = text
-            return (Int(line), Style(font: font, color: .labelColor, markerLength: hashes))
+            return (Int(line), Style(font: font, color: color, markerLength: hashes))
 
         case let .listItem(_, _, _, text, line):
             let marker = text.isEmpty ? 1 : 2   // "- " / "1. " — the muted part
@@ -148,7 +144,8 @@ enum EditorStyling {
             return (Int(line), Style(font: baseFont, color: .secondaryLabelColor, markerLength: 1))
 
         case let .code(_, _, line):
-            let font = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize * 0.95, weight: .regular)
+            // same size as the body, so code fences do not shift the layout either
+            let font = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular)
             return (Int(line), Style(font: font, color: .secondaryLabelColor))
 
         case let .rule(line):
