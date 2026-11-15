@@ -45,6 +45,31 @@ android {
     }
 }
 
+// An out-of-date libzree_core.so fails at runtime with a confusing
+// "NoClassDefFoundError: uniffi.zree_core.UniffiLib" (uniffi's checksum guard).
+// Fail the build instead, with the command to run.
+val coreSrc = rootProject.projectDir.parentFile.resolve("core/src")
+val coreSo = file("src/main/jniLibs/arm64-v8a/libzree_core.so")
+
+tasks.register("checkCoreFreshness") {
+    doLast {
+        if (!coreSo.exists()) {
+            throw GradleException("libzree_core.so missing — run android/scripts/build-core.sh")
+        }
+        val newestSource = coreSrc.walkTopDown()
+            .filter { it.isFile && it.extension == "rs" }
+            .maxOfOrNull { it.lastModified() } ?: 0L
+        if (newestSource > coreSo.lastModified()) {
+            throw GradleException(
+                "libzree_core.so is older than core/src — run android/scripts/build-core.sh " +
+                    "(and regenerate the Kotlin bindings if the FFI changed)"
+            )
+        }
+    }
+}
+
+tasks.named("preBuild") { dependsOn("checkCoreFreshness") }
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2025.09.00")
     implementation(composeBom)

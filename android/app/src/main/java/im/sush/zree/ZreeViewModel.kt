@@ -692,6 +692,8 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     private fun friendly(t: Throwable): String {
         val msg = t.message ?: t.toString()
         return when {
+            msg.contains("UniffiLib", true) || msg.contains("NoClassDefFound", true) ->
+                "アプリとコアのビルドが食い違っています。最新のAPKを入れ直してください"
             msg.contains("no TLS stream", true) || msg.contains("TLS", true) -> "TLSエラー: $msg"
             msg.contains("authentication", true) || msg.contains("401", true) ->
                 "認証に失敗しました（トークンを確認してください）: $msg"
