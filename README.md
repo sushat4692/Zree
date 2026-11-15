@@ -1,7 +1,14 @@
-# Note
+# Zree
+
+**Zero-friction Markdown tree.**（*Zero* + *Tree*）
 
 Obsidian の代替として作る、軽量な Markdown ノートアプリ。
 **macOS + Android**、UIは完全ネイティブ、ロジックは Rust の共有コア。
+
+- **Zero friction** — 一瞬で起動する。肥大したUIなし、手動のフォルダ管理なし
+- **Markdown at its core** — 純粋でポータブルなプレーンテキスト
+- **Git-synced Tree** — Gitのツリー構造に乗せる。バージョン管理とデバイス間同期
+- **Self-organizing** — 書くことに集中。自動タグ付けが思考を木構造へ編む（将来）
 
 ## なぜ作るか
 
