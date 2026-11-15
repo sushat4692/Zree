@@ -135,7 +135,8 @@ Still missing:
 - [x] auto-sync timer (default 5 min, 1/5/10/15 or off) plus a flush when the app is backgrounded
 - [x] conflict UI: banner on the list, per-file `mine / theirs / both`, bulk actions,
       then a merge commit and push
-- [ ] SAF import / export
+- [x] SAF import (copy .md + assets from a picked folder, never overwriting) and
+      export (write the vault into a picked folder)
 
 ## Phase 3 — Git
 
@@ -147,8 +148,12 @@ Still missing:
 
 ## Phase 4 — Android-specific surface
 
-- SAF import (copy an existing folder in) and export (write a zip/copy out)
-- back handling (editor → list), and no quick capture by design
+- [x] SAF import (copy an existing folder in) and export (write the vault out)
+- [x] back handling (editor → list, conflicts → list)
+- no quick capture by design
+
+Verified on the device: importing two notes from `Download/ZreeImport` added both to the
+vault, and exporting wrote all four vault notes back into that folder.
 
 ## Non-goals
 

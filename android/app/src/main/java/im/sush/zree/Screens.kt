@@ -1,6 +1,9 @@
 package im.sush.zree
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -118,8 +121,22 @@ fun SetupScreen(vm: ZreeViewModel, state: UiState) {
 fun ListScreen(vm: ZreeViewModel, state: UiState) {
     var showSettings by remember { mutableStateOf(false) }
 
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? -> uri?.let(vm::importFromTree) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? -> uri?.let(vm::exportToTree) }
+
     if (showSettings) {
-        AutoSyncDialog(vm, state) { showSettings = false }
+        AutoSyncDialog(
+            vm = vm,
+            state = state,
+            onImport = { showSettings = false; importLauncher.launch(null) },
+            onExport = { showSettings = false; exportLauncher.launch(null) },
+            onDismiss = { showSettings = false },
+        )
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -350,7 +367,13 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
 }
 
 @Composable
-private fun AutoSyncDialog(vm: ZreeViewModel, state: UiState, onDismiss: () -> Unit) {
+private fun AutoSyncDialog(
+    vm: ZreeViewModel,
+    state: UiState,
+    onImport: () -> Unit,
+    onExport: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("自動同期") },
@@ -387,6 +410,17 @@ private fun AutoSyncDialog(vm: ZreeViewModel, state: UiState, onDismiss: () -> U
                 Text(
                     "変更があるときだけコミットします。衝突を検出したら停止します。" +
                         "アプリを閉じる（バックグラウンドへ）際にも1回同期します。",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                HorizontalDivider()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = onImport) { Text("取り込み…") }
+                    OutlinedButton(onClick = onExport) { Text("書き出し…") }
+                }
+                Text(
+                    "取り込み: 選んだフォルダのMarkdownをこのVaultへコピーします（既存は上書きしません）。" +
+                        "書き出し: Vaultの内容を選んだフォルダへコピーします。",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

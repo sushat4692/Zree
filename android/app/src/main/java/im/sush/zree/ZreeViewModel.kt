@@ -2,10 +2,12 @@ package im.sush.zree
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -455,6 +457,101 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             git = st,
             conflicts = st.conflicts,
             merging = st.merging,
+        )
+    }
+
+    // MARK: - SAF import / export
+
+    /** Copy every .md (and assets/) from a picked folder into the vault. */
+    fun importFromTree(treeUri: Uri) = io {
+        val context = getApplication<Application>()
+        val root = DocumentFile.fromTreeUri(context, treeUri)
+            ?: throw IllegalStateException("フォルダを開けませんでした")
+        val target = File(defaultVaultPath).apply { mkdirs() }
+
+        var copied = 0
+        var skipped = 0
+
+        fun uniqueFile(dir: File, name: String): File {
+            var candidate = File(dir, name)
+            var n = 2
+            while (candidate.exists()) {
+                val base = name.substringBeforeLast('.')
+                val ext = name.substringAfterLast('.', "")
+                candidate = File(dir, if (ext.isEmpty()) "$base $n" else "$base $n.$ext")
+                n++
+            }
+            return candidate
+        }
+
+        fun copyFile(source: DocumentFile, name: String, dir: File) {
+            dir.mkdirs()
+            val bytes = context.contentResolver.openInputStream(source.uri)?.use { it.readBytes() }
+            if (bytes == null) {
+                skipped++
+                return
+            }
+            uniqueFile(dir, name).writeBytes(bytes)
+            copied++
+        }
+
+        fun walk(dir: DocumentFile, outDir: File, depth: Int) {
+            if (depth > 6) return
+            for (child in dir.listFiles()) {
+                val name = child.name ?: continue
+                if (name.startsWith(".")) continue
+                when {
+                    child.isDirectory && name == "assets" -> walk(child, File(target, "assets"), depth + 1)
+                    child.isDirectory -> walk(child, outDir, depth + 1)
+                    name.lowercase().endsWith(".md") -> copyFile(child, name, outDir)
+                }
+            }
+        }
+
+        walk(root, target, 0)
+        refresh()
+        _state.value = _state.value.copy(
+            message = if (copied == 0) "取り込めるMarkdownがありませんでした"
+            else "${copied}件を取り込みました" + if (skipped > 0) "（${skipped}件失敗）" else "",
+        )
+    }
+
+    /** Write the whole vault (notes and assets) into a picked folder. */
+    fun exportToTree(treeUri: Uri) = io {
+        val context = getApplication<Application>()
+        val root = DocumentFile.fromTreeUri(context, treeUri)
+            ?: throw IllegalStateException("フォルダを開けませんでした")
+        val vault = File(defaultVaultPath)
+        var written = 0
+
+        fun ensureDir(dir: DocumentFile, name: String): DocumentFile =
+            dir.findFile(name)?.takeIf { it.isDirectory }
+                ?: dir.createDirectory(name)
+                ?: throw IllegalStateException("フォルダを作れません: $name")
+
+        fun writeFile(dir: DocumentFile, name: String, bytes: ByteArray) {
+            val existing = dir.findFile(name)
+            val file = existing ?: dir.createFile("application/octet-stream", name)
+            ?: throw IllegalStateException("ファイルを作れません: $name")
+            context.contentResolver.openOutputStream(file.uri)?.use { it.write(bytes) }
+            written++
+        }
+
+        fun walk(src: File, dest: DocumentFile) {
+            for (f in src.listFiles().orEmpty()) {
+                if (f.name.startsWith(".")) continue
+                if (f.isDirectory) {
+                    walk(f, ensureDir(dest, f.name))
+                } else {
+                    writeFile(dest, f.name, f.readBytes())
+                }
+            }
+        }
+
+        vault.mkdirs()
+        walk(vault, root)
+        _state.value = _state.value.copy(
+            message = if (written == 0) "書き出すものがありません" else "${written}件を書き出しました",
         )
     }
 
