@@ -99,3 +99,16 @@ cargo run --release --example probe -- /path/to/vault
       pushing to GitHub), conflict UI, SAF import/export
 - [x] Editor assists shared by both platforms: list continuation, outdent, Tab/Shift-Tab,
       tag completion, block buttons, bold toggle
+- [x] List order (updated / created / title), creation dates backfilled from Git
+- [x] Confirmation before deleting (moves to `.trash/`)
+- [x] Preview typography: scaled headings, hanging lists, quotes, code blocks, `---` rules
+- [x] macOS: per-pane fonts (family / size / line height) in Settings, editor toolbar
+- [x] Android editor logic covered by JVM tests against the real core
+
+## Known follow-ups
+
+- [ ] Verify the macOS undo fix (own UndoManager) once more — both crashes were ⌘Z
+- [ ] Android build of the latest work is not installed on the device (it was offline)
+- [ ] Cache the Git first-added walk (1877 commits) instead of recomputing per open
+- [ ] macOS toolbar could take shortcuts (⌘B etc.)
+- [ ] Backlinks, templates and automatic tagging are still future work
