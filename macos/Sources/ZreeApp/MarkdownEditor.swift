@@ -144,6 +144,32 @@ struct MarkdownEditor: NSViewRepresentable {
         }
 
         @MainActor
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            scheduleRestyle(textView)
+        }
+
+        @MainActor
+        private func scheduleRestyle(_ textView: NSTextView) {
+            restyleTask?.cancel()
+            let work = DispatchWorkItem { [weak self, weak textView] in
+                guard let self, let textView, let app = self.app else { return }
+                EditorStyling.restyle(
+                    textView,
+                    blocks: app.blocks(of: textView.string),
+                    baseFont: self.parent.font,
+                    baseColor: ZreePalette.editorText,
+                    lineHeight: self.parent.lineHeight,
+                    mutedColor: .tertiaryLabelColor
+                )
+            }
+            restyleTask = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: work)
+        }
+
+        var restyleTask: DispatchWorkItem?
+
+        @MainActor
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             if commandSelector == #selector(NSResponder.insertTab(_:)) {
                 return indent(textView, outdent: false)
