@@ -2814,6 +2814,18 @@ public func completionContext(beforeCursor: String) -> CompletionContext?  {
 })
 }
 /**
+ * Tab (indent) / Shift-Tab (outdent) on a list line.
+ */
+public func indentLine(line: String, outdent: Bool) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_indent_line(
+        FfiConverterString.lower(line),
+        FfiConverterBool.lower(outdent),uniffiCallStatus
+    )
+})
+}
+/**
  * True when the folder is a Git working copy.
  */
 public func isGitRepo(root: String) -> Bool  {
@@ -2865,6 +2877,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.contractVersionMismatch
     }
     if (uniffi_zree_core_checksum_func_completion_context() != 57142) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_func_indent_line() != 57015) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_func_is_git_repo() != 9204) {

@@ -631,6 +631,10 @@ final class AppState {
         ZreeCore.listAction(line: line)
     }
 
+    func indentLine(_ line: String, outdent: Bool) -> String? {
+        ZreeCore.indentLine(line: line, outdent: outdent)
+    }
+
     func completionContext(_ beforeCursor: String) -> CompletionContext? {
         ZreeCore.completionContext(beforeCursor: beforeCursor)
     }

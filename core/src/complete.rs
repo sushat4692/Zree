@@ -109,6 +109,49 @@ pub struct CompletionContext {
     pub prefix: String,
 }
 
+/// Move a list line one level in (`outdent == false`) or out (`outdent == true`).
+///
+/// Returns the rewritten line, or `None` when the line is not a list item.
+pub fn indent_list_line(line: &str, outdent: bool) -> Option<String> {
+    let indent: String = line.chars().take_while(|c| *c == ' ' || *c == '\t').collect();
+    let rest = &line[indent.len()..];
+
+    let is_list = rest.starts_with("> ")
+        || ['-', '*', '+']
+            .iter()
+            .any(|b| rest.starts_with(&format!("{b} ")))
+        || rest
+            .chars()
+            .take_while(|c| c.is_ascii_digit())
+            .count()
+            .gt(&0)
+            && rest
+                .chars()
+                .skip_while(|c| c.is_ascii_digit())
+                .collect::<String>()
+                .starts_with(". ");
+
+    if !is_list {
+        return None;
+    }
+
+    let new_indent = if outdent {
+        if let Some(r) = indent.strip_suffix("  ") {
+            r.to_string()
+        } else if let Some(r) = indent.strip_suffix('\t') {
+            r.to_string()
+        } else if let Some(r) = indent.strip_suffix(' ') {
+            r.to_string()
+        } else {
+            indent.clone()
+        }
+    } else {
+        format!("{indent}  ")
+    };
+
+    Some(format!("{new_indent}{rest}"))
+}
+
 /// Decide whether the cursor sits in something completable.
 ///
 /// `before_cursor` is the editor text up to the caret. Returns `None` inside

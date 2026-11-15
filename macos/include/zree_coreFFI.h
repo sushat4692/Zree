@@ -443,6 +443,11 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_write(uint64_t ptr, RustBuffer
 RustBuffer uniffi_zree_core_fn_func_completion_context(RustBuffer before_cursor, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_INDENT_LINE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_INDENT_LINE
+RustBuffer uniffi_zree_core_fn_func_indent_line(RustBuffer line, int8_t outdent, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_IS_GIT_REPO
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_IS_GIT_REPO
 int8_t uniffi_zree_core_fn_func_is_git_repo(RustBuffer root, RustCallStatus *_Nonnull out_status
@@ -721,6 +726,12 @@ void ffi_zree_core_rust_future_complete_void(uint64_t handle, RustCallStatus *_N
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_COMPLETION_CONTEXT
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_COMPLETION_CONTEXT
 uint16_t uniffi_zree_core_checksum_func_completion_context(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_INDENT_LINE
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_INDENT_LINE
+uint16_t uniffi_zree_core_checksum_func_indent_line(void
     
 );
 #endif

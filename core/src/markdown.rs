@@ -112,9 +112,17 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
             continue;
         }
 
-        // list item
-        let indent_chars = line.chars().take_while(|c| *c == ' ').count();
-        let indent = (indent_chars / 2) as u8;
+        // list item: tabs count as one level (2 spaces) as well, otherwise
+        // tab-indented lists would render flat
+        let mut indent_width = 0usize;
+        for c in line.chars() {
+            match c {
+                ' ' => indent_width += 1,
+                '\t' => indent_width += 2,
+                _ => break,
+            }
+        }
+        let indent = (indent_width / 2) as u8;
         let body = trimmed;
         let (is_item, ordered, after) = list_marker(body);
         if is_item {

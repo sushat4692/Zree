@@ -183,6 +183,12 @@ pub fn list_action(line: String) -> crate::complete::ListAction {
     crate::complete::list_action(&line)
 }
 
+/// Tab (indent) / Shift-Tab (outdent) on a list line.
+#[uniffi::export]
+pub fn indent_line(line: String, outdent: bool) -> Option<String> {
+    crate::complete::indent_list_line(&line, outdent)
+}
+
 /// Whether the text before the caret sits in something completable.
 #[uniffi::export]
 pub fn completion_context(before_cursor: String) -> Option<crate::complete::CompletionContext> {

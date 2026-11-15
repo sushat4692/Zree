@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import uniffi.zree_core.CompletionKind
 import uniffi.zree_core.ListAction
 import uniffi.zree_core.completionContext
+import uniffi.zree_core.indentLine
 import uniffi.zree_core.listAction
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -45,7 +46,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
@@ -543,7 +552,57 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
         }
     }
 
+    fun lineRange(text: String, caret: Int): IntRange {
+        val start = if (caret == 0) 0 else text.lastIndexOf('\n', caret - 1).let { if (it < 0) 0 else it + 1 }
+        val end = text.indexOf('\n', caret).let { if (it < 0) text.length else it }
+        return start..end
+    }
+
+    fun applyIndent(outdent: Boolean) {
+        val caret = value.selection.start.coerceIn(0, value.text.length)
+        val range = lineRange(value.text, caret)
+        val line = value.text.substring(range.first, range.last)
+        val rewritten = runCatching { indentLine(line, outdent) }.getOrNull() ?: return
+        val text = value.text.substring(0, range.first) + rewritten + value.text.substring(range.last)
+        val delta = rewritten.length - line.length
+        val target = (caret + delta).coerceIn(range.first, range.first + rewritten.length)
+        value = TextFieldValue(text, TextRange(target))
+        vm.setDraft(text)
+    }
+
+    fun applyLinePrefix(prefix: String) {
+        val caret = value.selection.start.coerceIn(0, value.text.length)
+        val range = lineRange(value.text, caret)
+        val line = value.text.substring(range.first, range.last)
+        if (line.startsWith(prefix)) return
+        val stripped = line.trimStart(' ')
+        val text = value.text.substring(0, range.first) + prefix + stripped + value.text.substring(range.last)
+        value = TextFieldValue(text, TextRange(range.first + prefix.length + stripped.length))
+        vm.setDraft(text)
+    }
+
+    fun wrap(marks: String) {
+        val sel = value.selection
+        val text = value.text
+        val start = minOf(sel.start, sel.end).coerceIn(0, text.length)
+        val end = maxOf(sel.start, sel.end).coerceIn(0, text.length)
+        val selected = text.substring(start, end)
+        val newText = text.substring(0, start) + marks + selected + marks + text.substring(end)
+        val caret = start + marks.length + selected.length
+        value = TextFieldValue(newText, TextRange(caret))
+        vm.setDraft(newText)
+    }
+
     Column(Modifier.fillMaxSize()) {
+        EditorToolbar(
+            onOutdent = { applyIndent(true) },
+            onIndent = { applyIndent(false) },
+            onBullet = { applyLinePrefix("- ") },
+            onCheckbox = { applyLinePrefix("- [ ] ") },
+            onHeading = { applyLinePrefix("# ") },
+            onBold = { wrap("**") },
+        )
+
         if (suggestions.isNotEmpty()) {
             LazyRow(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
@@ -580,8 +639,53 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(16.dp)
+                .onPreviewKeyEvent { event ->
+                    // hardware keyboards: Tab indents, Shift-Tab outdents
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.Tab) {
+                        applyIndent(event.isShiftPressed)
+                        true
+                    } else {
+                        false
+                    }
+                },
         )
+    }
+}
+
+@Composable
+private fun EditorToolbar(
+    onOutdent: () -> Unit,
+    onIndent: () -> Unit,
+    onBullet: () -> Unit,
+    onCheckbox: () -> Unit,
+    onHeading: () -> Unit,
+    onBold: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        listOf(
+            "⇤" to onOutdent,
+            "⇥" to onIndent,
+            "•" to onBullet,
+            "☐" to onCheckbox,
+            "H" to onHeading,
+            "B" to onBold,
+        ).forEach { (label, action) ->
+            Text(
+                label,
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier
+                    .clickable(onClick = action)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+            )
+        }
     }
 }
 

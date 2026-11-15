@@ -83,6 +83,17 @@ struct MarkdownEditor: NSViewRepresentable {
         }
 
         @MainActor
+        func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if commandSelector == #selector(NSResponder.insertTab(_:)) {
+                return indent(textView, outdent: false)
+            }
+            if commandSelector == #selector(NSResponder.insertBacktab(_:)) {
+                return indent(textView, outdent: true)
+            }
+            return false
+        }
+
+        @MainActor
         func textView(
             _ textView: NSTextView,
             completions words: [String],

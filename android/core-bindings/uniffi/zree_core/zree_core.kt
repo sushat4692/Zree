@@ -677,6 +677,8 @@ internal object IntegrityCheckingUniffiLib {
     internal fun ensureInitialized() = Unit
     external fun uniffi_zree_core_checksum_func_completion_context(
     ): Int
+    external fun uniffi_zree_core_checksum_func_indent_line(
+    ): Int
     external fun uniffi_zree_core_checksum_func_is_git_repo(
     ): Int
     external fun uniffi_zree_core_checksum_func_list_action(
@@ -853,6 +855,8 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_completion_context(`beforeCursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_zree_core_fn_func_indent_line(`line`: RustBuffer.ByValue,`outdent`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_is_git_repo(`root`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
     external fun uniffi_zree_core_fn_func_list_action(`line`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -979,6 +983,9 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_func_completion_context() and 0xFFFF) != 57142) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_func_indent_line() and 0xFFFF) != 57015) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_func_is_git_repo() and 0xFFFF) != 9204) {
@@ -4126,6 +4133,21 @@ public object FfiConverterSequenceTypeInline: FfiConverterRustBuffer<List<Inline
     
         
         FfiConverterString.lower(`beforeCursor`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Tab (indent) / Shift-Tab (outdent) on a list line.
+         */ fun `indentLine`(`line`: kotlin.String, `outdent`: kotlin.Boolean): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_func_indent_line(
+    
+        
+        FfiConverterString.lower(`line`),
+        FfiConverterBoolean.lower(`outdent`),_status)
 }
     )
     }

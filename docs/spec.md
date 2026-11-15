@@ -105,6 +105,13 @@ Decided in the core (`complete.rs`), wired by each UI.
 | empty item, no indent | remove the marker, leaving an empty line |
 | empty item, indented | outdent one level (2 spaces, 1 tab or 1 space per step) |
 | empty item in a nested ordered list | outdent, keeping the current number |
+
+**Tab / Shift-Tab on a list line** (`indent_line`): indent adds two spaces before the marker,
+outdent removes one step (2 spaces / 1 tab / 1 space) and stops at the left margin. Lines that
+are not list items are left alone.
+
+Indentation is counted as width: a tab counts as one level (2 spaces) both for continuation and
+for the preview, so tab-indented lists nest correctly.
 | anything else | no assist |
 
 **Completion** (`completion_context` + `suggest_tags` / `suggest_notes`):

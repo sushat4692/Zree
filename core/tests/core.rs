@@ -358,3 +358,34 @@ fn tag_completion_accepts_list_markers_as_boundary() {
     // but a word glued to the hash is not a tag
     assert!(completion_context("ab#cd").is_none());
 }
+
+#[test]
+fn tabs_indent_lists_in_the_preview() {
+    let blocks = markdown::parse_blocks("- 親\n\t- 子\n\t\t- 孫\n");
+    let indents: Vec<u8> = blocks
+        .iter()
+        .filter_map(|b| match b {
+            Block::ListItem { indent, .. } => Some(*indent),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(indents, vec![0, 1, 2]);
+}
+
+#[test]
+fn indent_commands_move_list_lines_one_level() {
+    use zree_core::complete::indent_list_line;
+
+    assert_eq!(indent_list_line("- あ", false).unwrap(), "  - あ");
+    assert_eq!(indent_list_line("    - あ", true).unwrap(), "  - あ");
+    assert_eq!(indent_list_line("  - あ", true).unwrap(), "- あ");
+    assert_eq!(indent_list_line("- あ", true).unwrap(), "- あ"); // already at the margin
+    assert_eq!(indent_list_line("\t- あ", false).unwrap(), "\t  - あ");
+    assert_eq!(indent_list_line("\t- あ", true).unwrap(), "- あ");
+    assert_eq!(indent_list_line("1. あ", false).unwrap(), "  1. あ");
+    assert_eq!(indent_list_line("> あ", false).unwrap(), "  > あ");
+    assert_eq!(indent_list_line("- [ ] あ", false).unwrap(), "  - [ ] あ");
+    // not a list: the UI should do nothing
+    assert!(indent_list_line("ただの段落", false).is_none());
+    assert!(indent_list_line("# 見出し", false).is_none());
+}
