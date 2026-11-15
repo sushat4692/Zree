@@ -58,7 +58,9 @@ Deletion always asks for confirmation first; the note then moves to `.trash/`.
 
 ## 3c. Display settings
 
-- macOS: font family / size / line height, independently for the editor and the preview
+- macOS: one font family / size / line height for both the editor and the preview, so text
+  keeps its size and rhythm when switching panes; the editor uses the same 24/20 margins
+  as the preview
 - Android: editor font size, editor line height, preview scale
 
 Both persist their own settings; there is no cross-device sync for them.

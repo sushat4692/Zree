@@ -128,18 +128,10 @@ struct GitSettingsSheet: View {
                 .font(.headline)
 
             DisplaySettingsBlock(
-                title: "エディタ",
-                family: $app.editorFontFamily,
-                size: $app.editorFontSize,
-                lineHeight: $app.editorLineHeight,
-                families: app.availableFontFamilies
-            )
-
-            DisplaySettingsBlock(
-                title: "プレビュー",
-                family: $app.previewFontFamily,
-                size: $app.previewFontSize,
-                lineHeight: $app.previewLineHeight,
+                title: "エディタとプレビュー",
+                family: $app.fontFamily,
+                size: $app.fontSize,
+                lineHeight: $app.lineHeight,
                 families: app.availableFontFamilies
             )
 

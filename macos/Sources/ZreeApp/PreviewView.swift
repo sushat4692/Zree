@@ -35,12 +35,12 @@ struct PreviewView: View {
     private func row(_ block: Block) -> some View {
         switch block {
         case .blank:
-            Spacer().frame(height: app.previewFontSize * 0.55)
+            Spacer().frame(height: app.fontSize * 0.55)
 
         case let .heading(level, text, _):
             Text(app.attributed(text))
                 .font(.system(size: headingSize(level), weight: level <= 2 ? .bold : .semibold))
-                .lineSpacing(app.previewFontSize * 0.15)
+                .lineSpacing(app.fontSize * 0.15)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, headingTopPadding(level))
                 .padding(.bottom, level <= 2 ? 4 : 2)
@@ -74,7 +74,7 @@ struct PreviewView: View {
         case let .code(_, text, _):
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(text)
-                    .font(.system(size: max(11, app.previewFontSize - 3), design: .monospaced))
+                    .font(.system(size: max(11, app.fontSize - 3), design: .monospaced))
                     .lineSpacing(2)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
@@ -102,7 +102,7 @@ struct PreviewView: View {
 
         case .rule:
             Divider()
-                .padding(.vertical, app.previewFontSize * 0.6)
+                .padding(.vertical, app.fontSize * 0.6)
 
         case let .paragraph(text, _):
             Text(app.attributed(text))
@@ -118,19 +118,19 @@ struct PreviewView: View {
 
     private func headingSize(_ level: UInt8) -> CGFloat {
         switch level {
-        case 1: app.previewFontSize * 1.85
-        case 2: app.previewFontSize * 1.5
-        case 3: app.previewFontSize * 1.22
-        case 4: app.previewFontSize * 1.08
-        default: app.previewFontSize
+        case 1: app.fontSize * 1.85
+        case 2: app.fontSize * 1.5
+        case 3: app.fontSize * 1.22
+        case 4: app.fontSize * 1.08
+        default: app.fontSize
         }
     }
 
     private func headingTopPadding(_ level: UInt8) -> CGFloat {
         switch level {
-        case 1: app.previewFontSize * 1.1
-        case 2: app.previewFontSize * 0.8
-        default: app.previewFontSize * 0.5
+        case 1: app.fontSize * 1.1
+        case 2: app.fontSize * 0.8
+        default: app.fontSize * 0.5
         }
     }
 

@@ -254,7 +254,7 @@ struct DetailView: View {
                 }
             ),
             font: app.editorFont,
-            lineHeight: app.editorLineHeight
+            lineHeight: app.lineHeight
         )
     }
 }

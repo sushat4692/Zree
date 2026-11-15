@@ -45,7 +45,8 @@ struct MarkdownEditor: NSViewRepresentable {
         textView.insertionPointColor = NSColor(ZreePalette.accent)
         scroll.drawsBackground = true
         scroll.backgroundColor = ZreePalette.editorBackground
-        textView.textContainerInset = NSSize(width: 16, height: 14)
+        // same margins as the preview pane
+        textView.textContainerInset = NSSize(width: 24, height: 20)
         textView.string = text
         return scroll
     }
