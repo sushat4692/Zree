@@ -97,27 +97,42 @@ fun PreviewList(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         itemsIndexed(blocks) { _, block ->
             when (block) {
-                is PBlock.Blank -> Spacer(Modifier.height(6.dp))
+                is PBlock.Blank -> Spacer(Modifier.height(9.dp))
 
                 is PBlock.Heading -> Text(
                     text = spansToAnnotated(block.spans, linkColor, onLink),
                     fontSize = when (block.level) {
-                        1 -> 24.sp
-                        2 -> 20.sp
-                        3 -> 17.sp
+                        1 -> 25.sp
+                        2 -> 21.sp
+                        3 -> 18.sp
+                        4 -> 16.sp
                         else -> 15.sp
                     },
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 4.dp),
+                    lineHeight = when (block.level) {
+                        1 -> 31.sp
+                        2 -> 27.sp
+                        else -> 23.sp
+                    },
+                    fontWeight = if (block.level <= 2) FontWeight.Bold else FontWeight.SemiBold,
+                    modifier = Modifier.padding(
+                        top = when (block.level) {
+                            1 -> 18.dp
+                            2 -> 13.dp
+                            else -> 9.dp
+                        },
+                        bottom = if (block.level <= 2) 4.dp else 2.dp,
+                    ),
                 )
 
                 is PBlock.Item -> Row(
-                    modifier = Modifier.padding(start = (block.indent * 16).dp),
+                    modifier = Modifier
+                        .padding(start = (block.indent * 18).dp)
+                        .padding(top = 1.dp),
                 ) {
                     Text(
                         text = when {
@@ -127,7 +142,7 @@ fun PreviewList(
                         },
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.width(18.dp),
+                        modifier = Modifier.width(20.dp),
                     )
                     Text(
                         text = spansToAnnotated(block.spans, linkColor, onLink),
@@ -137,26 +152,30 @@ fun PreviewList(
                     )
                 }
 
-                is PBlock.Quote -> Row {
+                is PBlock.Quote -> Row(
+                    modifier = Modifier.padding(vertical = 3.dp),
+                ) {
                     Box(
                         Modifier
                             .width(3.dp)
                             .heightIn(min = 18.dp)
-                            .background(MaterialTheme.colorScheme.outlineVariant)
+                            .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp))
                     )
                     Text(
                         text = spansToAnnotated(block.spans, linkColor, onLink),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 8.dp),
+                        lineHeight = 23.sp,
+                        modifier = Modifier.padding(start = 10.dp),
                     )
                 }
 
                 is PBlock.Code -> Box(
                     Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
+                        .padding(vertical = 5.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
                         .horizontalScroll(rememberScrollState())
-                        .padding(8.dp)
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
                 ) {
                     Text(
                         block.text,
@@ -187,6 +206,8 @@ fun PreviewList(
 
                 is PBlock.Para -> Text(
                     text = spansToAnnotated(block.spans, linkColor, onLink),
+                    lineHeight = 23.sp,
+                    modifier = Modifier.padding(top = 1.dp),
                 )
             }
             HorizontalDivider(color = Color.Transparent)
