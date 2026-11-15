@@ -15,8 +15,8 @@ extension NSAttributedString.Key {
 }
 
 /// Draws a real horizontal line for `---` lines, without touching the characters.
-final class ZreeLayoutManager: NSLayoutManager {
-    override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint) {
+public final class ZreeLayoutManager: NSLayoutManager {
+    public override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint) {
         super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
         guard let storage = textStorage else { return }
 
@@ -36,21 +36,20 @@ final class ZreeLayoutManager: NSLayoutManager {
     }
 }
 
-enum EditorStyling {
-    struct Style {
-        var font: NSFont
-        var color: NSColor
+public enum EditorStyling {
+    public struct Style {
+        public var font: NSFont
+        public var color: NSColor
         /// Range within the line that should look muted (list bullet, `#`, `>`, fences).
-        var markerLength: Int = 0
+        public var markerLength: Int = 0
         /// `---` lines are drawn as a divider instead of text.
-        var isRule: Bool = false
+        public var isRule: Bool = false
     }
 
     /// Style every line (used when a note is opened or re-read).
     @MainActor
-    static func restyle(
+    public static func restyle(
         _ textView: NSTextView,
-        app: AppState,
         blocks: [Block],
         baseFont: NSFont,
         baseColor: NSColor,
@@ -102,7 +101,7 @@ enum EditorStyling {
     /// because it changes how every following line is classified.
     /// Restyle exactly one line (block kind changed, or the caret just left it).
     @MainActor
-    static func restyleLine(
+    public static func restyleLine(
         _ textView: NSTextView,
         lineRange: NSRange,
         baseFont: NSFont,
@@ -136,9 +135,9 @@ enum EditorStyling {
     }
 
     @MainActor
-    static func restyleChangedLines(
+    public static func restyleChangedLines(
         _ textView: NSTextView,
-        app: AppState,
+        blocksProvider: (String) -> [Block],
         editedRange: NSRange,
         baseFont: NSFont,
         baseColor: NSColor,
@@ -157,8 +156,7 @@ enum EditorStyling {
             || lineText.trimmingCharacters(in: .whitespaces).hasPrefix("~~~") {
             restyle(
                 textView,
-                app: app,
-                blocks: app.blocks(of: textView.string),
+                blocks: blocksProvider(textView.string),
                 baseFont: baseFont,
                 baseColor: baseColor,
                 lineHeight: lineHeight,
@@ -200,14 +198,14 @@ enum EditorStyling {
 
     /// Style for one line, computed on demand (single-line parse).
     @MainActor
-    static func styleOfLine(_ line: String, baseFont: NSFont) -> Style? {
+    public static func styleOfLine(_ line: String, baseFont: NSFont) -> Style? {
         let block = ZreeCore.lineBlock(line: line)
         if case .blank = block { return nil }
         return style(for: block, baseFont: baseFont)?.style
     }
 
     /// Attributes new characters should take, so typing never changes size or weight.
-    static func typingAttributes(for style: Style?, baseFont: NSFont, baseColor: NSColor, lineHeight: Double) -> [NSAttributedString.Key: Any] {
+    public static func typingAttributes(for style: Style?, baseFont: NSFont, baseColor: NSColor, lineHeight: Double) -> [NSAttributedString.Key: Any] {
         var attributes = baseline(baseFont, baseColor, lineHeight)
         if let style, !style.isRule {
             attributes[.font] = style.font

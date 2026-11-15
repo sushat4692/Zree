@@ -1,4 +1,5 @@
 import SwiftUI
+import ZreeEditor
 import ZreeCore
 
 struct ContentView: View {

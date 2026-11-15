@@ -39,11 +39,26 @@ let package = Package(
     targets: [
         .binaryTarget(name: "zree_coreFFI", path: "Frameworks/zree_coreFFI.xcframework"),
         .target(
+            name: "ZreeEditor",
+            dependencies: ["ZreeCore"],
+            path: "Sources/ZreeEditor",
+            linkerSettings: coreLinkerSettings
+        ),
+        .target(
             name: "ZreeCore",
             dependencies: ["zree_coreFFI"],
             path: "Sources/ZreeCore",
             linkerSettings: coreLinkerSettings
         ),
-        .executableTarget(name: "Zree", dependencies: ["ZreeCore"], path: "Sources/ZreeApp"),
+        .executableTarget(
+            name: "Zree",
+            dependencies: ["ZreeCore", "ZreeEditor"],
+            path: "Sources/ZreeApp"
+        ),
+        .testTarget(
+            name: "ZreeEditorTests",
+            dependencies: ["ZreeEditor", "ZreeCore"],
+            path: "Tests/ZreeEditorTests"
+        ),
     ]
 )

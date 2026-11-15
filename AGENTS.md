@@ -80,6 +80,8 @@ the device is in daily use and every injected event lands in whatever app is in 
 
 ```bash
 cargo test -p zree-core
+swift test --package-path macos
+./android/gradlew -p android :app:testDebugUnitTest
 cargo run --release --example probe -- /path/to/vault
 ./macos/scripts/sync-core.sh   # Rust → Swift bindings → XCFramework
 ./macos/scripts/bundle.sh      # build/Zree.app
@@ -110,6 +112,11 @@ cargo run --release --example probe -- /path/to/vault
 The editor renders Markdown in place: headings larger and bold, list/quote markers muted,
 inline bold/italic/strike/code styled, `---` drawn as a rule by a custom NSLayoutManager.
 Markers are never hidden and only attributes change (undo/IME/caret unaffected).
+
+Styling is verified headlessly: `swift test --package-path macos` builds a real
+NSTextStorage/ZreeLayoutManager/NSTextView and asserts fonts, colours, the rule attribute
+and typing attributes (5 tests in `macos/Tests/ZreeEditorTests`). Keep them green — they
+catch the class of bug where attributes are silently ignored (e.g. `isRichText = false`).
 
 Parsing is done once per document, then only when it can change the result:
 

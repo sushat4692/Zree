@@ -1,5 +1,6 @@
 import AppKit
 import ZreeCore
+import ZreeEditor
 import SwiftUI
 
 /// Plain NSTextView: the most reliable Japanese IME path on macOS,
@@ -43,7 +44,13 @@ struct MarkdownEditor: NSViewRepresentable {
         context.coordinator.app = app
         textView.delegate = context.coordinator
         textView.textStorage?.delegate = context.coordinator
-        textView.isRichText = false
+        // Attributes are how the editor renders Markdown. With isRichText = false,
+        // NSTextView ignores per-range fonts entirely (headings and bold silently did
+        // nothing); the document stays plain because we write `textView.string` back
+        // and drive typing through typingAttributes.
+        textView.isRichText = true
+        textView.importsGraphics = false
+        textView.usesFontPanel = false
         textView.allowsUndo = true
         textView.usesFindBar = true
         textView.isAutomaticQuoteSubstitutionEnabled = false
@@ -78,7 +85,6 @@ struct MarkdownEditor: NSViewRepresentable {
 
         let fontChanged = context.coordinator.lastFont != font
             || context.coordinator.lastLineHeight != lineHeight
-        applyTypography(to: textView)
         applyTypography(to: textView)
 
         if textView.string != text {
@@ -126,6 +132,7 @@ struct MarkdownEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
+            handleEdit(textView)
 
             // offer tag candidates right after the user types '#'
             let ns = textView.string as NSString
@@ -270,7 +277,6 @@ struct MarkdownEditor: NSViewRepresentable {
             lastLineHeight = parent.lineHeight
             EditorStyling.restyle(
                 textView,
-                app: app,
                 blocks: app.blocks(of: textView.string),
                 baseFont: parent.font,
                 baseColor: ZreePalette.editorText,
