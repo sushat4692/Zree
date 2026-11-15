@@ -75,6 +75,9 @@ struct MarkdownEditor: NSViewRepresentable {
         context.coordinator.parent = self
         context.coordinator.app = app
         guard let textView = scroll.documentView as? NSTextView else { return }
+
+        let fontChanged = context.coordinator.lastFont != font
+            || context.coordinator.lastLineHeight != lineHeight
         applyTypography(to: textView)
         applyTypography(to: textView)
 
@@ -92,6 +95,8 @@ struct MarkdownEditor: NSViewRepresentable {
             textView.undoManager?.removeAllActions()
             textView.breakUndoCoalescing()
             context.coordinator.restyleWholeDocument(textView)
+        } else if fontChanged {
+            context.coordinator.restyleWholeDocument(textView)
         }
     }
 
@@ -108,20 +113,6 @@ struct MarkdownEditor: NSViewRepresentable {
         textView.font = font
         textView.defaultParagraphStyle = style
         textView.typingAttributes = attributes
-
-        guard let storage = textView.textStorage else { return }
-        let full = NSRange(location: 0, length: storage.length)
-        if full.length == 0 { return }
-
-        let needsUpdate: Bool = {
-            guard let current = storage.attribute(.font, at: 0, effectiveRange: nil) as? NSFont else { return true }
-            return current != font
-        }()
-        guard needsUpdate else { return }
-
-        storage.beginEditing()
-        storage.setAttributes(attributes, range: full)
-        storage.endEditing()
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate {
@@ -267,12 +258,16 @@ struct MarkdownEditor: NSViewRepresentable {
         }
 
         var pendingEditRange: NSRange?
+        var lastFont: NSFont?
+        var lastLineHeight: Double?
 
         /// The document was replaced (note opened / changed on disk): parse it once.
         @MainActor
         func restyleWholeDocument(_ textView: NSTextView) {
             guard let app else { return }
             lineKinds.removeAll()
+            lastFont = parent.font
+            lastLineHeight = parent.lineHeight
             EditorStyling.restyle(
                 textView,
                 app: app,
