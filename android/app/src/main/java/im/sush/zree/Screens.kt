@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -323,7 +325,7 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
     // press inside the editor should do.
     BackHandler(enabled = true) { vm.backToList() }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().imePadding()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -594,15 +596,6 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        EditorToolbar(
-            onOutdent = { applyIndent(true) },
-            onIndent = { applyIndent(false) },
-            onBullet = { applyLinePrefix("- ") },
-            onCheckbox = { applyLinePrefix("- [ ] ") },
-            onHeading = { applyLinePrefix("# ") },
-            onBold = { wrap("**") },
-        )
-
         if (suggestions.isNotEmpty()) {
             LazyRow(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
@@ -638,7 +631,8 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .padding(16.dp)
                 .onPreviewKeyEvent { event ->
                     // hardware keyboards: Tab indents, Shift-Tab outdents
@@ -649,6 +643,17 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
                         false
                     }
                 },
+        )
+
+        // Sits directly above the keyboard (an input accessory bar).
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        EditorToolbar(
+            onOutdent = { applyIndent(true) },
+            onIndent = { applyIndent(false) },
+            onBullet = { applyLinePrefix("- ") },
+            onCheckbox = { applyLinePrefix("- [ ] ") },
+            onHeading = { applyLinePrefix("# ") },
+            onBold = { wrap("**") },
         )
     }
 }
@@ -665,8 +670,10 @@ private fun EditorToolbar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = 8.dp)
+            .navigationBarsPadding(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         listOf(

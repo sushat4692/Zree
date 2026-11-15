@@ -146,6 +146,12 @@ Still missing:
 - PAT in `EncryptedSharedPreferences`
 - no pull-on-launch unless clean, as on macOS
 
+## Editor toolbar
+
+The editor's assist bar sits at the bottom of the screen, directly above the soft keyboard
+(`imePadding()` on the editor column + a `surfaceVariant` row with
+`navigationBarsPadding`). Buttons: outdent, indent, bullet, checkbox, heading, bold.
+
 ## Phase 4 — Android-specific surface
 
 - [x] SAF import (copy an existing folder in) and export (write the vault out)
