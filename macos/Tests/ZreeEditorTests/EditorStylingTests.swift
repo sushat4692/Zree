@@ -146,6 +146,36 @@ final class EditorStylingTests: XCTestCase {
         )
     }
 
+    func test_several_characters_typed_in_a_heading_keep_the_heading_size() {
+        let text = "# 見出し"
+        let textView = makeTextView(text)
+        style(textView, text)
+
+        textView.setSelectedRange(NSRange(location: (text as NSString).length, length: 0))
+
+        for character in ["あ", "い", "う"] {
+            // the editor refreshes typing attributes for the caret line before each insert
+            let lineRange = (textView.string as NSString).lineRange(
+                for: NSRange(location: textView.selectedRange().location, length: 0)
+            )
+            let line = (textView.string as NSString).substring(with: lineRange)
+            let lineStyle = EditorStyling.styleOfLine(line, baseFont: baseFont)
+            textView.typingAttributes = EditorStyling.typingAttributes(
+                for: lineStyle,
+                baseFont: baseFont,
+                baseColor: baseColor,
+                lineHeight: 1.6
+            )
+            textView.insertText(character, replacementRange: textView.selectedRange())
+        }
+
+        let ns = textView.string as NSString
+        for offset in 0..<ns.length {
+            let size = font(textView, at: offset).pointSize
+            XCTAssertGreaterThan(size, baseFont.pointSize, "offset \(offset) lost the heading size")
+        }
+    }
+
     func test_list_markers_are_muted_but_text_is_not() {
         let text = "- 項目"
         let textView = makeTextView(text)

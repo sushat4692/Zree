@@ -103,6 +103,8 @@ struct MarkdownEditor: NSViewRepresentable {
             context.coordinator.restyleWholeDocument(textView)
         } else if fontChanged {
             context.coordinator.restyleWholeDocument(textView)
+        } else {
+            context.coordinator.refreshTypingAttributesForCurrentLine(textView)
         }
     }
 
@@ -118,7 +120,9 @@ struct MarkdownEditor: NSViewRepresentable {
 
         textView.font = font
         textView.defaultParagraphStyle = style
-        textView.typingAttributes = attributes
+        // typingAttributes are owned by the coordinator: they depend on the caret's line,
+        // and this method runs on every SwiftUI update (each keystroke included).
+        _ = attributes
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate {
@@ -261,6 +265,11 @@ struct MarkdownEditor: NSViewRepresentable {
             // the line we are entering must already look right, or the first character
             // would be typed at the wrong size
             ensureStyled(textView, range: newRange)
+            refreshTypingAttributes(textView)
+        }
+
+        @MainActor
+        func refreshTypingAttributesForCurrentLine(_ textView: NSTextView) {
             refreshTypingAttributes(textView)
         }
 
