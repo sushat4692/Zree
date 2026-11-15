@@ -42,6 +42,23 @@ class EditorEditsTest {
     }
 
     @Test
+    fun ime_autocorrect_together_with_return_still_continues_the_list() {
+        // Gboard turns "aaa" into "AAA" and inserts the newline in the same edit
+        val old = EditText.atEnd("- 箇条書き\n- aaa")
+        val next = EditText("- 箇条書き\n- AAA\n", 18, 18)
+        val result = EditorEdits.newline(old, next)
+        assertEquals("- 箇条書き\n- AAA\n- ", result?.text)
+    }
+
+    @Test
+    fun return_after_an_existing_newline_is_not_a_new_return() {
+        // typing a character right after a newline must not be treated as Return
+        val old = EditText("- あ\n", 4, 4)
+        val next = EditText("- あ\nZ", 5, 5)
+        assertNull(EditorEdits.newline(old, next))
+    }
+
+    @Test
     fun return_on_empty_item_outdents_then_leaves_the_list() {
         // empty nested item outdents one level
         assertEquals("  - あ\n- ", EditorEdits.newline(EditText.atEnd("  - あ\n  - "), type("  - あ\n  - ".length, "  - あ\n  - ", "\n"))!!.text)

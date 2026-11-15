@@ -45,28 +45,40 @@ object EditorEdits {
     }
 
     /**
-     * List continuation when Return was pressed: returns the assisted value, or
-     * null when the edit is a plain newline and should be left to the field.
+     * List continuation when Return was pressed.
+     *
+     * The check is "a newline appeared right before the caret", not "exactly one character
+     * was inserted": Android IMEs apply a prediction at the same time (aaa -> AAA plus the
+     * newline in one edit), which made the strict version skip the assist.
      */
     fun newline(old: EditText, next: EditText): EditText? {
-        val caret = old.selStart.coerceIn(0, old.text.length)
-        val inserted = next.text.length == old.text.length + 1 &&
-            next.text == old.text.substring(0, caret) + "\n" + old.text.substring(caret)
-        if (!inserted) return null
+        val text = next.text
+        val caret = next.selStart.coerceIn(0, text.length)
+        if (caret == 0 || text[caret - 1] != '\n') return null
 
-        val range = lineRange(old.text, caret)
-        val line = old.text.substring(range.start, caret)
+        // the newline has to be new; a caret that was already after one is not a Return
+        val oldCaret = old.selStart.coerceIn(0, old.text.length)
+        if (oldCaret > 0 && old.text[oldCaret - 1] == '\n') return null
+
+        val lineEnd = caret - 1
+        val lineStart = if (lineEnd == 0) 0 else {
+            text.lastIndexOf('\n', lineEnd - 1).let { if (it < 0) 0 else it + 1 }
+        }
+        val line = text.substring(lineStart, lineEnd)
+
         return when (val action = runCatching { listAction(line) }.getOrNull()) {
             is ListAction.Continue -> {
                 val marker = action.marker
-                val text = old.text.substring(0, caret) + "\n" + marker + old.text.substring(caret)
-                val c = caret + 1 + marker.length
-                EditText(text, c, c)
+                val inserted = text.substring(0, caret) + marker + text.substring(caret)
+                val c = caret + marker.length
+                EditText(inserted, c, c)
             }
             is ListAction.Replace -> {
-                val text = old.text.substring(0, range.start) + action.marker + old.text.substring(caret)
-                val c = range.start + action.marker.length
-                EditText(text, c, c)
+                // the newline Enter inserted goes away with the marker: the empty item
+                // becomes one shallower marker (or disappears) instead of adding a line
+                val replaced = text.substring(0, lineStart) + action.marker + text.substring(lineEnd + 1)
+                val c = lineStart + action.marker.length
+                EditText(replaced, c, c)
             }
             else -> null
         }
