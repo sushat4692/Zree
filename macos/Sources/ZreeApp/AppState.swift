@@ -102,6 +102,7 @@ final class AppState {
             } else if let first = rows.first {
                 select(first.id)
             }
+            autoPullOnOpen()
         } catch {
             errorMessage = describe(error)
         }
@@ -292,18 +293,50 @@ final class AppState {
             gitStatus = nil
             return
         }
+        let token = Keychain.migrateFromDefaults(defaults, defaultsKey: Keys.token, account: Keys.token)
         if isGitRepo(root: vaultPath) {
             git = try? GitRepo.open(
                 root: vaultPath,
                 username: defaults.string(forKey: Keys.username),
-                token: defaults.string(forKey: Keys.token)
+                token: token
             )
         } else {
             git = nil
         }
         remoteDraft = git?.remoteUrl() ?? ""
-        tokenDraft = defaults.string(forKey: Keys.token) ?? ""
+        tokenDraft = Keychain.get(Keys.token) ?? ""
         refreshGitStatus()
+    }
+
+    /// Pull on launch, but only when it cannot surprise the user:
+    /// clean working tree, nothing staged, no conflicts, and actually behind.
+    func autoPullOnOpen() {
+        guard let repo = git, let st = gitStatus else { return }
+        guard st.changed == 0, st.behind > 0, st.conflicts.isEmpty, !st.merging else { return }
+
+        status = "同期中…"
+        Task.detached { [weak self] in
+            let result = Result { try repo.pull() }
+            await MainActor.run {
+                guard let self else { return }
+                switch result {
+                case .success(let outcome):
+                    if case let .conflicts(paths) = outcome {
+                        self.conflicts = paths
+                    }
+                    self.refreshAll()
+                    self.refreshGitStatus()
+                    self.reloadSelectedIfClean()
+                case .failure(let error):
+                    self.errorMessage = self.describe(error)
+                }
+            }
+        }
+    }
+
+    func reloadSelectedIfClean() {
+        guard !isDirty, selectedID != nil else { return }
+        loadSelected()
     }
 
     func refreshGitStatus() {
@@ -385,7 +418,8 @@ final class AppState {
                 switch result {
                 case .success:
                     if !token.isEmpty {
-                        self.defaults.set(token, forKey: "gitToken")
+                        Keychain.set(token, for: Keys.token)
+                        self.defaults.removeObject(forKey: Keys.token)
                     }
                     self.cloneMessage = "✓ クローン完了"
                     self.showClone = false
@@ -416,8 +450,13 @@ final class AppState {
             if !remoteDraft.isEmpty {
                 try git.setRemote(url: remoteDraft)
             }
-            try? git.setAuth(username: nil, token: tokenDraft.isEmpty ? nil : tokenDraft)
-            defaults.set(tokenDraft, forKey: Keys.token)
+            let token = tokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+            try? git.setAuth(username: nil, token: token.isEmpty ? nil : token)
+            if token.isEmpty {
+                Keychain.delete(Keys.token)
+            } else {
+                Keychain.set(token, for: Keys.token)
+            }
             refreshGitStatus()
             showSettings = false
         } catch {

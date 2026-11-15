@@ -19,7 +19,7 @@
 core/      Rust: Vault IO / 日本語検索 / タグ抽出 / Markdownトークナイザ (uniffi)
 macos/     SwiftUI アプリ (NSTextView = OS標準IME)
 android/   Kotlin + Compose（未着手）
-docs/      仕様（2OSで共有する挙動）
+docs/spec.md  仕様（2OSで共有する挙動の定義）
 ```
 
 macOS は Xcode プロジェクトを使わず、SwiftPM + ad-hoc 署名で `.app` を組み立てる。
@@ -50,7 +50,8 @@ open build/Zree.app
 - リポジトリはVaultそのもの（`.git` を同居させる）
 - 同期 = commit（全変更）→ pull（ff かマージ）→ push。衝突時は push せず停止
 - 衝突は `自分 / 相手 / 両方` を選んで解決 → 「マージ確定」でコミット＆push
-- 認証: HTTPS + PAT、または ssh-agent
+- 認証: HTTPS + PAT（キーチェーンに保存）、または ssh-agent
+- 起動時に自動pull（変更なし・衝突なし・behind>0 のときだけ）
 - リモートURLとトークンは ⌘, の設定から
 
 ## 性能（実データ365ノート / 443KB）

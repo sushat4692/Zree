@@ -146,7 +146,7 @@ struct GitSettingsSheet: View {
                     .foregroundStyle(.secondary)
                 SecureField("ghp_…", text: $app.tokenDraft)
                     .textFieldStyle(.roundedBorder)
-                Text("保存先は UserDefaults です（後でKeychainに移します）")
+                Text("キーチェーンに保存します")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
