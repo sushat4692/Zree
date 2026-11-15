@@ -3,4 +3,5 @@
     <!-- sampled from the app icon -->
     <color name="zree_surface">#FAFAF6</color>
     <color name="zree_ink">#1A2620</color>
+    <color name="zree_mint">#DCEBE0</color>
 </resources>

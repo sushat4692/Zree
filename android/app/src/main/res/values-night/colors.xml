@@ -2,4 +2,5 @@
 <resources>
     <color name="zree_surface">#121A16</color>
     <color name="zree_ink">#E4EDE6</color>
+    <color name="zree_mint">#DCEBE0</color>
 </resources>

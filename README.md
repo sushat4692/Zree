@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/zree-logo.png" width="380" alt="Zree — zero-friction Markdown tree">
+</p>
+
 # Zree
 
 **Zero-friction Markdown tree.** (*Zero* + *Tree*)

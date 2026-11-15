@@ -41,6 +41,15 @@ swift android/scripts/make-icons.swift
 
 - `res/mipmap-*/ic_launcher.png` are the legacy bitmaps, kept only as a fallback
 
+Splash screen (`res/values/themes.xml`, mint background) uses the wordmark:
+
+```bash
+swift android/scripts/make-splash-logo.swift   # pads docs/assets/zree-logo.png onto a square
+```
+
+The square canvas matters: Android's splash icon slot is square and stretches
+non-square drawables.
+
 ## Native dependencies
 
 The core links libgit2. Cross-compiling it for Android is the risky step; if it fails,

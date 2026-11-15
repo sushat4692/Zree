@@ -8,8 +8,8 @@
     </style>
 
     <style name="Theme.Zree.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/zree_surface</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="windowSplashScreenBackground">@color/zree_mint</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/zree_splash_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.Zree</item>
     </style>
 </resources>
