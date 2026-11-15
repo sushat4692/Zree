@@ -31,9 +31,12 @@ The link needs OpenSSL (a side effect of git2's `https` feature); Homebrew's
 
 ```bash
 ./macos/scripts/sync-core.sh   # build Rust → generate Swift bindings → XCFramework
-./macos/scripts/bundle.sh      # produces build/Zree.app
+./macos/scripts/bundle.sh      # produces build/Zree.app (compiles the icon with actool)
 open build/Zree.app
 ```
+
+The app icon is an Icon Composer bundle (`macos/Resources/Zree.icon`), compiled at bundle
+time; `mipmap-*/ic_launcher.png` for Android is generated from the same source.
 
 ### Shortcuts
 

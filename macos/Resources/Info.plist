@@ -6,6 +6,10 @@
     <string>ja</string>
     <key>CFBundleExecutable</key>
     <string>Zree</string>
+    <key>CFBundleIconFile</key>
+    <string>Zree</string>
+    <key>CFBundleIconName</key>
+    <string>Zree</string>
     <key>CFBundleIdentifier</key>
     <string>im.sush.zree</string>
     <key>CFBundleInfoDictionaryVersion</key>
