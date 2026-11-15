@@ -60,6 +60,7 @@ struct MarkdownEditor: NSViewRepresentable {
         // same margins as the preview pane
         textView.textContainerInset = NSSize(width: 24, height: 20)
         textView.string = text
+        context.coordinator.restyleWholeDocument(textView)
         return scroll
     }
 
@@ -214,27 +215,30 @@ struct MarkdownEditor: NSViewRepresentable {
             activeLineRange = range
         }
 
-        /// After an edit: only react when the line's block kind actually changed.
+        /// Style a line if its block kind is unknown or changed. This is the only place
+        /// that runs a (single-line) parse while typing.
+        @MainActor
+        private func ensureStyled(_ textView: NSTextView, range: NSRange) {
+            let signature = kindSignature(textView, lineRange: range)
+            guard lineKinds[range.location] != signature else { return }
+            lineKinds[range.location] = signature
+            EditorStyling.restyleLine(
+                textView,
+                lineRange: range,
+                baseFont: parent.font,
+                baseColor: ZreePalette.editorText,
+                lineHeight: parent.lineHeight,
+                mutedColor: .tertiaryLabelColor
+            )
+        }
+
+        /// After an edit: react only when the line's block kind actually changed.
         @MainActor
         private func handleEdit(_ textView: NSTextView) {
             let edited = pendingEditRange ?? textView.selectedRange()
             pendingEditRange = nil
 
-            let range = lineRange(at: edited.location, in: textView)
-            let signature = kindSignature(textView, lineRange: range)
-            let index = range.location
-
-            if lineKinds[index] != signature {
-                lineKinds[index] = signature
-                EditorStyling.restyleLine(
-                    textView,
-                    lineRange: range,
-                    baseFont: parent.font,
-                    baseColor: ZreePalette.editorText,
-                    lineHeight: parent.lineHeight,
-                    mutedColor: .tertiaryLabelColor
-                )
-            }
+            ensureStyled(textView, range: lineRange(at: edited.location, in: textView))
             refreshTypingAttributes(textView)
         }
 
@@ -256,6 +260,9 @@ struct MarkdownEditor: NSViewRepresentable {
                     )
                 }
             }
+            // the line we are entering must already look right, or the first character
+            // would be typed at the wrong size
+            ensureStyled(textView, range: newRange)
             refreshTypingAttributes(textView)
         }
 
