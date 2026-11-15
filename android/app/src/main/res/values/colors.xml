@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- sampled from the app icon -->
+    <color name="zree_surface">#FAFAF6</color>
+    <color name="zree_ink">#1A2620</color>
+</resources>

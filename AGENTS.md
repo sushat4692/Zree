@@ -51,6 +51,7 @@ The design is sized against this real data:
 | Templates | Deferred |
 | Images | Move to standard `![](path)` with `assets/YYYY-MM-DD-HHMMSS.ext`; migration happens **after the app ships** |
 | Distribution | macOS: ad-hoc signed `.app` / Android: sideloaded APK |
+| Visual identity | Icon Composer bundle is the single source of truth; UI palettes (SwiftUI + Compose) are sampled from it |
 
 ## Explicitly out of scope
 

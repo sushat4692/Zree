@@ -36,7 +36,11 @@ open build/Zree.app
 ```
 
 The app icon is an Icon Composer bundle (`macos/Resources/Zree.icon`), compiled at bundle
-time; `mipmap-*/ic_launcher.png` for Android is generated from the same source.
+time; the Android icon is generated from the same source. The UI palette is sampled from it
+too: tree `#559955` -> accent `#3C7D57`, trunk `#22323F`, background `#FAFAF6`/`#DCEBE0`.
+
+Android shows a splash screen (Android 12+ SplashScreen API) with the tree on the paper
+background; macOS has no splash by convention.
 
 ### Shortcuts
 

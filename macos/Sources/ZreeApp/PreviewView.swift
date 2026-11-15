@@ -20,7 +20,7 @@ struct PreviewView: View {
             .padding(18)
             .textSelection(.enabled)
         }
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(Color(nsColor: ZreePalette.editorBackground))
         .environment(\.openURL, OpenURLAction { url in
             app.openNoteLink(url) ? .handled : .systemAction
         })

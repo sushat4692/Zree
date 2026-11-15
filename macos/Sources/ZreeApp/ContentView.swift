@@ -30,6 +30,7 @@ struct ContentView: View {
         .sheet(isPresented: Bindable(app).showClone) {
             CloneSheet()
         }
+        .tint(ZreePalette.accent)
     }
 }
 
@@ -144,6 +145,7 @@ struct RowView: View {
                     Text("·")
                     Text(row.tags.prefix(3).map { "#\($0)" }.joined(separator: " "))
                         .lineLimit(1)
+                        .foregroundStyle(ZreePalette.accent)
                 }
             }
             .font(.system(size: 10))

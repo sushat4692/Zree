@@ -26,6 +26,11 @@ struct MarkdownEditor: NSViewRepresentable {
         textView.isAutomaticSpellingCorrectionEnabled = false
         textView.isContinuousSpellCheckingEnabled = false
         textView.font = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
+        textView.backgroundColor = ZreePalette.editorBackground
+        textView.textColor = ZreePalette.editorText
+        textView.insertionPointColor = NSColor(ZreePalette.accent)
+        scroll.drawsBackground = true
+        scroll.backgroundColor = ZreePalette.editorBackground
         textView.textContainerInset = NSSize(width: 16, height: 14)
         textView.string = text
         return scroll

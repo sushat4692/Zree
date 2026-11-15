@@ -1,13 +1,14 @@
 package im.sush.zree
 
 import android.os.Bundle
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import im.sush.zree.ui.ZreeTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -23,6 +24,7 @@ class MainActivity : ComponentActivity() {
     private val vm: ZreeViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         setContent { ZreeRoot(vm) }
     }
@@ -47,7 +49,7 @@ fun ZreeRoot(vm: ZreeViewModel) {
         }
     }
 
-    MaterialTheme {
+    ZreeTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
                 Box(Modifier.padding(padding)) {
