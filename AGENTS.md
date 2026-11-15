@@ -107,7 +107,8 @@ cargo run --release --example probe -- /path/to/vault
 
 ## Known follow-ups
 
-- [ ] Verify the macOS undo fix (own UndoManager) once more — both crashes were ⌘Z
+- [ ] Verify macOS undo: ⌘Z must work again (the per-view UndoManager made it dead) and
+      must not crash; registrations are cleared on note load and on dismantle
 - [ ] Android build of the latest work is not installed on the device (it was offline)
 - [ ] Cache the Git first-added walk (1877 commits) instead of recomputing per open
 - [ ] macOS toolbar could take shortcuts (⌘B etc.)
