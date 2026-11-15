@@ -68,10 +68,13 @@ docs/    spec shared by both platforms, plus the Android plan
 
 ## Ground rules
 
-**Never drive the phone.** Do not use `adb shell input` (taps, keys, swipes) or wake the screen:
-the device is in daily use and every injected event lands in whatever app is in front. Verify on
-the device only by asking the owner to try it, or by reading state the app itself wrote (files,
-logcat) without sending input.
+**Do not fight the phone for the foreground.** `adb shell input` is fine for verifying Zree, but
+the device is in daily use and every injected event lands in whatever app is in front:
+
+- check `dumpsys window | grep mCurrentFocus` first; if it is not Zree or the launcher, stop and ask
+- never send `KEYCODE_HOME`, `KEYCODE_WAKEUP` or `KEYCODE_BACK` to escape — back leaves Zree and
+  home/wakeup hit whatever the owner is doing
+- prefer reading state Zree wrote (vault files, logcat) over screen scraping
 
 ## Commands
 
