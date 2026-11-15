@@ -57,6 +57,7 @@ data class UiState(
     val autoSync: Boolean = true,
     val autoSyncMinutes: Int = 5,
     val lastSyncAt: Long = 0L,
+    val recentTrees: List<String> = emptyList(),
     val conflicts: List<String> = emptyList(),
     val merging: Boolean = false,
     val message: String? = null,
@@ -91,6 +92,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             autoSyncMinutes = prefs.getInt(KEY_AUTO_MIN, 5).coerceIn(1, 60),
             lastSyncAt = prefs.getLong(KEY_LAST_SYNC, 0L),
         )
+        _state.value = _state.value.copy(recentTrees = recentTrees())
         prefs.getString(KEY_VAULT, null)?.let { path ->
             if (File(path).isDirectory) openVault(path)
         }
@@ -122,6 +124,30 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openVault(path: String) = io { openVaultInternal(path) }
 
+    /** Back to the chooser, e.g. to switch to another tree. */
+    fun showSetup() {
+        _state.value = _state.value.copy(screen = Screen.Setup, message = null, error = null, recentTrees = recentTrees())
+    }
+
+    fun forgetTree(path: String) {
+        val kept = recentTrees().filterNot { it == path }
+        prefs.edit().putString(KEY_RECENT, kept.joinToString("\n")).apply()
+        _state.value = _state.value.copy(recentTrees = kept)
+    }
+
+    private fun recentTrees(): List<String> =
+        prefs.getString(KEY_RECENT, "")
+            .orEmpty()
+            .split('\n')
+            .filter { it.isNotBlank() && File(it).isDirectory }
+            .distinct()
+
+    private fun rememberTree(path: String) {
+        val updated = (listOf(path) + recentTrees()).distinct().take(5)
+        prefs.edit().putString(KEY_RECENT, updated.joinToString("\n")).apply()
+        _state.value = _state.value.copy(recentTrees = updated)
+    }
+
     private suspend fun openVaultInternal(path: String) {
         session?.close()
         session = ZreeSession.open(path)
@@ -131,6 +157,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             null
         }
         prefs.edit().putString(KEY_VAULT, path).apply()
+        rememberTree(path)
         _state.value = _state.value.copy(
             vaultPath = path,
             screen = Screen.List,
@@ -622,5 +649,6 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         private const val KEY_AUTO_ON = "autoSyncEnabled"
         private const val KEY_AUTO_MIN = "autoSyncMinutes"
         private const val KEY_LAST_SYNC = "lastSyncAt"
+        private const val KEY_RECENT = "recentTrees"
     }
 }

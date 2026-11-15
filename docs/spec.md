@@ -4,9 +4,11 @@ Behaviour that must be **identical on macOS and Android**. Visual design is up t
 The source of truth for the implementation is `core/` (Rust). If this document and the code disagree,
 either fix the code or fix this document — do not let them drift.
 
-## 1. Vault
+## 1. Tree (the folder; `Vault` in the core)
 
-- A vault is one folder. Everything inside it is notes and resources.
+- A tree is one folder. Everything inside it is notes and resources.
+- Several trees can be remembered (most recent five on Android); switching trees only
+  changes the folder the app opens.
 - Scanned: `**.md` (recursive), excluding
   - directories beginning with `.` (`.git`, `.obsidian`, `.trash`)
   - `assets/` (attachments only)

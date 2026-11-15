@@ -21,7 +21,7 @@ struct ZreeMain: App {
             CommandGroup(after: .newItem) {
                 Button("新規ノート") { app.newNote() }
                     .keyboardShortcut("n", modifiers: .command)
-                Button("Vaultを開く…") { app.chooseVault() }
+                Button("ツリーを開く…") { app.chooseVault() }
                     .keyboardShortcut("o", modifiers: [.command, .shift])
                 Button("Gitからクローン…") { app.showClone = true }
                     .keyboardShortcut("c", modifiers: [.command, .shift])

@@ -146,6 +146,11 @@ Still missing:
 - PAT in `EncryptedSharedPreferences`
 - no pull-on-launch unless clean, as on macOS
 
+## Switching trees
+
+The settings dialog has **ツリーを切り替え…**, which returns to the chooser; the chooser lists the
+last five trees (tap to open, 外す to forget) next to clone / create-empty.
+
 ## Editor toolbar
 
 The editor's assist bar sits at the bottom of the screen, directly above the soft keyboard

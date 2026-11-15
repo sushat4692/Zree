@@ -88,7 +88,7 @@ fun SetupScreen(vm: ZreeViewModel, state: UiState) {
     ) {
         Text("Zree", style = MaterialTheme.typography.headlineMedium)
         Text(
-            "ノートはプレーンなMarkdownです。Gitリポジトリを複製するか、空のVaultから始めます。",
+            "ノートはプレーンなMarkdownです。Gitリポジトリを複製するか、空のツリーから始めます。",
             style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(4.dp))
@@ -117,7 +117,29 @@ fun SetupScreen(vm: ZreeViewModel, state: UiState) {
                 enabled = !state.busy && (url.contains("/") || url.contains(":")),
             ) { Text("クローンして開く") }
             OutlinedButton(onClick = { vm.createEmptyVault() }, enabled = !state.busy) {
-                Text("空のVaultを作る")
+                Text("空のツリーを作る")
+            }
+        }
+
+        if (state.recentTrees.isNotEmpty()) {
+            HorizontalDivider()
+            Text("最近のツリー", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            state.recentTrees.forEach { path ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { vm.openVault(path) }
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(path.substringAfterLast('/'), style = MaterialTheme.typography.bodyMedium)
+                        Text(path, style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.MiddleEllipsis)
+                    }
+                    TextButton(onClick = { vm.forgetTree(path) }) { Text("外す") }
+                }
             }
         }
 
@@ -132,7 +154,7 @@ fun SetupScreen(vm: ZreeViewModel, state: UiState) {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
         state.vaultPath?.let {
-            Text("Vault: $it", style = MaterialTheme.typography.bodySmall)
+            Text("ツリー: $it", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -422,12 +444,13 @@ private fun AutoSyncDialog(
                 )
                 HorizontalDivider()
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { vm.showSetup(); onDismiss() }) { Text("ツリーを切り替え…") }
                     OutlinedButton(onClick = onImport) { Text("取り込み…") }
                     OutlinedButton(onClick = onExport) { Text("書き出し…") }
                 }
                 Text(
-                    "取り込み: 選んだフォルダのMarkdownをこのVaultへコピーします（既存は上書きしません）。" +
-                        "書き出し: Vaultの内容を選んだフォルダへコピーします。",
+                    "取り込み: 選んだフォルダのMarkdownをこのツリーへコピーします（既存は上書きしません）。" +
+                        "書き出し: ツリーの内容を選んだフォルダへコピーします。",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

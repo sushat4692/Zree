@@ -43,7 +43,7 @@ The design is sized against this real data:
 | UI | Fully native, no WebView/JS. SwiftUI + Compose |
 | Logic | Shared Rust core via uniffi |
 | Editor | NSTextView / BasicTextField — use the OS text system so IME is native |
-| Storage | Flat `.md` files. No folders, no naming convention (humans handle naming) |
+| Storage | Flat `.md` files in a folder. UI calls that folder a **tree** (`Vault` inside the Rust core); no sub-folders, no naming convention |
 | Search | NFKC + lowercase + substring match (Japanese has no word separators) |
 | Tags | Inline tags, filter UI, automatic tagging later. **The primary way notes connect** |
 | Note links | Standard Markdown only: `[label](relative/path.md)`, clickable. Accepts percent-encoded or raw names |

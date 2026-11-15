@@ -59,7 +59,7 @@ background; macOS has no splash by convention.
 | ⌘N | New note (`Untitled yyMMdd-HHmm`, rename later) |
 | ⌘S | Save (also autosaves 600 ms after typing stops) |
 | ⇧⌘P | Toggle preview pane |
-| ⇧⌘O | Open a vault folder |
+| ⇧⌘O | Open a tree (folder) |
 | ⇧⌘C | Clone a vault from Git |
 | ⇧⌘U | Sync (commit → pull → push) |
 | ⌘, | Settings (auto-sync interval, remote URL, PAT) |
@@ -71,7 +71,7 @@ The rules live in the core, so Android behaves identically.
 
 ## Git sync
 
-- The vault **is** the repository (`.git` lives next to the notes).
+- Trees are just folders; a tree **is** the repository (`.git` lives next to the notes).
 - Sync = commit all changes → pull → push. Each step is skipped when it would be a no-op:
   no commit without changes, and **no push unless the branch is ahead of the remote**.
 - Pull fast-forwards when possible; otherwise it merges. On conflicts it stops without pushing and hands the file list to the UI.

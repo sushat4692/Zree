@@ -171,7 +171,7 @@ struct EmptyState: View {
             Image(systemName: "note.text")
                 .font(.system(size: 40))
                 .foregroundStyle(.tertiary)
-            Text("Vaultを開いてください")
+            Text("ツリーを開いてください")
                 .font(.title3)
             Button("フォルダを選択…") { app.chooseVault() }
                 .keyboardShortcut("o", modifiers: [.command, .shift])

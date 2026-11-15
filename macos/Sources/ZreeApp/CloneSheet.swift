@@ -14,7 +14,7 @@ struct CloneSheet: View {
                     .font(.headline)
             }
 
-            Text("リポジトリを複製して、このMacのVaultとして開きます。既存のノートは上書きされません（新規フォルダに取得します）。")
+            Text("リポジトリを複製して、このMacのツリーとして開きます。既存のノートは上書きされません（新規フォルダに取得します）。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
