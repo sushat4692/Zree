@@ -149,7 +149,13 @@ Still missing:
 ## Switching trees
 
 The settings dialog has **ツリーを切り替え…**, which returns to the chooser; the chooser lists the
-last five trees (tap to open, 外す to forget) next to clone / create-empty.
+last five trees (tap to open) next to clone / create-empty.
+
+Each entry shows its folder size and a **削除** button. Removing a tree *deletes its folder
+from the device* after a confirmation that names the risk (unpushed changes are lost; Git
+can restore the rest). If the tree is the one that is open, the session and repository are
+closed first and the app returns to the chooser. Deletion makes read-only Git objects
+writable first, and a folder that cannot be removed stays in the list with an error.
 
 ## In-place Markdown rendering
 

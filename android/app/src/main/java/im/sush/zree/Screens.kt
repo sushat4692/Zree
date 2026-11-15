@@ -79,6 +79,7 @@ import uniffi.zree_core.TagCount
 @Composable
 fun SetupScreen(vm: ZreeViewModel, state: UiState) {
     var url by remember { mutableStateOf("") }
+    var pendingDelete by remember { mutableStateOf<String?>(null) }
     var pat by remember { mutableStateOf("") }
 
     Column(
@@ -122,6 +123,29 @@ fun SetupScreen(vm: ZreeViewModel, state: UiState) {
             }
         }
 
+        if (pendingDelete != null) {
+            AlertDialog(
+                onDismissRequest = { pendingDelete = null },
+                title = { Text("ツリーを削除") },
+                text = {
+                    Text(
+                        "「${java.io.File(pendingDelete!!).name}」とそのノートをこの端末から削除します。\n\n" +
+                            "・未pushの変更は失われます\n" +
+                            "・Gitのリモートからは再取得できます",
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.forgetTree(path = pendingDelete!!)
+                        pendingDelete = null
+                    }) { Text("削除") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingDelete = null }) { Text("キャンセル") }
+                },
+            )
+        }
+
         if (state.recentTrees.isNotEmpty()) {
             HorizontalDivider()
             Text("最近のツリー", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -139,7 +163,12 @@ fun SetupScreen(vm: ZreeViewModel, state: UiState) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.MiddleEllipsis)
                     }
-                    TextButton(onClick = { vm.forgetTree(path) }) { Text("外す") }
+                    Text(
+                        vm.treeSize(path),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(onClick = { pendingDelete = path }) { Text("削除") }
                 }
             }
         }

@@ -144,11 +144,44 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(screen = Screen.Setup, message = null, error = null, recentTrees = recentTrees())
     }
 
-    fun forgetTree(path: String) {
+    /** Remove a tree from this device: the listing *and* the folder on disk. */
+    fun forgetTree(path: String) = io {
+        val current = _state.value.vaultPath == path
+        if (current) {
+            // close before deleting: the repository lives inside the folder
+            runCatching { session?.close() }
+            runCatching { repo?.close() }
+            session = null
+            repo = null
+            prefs.edit().remove(KEY_VAULT).apply()
+        }
+
+        val directory = File(path)
+        val name = directory.name
+        val deleted = TreeFiles.delete(directory)
+
+        if (!deleted) {
+            _state.value = _state.value.copy(
+                message = null,
+                error = "「$name」を削除できませんでした（他で開かれている可能性があります）",
+            )
+            return@io
+        }
+
         val kept = recentTrees().filterNot { it == path }
         prefs.edit().putString(KEY_RECENT, kept.joinToString("\n")).apply()
-        _state.value = _state.value.copy(recentTrees = kept)
+        _state.value = _state.value.copy(
+            screen = if (current) Screen.Setup else _state.value.screen,
+            vaultPath = if (current) null else _state.value.vaultPath,
+            selectedId = if (current) null else _state.value.selectedId,
+            rows = if (current) emptyList() else _state.value.rows,
+            recentTrees = kept,
+            message = "「$name」を削除しました",
+            error = null,
+        )
     }
+
+    fun treeSize(path: String): String = TreeFiles.humanSize(TreeFiles.size(File(path)))
 
     private fun recentTrees(): List<String> =
         prefs.getString(KEY_RECENT, "")
