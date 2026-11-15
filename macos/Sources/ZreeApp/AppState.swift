@@ -45,6 +45,14 @@ final class AppState {
     var remoteDraft = ""
     var tokenDraft = ""
 
+    // Clone flow
+    var showClone = false
+    var cloneURL = ""
+    var cloneToken = ""
+    var cloneParent = ""
+    var cloneMessage: String?
+    var cloning = false
+
     private let defaults = UserDefaults.standard
     private enum Keys {
         static let vault = "vaultPath"
@@ -302,6 +310,90 @@ final class AppState {
         gitStatus = try? git?.status()
         if let status = gitStatus, !status.conflicts.isEmpty {
             conflicts = status.conflicts
+        }
+    }
+
+    // MARK: - Clone
+
+    /// `parent/<repo name>` derived from the URL, following git's own convention.
+    var cloneTargetPath: String? {
+        guard !cloneParent.isEmpty else { return nil }
+        let name = Self.repoName(from: cloneURL)
+        guard !name.isEmpty else { return nil }
+        return (cloneParent as NSString).appendingPathComponent(name)
+    }
+
+    var canClone: Bool {
+        // not URL(string:) — scp-style remotes (git@host:owner/repo) fail that parse
+        guard !cloning, cloneTargetPath != nil else { return false }
+        let trimmed = cloneURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.contains("/") || trimmed.contains(":")
+    }
+
+    static func repoName(from url: String) -> String {
+        var s = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !s.isEmpty else { return "" }
+        while s.hasSuffix("/") { s.removeLast() }
+        if s.hasSuffix(".git") { s.removeLast(4) }
+        let parts = s.split(whereSeparator: { $0 == "/" || $0 == ":" })
+        return parts.last.map(String.init) ?? ""
+    }
+
+    @MainActor
+    func chooseCloneParent() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "ここに保存"
+        panel.message = "クローン先の親フォルダを選択（リポジトリ名のフォルダを新規作成します）"
+        if panel.runModal() == .OK, let url = panel.url {
+            cloneParent = url.path
+            cloneMessage = nil
+        }
+    }
+
+    func performClone() {
+        guard let target = cloneTargetPath else { return }
+        let url = cloneURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let token = cloneToken.trimmingCharacters(in: .whitespaces)
+        let parentOK = cloneParent.isEmpty == false
+
+        if parentOK, FileManager.default.fileExists(atPath: target) {
+            let contents = (try? FileManager.default.contentsOfDirectory(atPath: target)) ?? []
+            if !contents.filter({ $0 != ".DS_Store" }).isEmpty {
+                cloneMessage = "保存先に既にファイルがあります: \(target)"
+                return
+            }
+        }
+
+        cloning = true
+        cloneMessage = "接続しています…"
+
+        Task.detached { [url, target, token] in
+            let result: Result<Void, Error> = Result {
+                _ = try GitRepo.clone(
+                    url: url,
+                    path: target,
+                    username: nil,
+                    token: token.isEmpty ? nil : token
+                )
+            }
+            await MainActor.run {
+                self.cloning = false
+                switch result {
+                case .success:
+                    if !token.isEmpty {
+                        self.defaults.set(token, forKey: "gitToken")
+                    }
+                    self.cloneMessage = "✓ クローン完了"
+                    self.showClone = false
+                    self.openVault(target)
+                case .failure(let error):
+                    self.cloneMessage = self.describe(error)
+                }
+            }
         }
     }
 

@@ -10,7 +10,11 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
         } detail: {
             if app.selectedID == nil {
-                EmptyState()
+                if app.vaultPath == nil {
+                    FirstRunView()
+                } else {
+                    EmptyState()
+                }
             } else {
                 DetailView()
             }
@@ -22,6 +26,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: Bindable(app).showSettings) {
             GitSettingsSheet()
+        }
+        .sheet(isPresented: Bindable(app).showClone) {
+            CloneSheet()
         }
     }
 }

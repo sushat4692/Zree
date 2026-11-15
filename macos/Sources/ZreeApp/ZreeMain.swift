@@ -19,6 +19,8 @@ struct ZreeMain: App {
                     .keyboardShortcut("n", modifiers: .command)
                 Button("Vaultを開く…") { app.chooseVault() }
                     .keyboardShortcut("o", modifiers: [.command, .shift])
+                Button("Gitからクローン…") { app.showClone = true }
+                    .keyboardShortcut("c", modifiers: [.command, .shift])
             }
             CommandGroup(after: .saveItem) {
                 Button("同期 (commit → pull → push)") { app.sync() }
