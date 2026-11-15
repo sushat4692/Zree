@@ -1,77 +1,80 @@
 # Zree
 
-**Zero-friction Markdown tree.**（*Zero* + *Tree*）
+**Zero-friction Markdown tree.** (*Zero* + *Tree*)
 
-軽量な Markdown ノートアプリ。**macOS + Android**、UIは完全ネイティブ、ロジックは Rust の共有コア。
+A lightweight Markdown note-taking app: **macOS + Android**, fully native UI, one shared Rust core.
 
-- **Zero friction** — 一瞬で起動する。肥大したUIなし、手動のフォルダ管理なし
-- **Markdown at its core** — 純粋でポータブルなプレーンテキスト
-- **Git-synced Tree** — Gitのツリー構造に乗せる。バージョン管理とデバイス間同期
-- **Self-organizing** — 書くことに集中。自動タグ付けが思考を木構造へ編む（将来）
+- **Zero friction** — launches instantly. No bloated UI, no manual folder management.
+- **Markdown at its core** — pure, portable plain text that you own.
+- **Git-synced Tree** — built on Git's tree structure, so notes are versioned and synced across devices.
+- **Self-organizing** — focus on writing; automatic tagging weaves your thoughts into a connected tree (future).
 
-繋がり方は **タグが主、標準Markdownリンクが従**。`[[wikilink]]` は使わない。
+Connections are made by **tags first, standard Markdown links second**. `[[wikilink]]` syntax is not used.
 
-識別子: `im.sush.zree`
+Identifier: `im.sush.zree`
 
-## 構成
+## Layout
 
 ```
-core/      Rust: Vault IO / 日本語検索 / タグ抽出 / Markdownトークナイザ (uniffi)
-macos/     SwiftUI アプリ (NSTextView = OS標準IME)
-android/   Kotlin + Compose（未着手）
-docs/spec.md  仕様（2OSで共有する挙動の定義）
+core/          Rust: vault IO / Japanese search / tags / markdown tokenizer / git (uniffi)
+macos/         SwiftUI app (NSTextView = the OS text system, so IME just works)
+android/       Kotlin + Compose (not started)
+docs/spec.md   the contract both platforms must follow
 ```
 
-macOS は Xcode プロジェクトを使わず、SwiftPM + ad-hoc 署名で `.app` を組み立てる。
+The macOS app is built with SwiftPM and ad-hoc signing — no Xcode project.
 
 ## macOS
 
 ```bash
-./macos/scripts/sync-core.sh   # Rustをビルド → Swiftバインディング生成 → XCFramework
-./macos/scripts/bundle.sh      # build/Zree.app を作る
+./macos/scripts/sync-core.sh   # build Rust → generate Swift bindings → XCFramework
+./macos/scripts/bundle.sh      # produces build/Zree.app
 open build/Zree.app
 ```
 
-ショートカット:
+### Shortcuts
 
-| キー | 動作 |
+| Key | Action |
 |---|---|
-| ⌘N | 新規ノート（タイトルは `Untitled yyMMdd-HHmm`、あとでリネーム可） |
-| ⌘S | 保存（600ms無操作でも自動保存） |
-| ⇧⌘P | プレビュー切り替え |
-| ⇧⌘O | Vaultを開く |
-| ⇧⌘U | 同期（commit → pull → push） |
-| ⌘, | 設定（リモートURL / トークン） |
-| ⇧⌘R | 再インデックス（git pull 後など） |
-| ⇧⌘F | Finderで表示 |
+| ⌘N | New note (`Untitled yyMMdd-HHmm`, rename later) |
+| ⌘S | Save (also autosaves 600 ms after typing stops) |
+| ⇧⌘P | Toggle preview pane |
+| ⇧⌘O | Open a vault folder |
+| ⇧⌘C | Clone a vault from Git |
+| ⇧⌘U | Sync (commit → pull → push) |
+| ⌘, | Settings (remote URL, PAT) |
+| ⇧⌘R | Reindex (e.g. after pulling) |
+| ⇧⌘F | Reveal in Finder |
 
-## Git同期
+## Git sync
 
-- リポジトリはVaultそのもの（`.git` を同居させる）
-- 同期 = commit（全変更）→ pull（ff かマージ）→ push。衝突時は push せず停止
-- 衝突は `自分 / 相手 / 両方` を選んで解決 → 「マージ確定」でコミット＆push
-- 認証: HTTPS + PAT（キーチェーンに保存）、または ssh-agent
-- 起動時に自動pull（変更なし・衝突なし・behind>0 のときだけ）
-- リモートURLとトークンは ⌘, の設定から
+- The vault **is** the repository (`.git` lives next to the notes).
+- Sync = commit all changes → pull → push. Nothing to commit is not an error.
+- Pull fast-forwards when possible; otherwise it merges. On conflicts it stops without pushing and hands the file list to the UI.
+- Conflicts are resolved per file as `mine / theirs / both`, then finalised with a merge commit.
+- Auth: HTTPS + PAT (stored in the macOS Keychain) or ssh-agent.
+- Pulling on launch only happens when the worktree is clean, nothing is merging and the branch is actually behind.
 
-## 性能（実データ365ノート / 443KB）
+## Performance (real vault: 365 notes / 443 KB)
 
-| 項目 | 値 |
+| Operation | Time |
 |---|---|
-| Vault走査 | 60ms |
-| インデックス構築 | 41ms |
-| 検索1回 | 200〜300µs |
+| Vault scan | 60 ms |
+| Index build | 41 ms |
+| One search | 200–300 µs |
 
-## ステータス
+## Status
 
-- [x] コア: Vault IO / 検索 / タグ / Markdown
-- [x] uniffi バインディング（Swift、Kotlinは生成可能）
-- [x] macOS: 一覧・検索・タグ絞り込み・編集・自動保存・プレビュー
-- [x] ノート間リンク（標準Markdown `[表示名](ノート.md)` をクリックで遷移）
-- [x] Git同期（libgit2: commit/pull/push、fast-forward、マージ）＋衝突UI
+- [x] Core: vault IO / search / tags / markdown
+- [x] uniffi bindings (Swift; Kotlin can be generated)
+- [x] macOS: list, search, tag filtering, editor, autosave, preview
+- [x] Standard Markdown links that navigate between notes
+- [x] Git sync (commit/pull/push, fast-forward, merge) with a conflict UI
+- [x] Clone onboarding, Keychain-backed PAT, pull on launch
 - [ ] Android
+- [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)
 
-## テスト
+## Tests
 
 ```bash
 cargo test -p zree-core
