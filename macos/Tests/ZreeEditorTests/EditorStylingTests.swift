@@ -236,6 +236,41 @@ final class EditorStylingTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
     }
 
+    /// Deleting at the end of a heading made AppKit copy the heading's bold font onto the
+    /// next line. The editor repairs the neighbouring line; this checks the repair.
+    func test_neighbouring_line_is_repaired_after_attribute_bleed() {
+        let text = "# 見出し\n- 載っている内容"
+        let textView = makeTextView(text)
+        style(textView, text)
+
+        // simulate AppKit bleeding the heading attributes onto the next line
+        let storage = textView.textStorage!
+        let ns = text as NSString
+        let nextLine = ns.lineRange(for: NSRange(location: ns.range(of: "- 載").location, length: 0))
+        let headingFont = storage.attribute(.font, at: 0, effectiveRange: nil) as! NSFont
+        storage.addAttribute(.font, value: headingFont, range: nextLine)
+        XCTAssertTrue(
+            (storage.attribute(.font, at: nextLine.location, effectiveRange: nil) as! NSFont)
+                .fontDescriptor.symbolicTraits.contains(.bold)
+        )
+
+        EditorStyling.restyleLine(
+            textView,
+            lineRange: nextLine,
+            baseFont: baseFont,
+            baseColor: baseColor,
+            lineHeight: 1.6,
+            mutedColor: mutedColor
+        )
+
+        let repaired = storage.attribute(.font, at: nextLine.location, effectiveRange: nil) as! NSFont
+        XCTAssertFalse(
+            repaired.fontDescriptor.symbolicTraits.contains(.bold),
+            "the list line must not stay bold"
+        )
+        XCTAssertEqual(repaired.pointSize, baseFont.pointSize, accuracy: 0.01)
+    }
+
     func test_list_markers_are_muted_but_text_is_not() {
         let text = "- 項目"
         let textView = makeTextView(text)

@@ -237,8 +237,36 @@ struct MarkdownEditor: NSViewRepresentable {
             let edited = pendingEditRange ?? textView.selectedRange()
             pendingEditRange = nil
 
-            ensureStyled(textView, range: lineRange(at: edited.location, in: textView))
+            let range = lineRange(at: edited.location, in: textView)
+            ensureStyled(textView, range: range)
+
+            // Deleting at a boundary makes AppKit carry the previous line's attributes
+            // into its neighbour (a bold heading turned the start of the next line bold),
+            // so rebuild the neighbours unconditionally.
+            repair(textView, range: lineRange(at: range.location + range.length, in: textView))
+
+            if edited.location <= range.location {
+                let previous = max(0, range.location - 1)
+                repair(textView, range: lineRange(at: previous, in: textView))
+            }
+
             refreshTypingAttributes(textView)
+        }
+
+        /// Re-apply a line's own styling, ignoring the cached kind.
+        @MainActor
+        private func repair(_ textView: NSTextView, range: NSRange) {
+            let ns = textView.string as NSString
+            guard range.length > 0, range.location + range.length <= ns.length else { return }
+            lineKinds[range.location] = kindSignature(textView, lineRange: range)
+            EditorStyling.restyleLine(
+                textView,
+                lineRange: range,
+                baseFont: parent.font,
+                baseColor: ZreePalette.editorText,
+                lineHeight: parent.lineHeight,
+                mutedColor: .tertiaryLabelColor
+            )
         }
 
         /// Leaving a line is the moment to render its inline styling.
