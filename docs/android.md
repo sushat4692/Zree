@@ -161,7 +161,11 @@ text the app saves never changes and the caret/IME are untouched.
 - styling does not depend on the caret position (no reflow while typing)
 - lines are cached by their text, so only the edited line is re-parsed (one-line parse in
   the core)
-- Compose spans cannot set a line height, so headings share the body line height here
+- heading lines carry their own `ParagraphStyle` so glyphs and caret agree; the span must
+  include the line's terminator, otherwise Compose starts a new paragraph there (an extra
+  line box appeared and the caret could not reach the end of the line)
+- heading line height is 1.2x the heading size, close to the glyphs, so the gap under a
+  heading stays near the normal line spacing
 - `---` becomes a struck-through transparent line rather than a full-width rule
 
 ## Editor toolbar

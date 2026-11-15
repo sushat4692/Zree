@@ -606,6 +606,7 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
     val scheme = MaterialTheme.colorScheme
     val transformation = remember(
         state.editorFontSize,
+        state.editorLineHeight,
         scheme.onSurface,
         scheme.onSurfaceVariant,
         scheme.primary,
@@ -613,6 +614,7 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
     ) {
         MarkdownVisualTransformation(
             baseSizeSp = state.editorFontSize,
+            lineHeight = state.editorLineHeight,
             onSurface = scheme.onSurface,
             muted = scheme.onSurfaceVariant,
             accent = scheme.primary,
