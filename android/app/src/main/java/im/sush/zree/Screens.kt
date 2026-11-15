@@ -29,11 +29,6 @@ import uniffi.zree_core.CompletionKind
 import uniffi.zree_core.ListAction
 import uniffi.zree_core.BlockKind
 import uniffi.zree_core.completionContext
-import uniffi.zree_core.formatBlock
-import uniffi.zree_core.toggleInline
-import uniffi.zree_core.toggleTask
-import uniffi.zree_core.indentLine
-import uniffi.zree_core.listAction
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -47,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -551,15 +547,22 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
     }
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    fun current(): EditText = EditText(value.text, value.selection.start, value.selection.end)
+
+    fun apply(edit: EditText) {
+        if (edit.text == value.text && edit.selStart == value.selection.start && edit.selEnd == value.selection.end) return
+        value = TextFieldValue(edit.text, TextRange(edit.selStart, edit.selEnd))
+        vm.setDraft(edit.text)
+    }
+
     fun updateSuggestions(text: String, cursor: Int) {
         val before = text.substring(0, cursor.coerceIn(0, text.length))
         val ctx = runCatching { completionContext(before) }.getOrNull()
-        val list = when {
+        suggestions = when {
             ctx == null -> emptyList()
             ctx.kind == CompletionKind.TAG -> vm.suggestTags(ctx.prefix)
             else -> emptyList()
         }
-        suggestions = list
     }
 
     fun applySuggestion(tag: String) {
@@ -568,73 +571,14 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
         val ctx = runCatching { completionContext(before) }.getOrNull() ?: return
         val start = cursor - ctx.prefix.length
         val newText = value.text.substring(0, start) + tag + value.text.substring(cursor)
-        val next = TextFieldValue(newText, TextRange(start + tag.length))
-        value = next
-        vm.setDraft(newText)
+        apply(EditText(newText, start + tag.length, start + tag.length))
         suggestions = emptyList()
     }
 
     LaunchedEffect(state.selectedId) {
-        // keep the field in sync when the note changes underneath us
         if (value.text != state.draft) {
             value = TextFieldValue(state.draft, TextRange(state.draft.length))
         }
-    }
-
-    fun lineRange(text: String, caret: Int): IntRange {
-        val start = if (caret == 0) 0 else text.lastIndexOf('\n', caret - 1).let { if (it < 0) 0 else it + 1 }
-        val end = text.indexOf('\n', caret).let { if (it < 0) text.length else it }
-        return start..end
-    }
-
-    fun applyIndent(outdent: Boolean) {
-        val caret = value.selection.start.coerceIn(0, value.text.length)
-        val range = lineRange(value.text, caret)
-        val line = value.text.substring(range.first, range.last)
-        val rewritten = runCatching { indentLine(line, outdent) }.getOrNull() ?: return
-        val text = value.text.substring(0, range.first) + rewritten + value.text.substring(range.last)
-        val delta = rewritten.length - line.length
-        val target = (caret + delta).coerceIn(range.first, range.first + rewritten.length)
-        value = TextFieldValue(text, TextRange(target))
-        vm.setDraft(text)
-    }
-
-    fun rewriteCurrentLine(transform: (String) -> String) {
-        val caret = value.selection.start.coerceIn(0, value.text.length)
-        val range = lineRange(value.text, caret)
-        val line = value.text.substring(range.first, range.last)
-        val rewritten = runCatching { transform(line) }.getOrNull() ?: return
-        if (rewritten == line) return
-        val text = value.text.substring(0, range.first) + rewritten + value.text.substring(range.last)
-        val target = range.first + rewritten.length
-        value = TextFieldValue(text, TextRange(target))
-        vm.setDraft(text)
-    }
-
-    fun applyBlock(kind: BlockKind) = rewriteCurrentLine { formatBlock(it, kind) }
-
-    fun applyTaskToggle() = rewriteCurrentLine { toggleTask(it) }
-
-    /**
-     * Wrap/unwrap an inline marker. Offsets cross the FFI in characters, so they
-     * are converted from UTF-16 here; the toggle itself lives in the core.
-     */
-    fun toggleWrap(mark: String) {
-        val text = value.text
-        val sel = value.selection
-        val utf16Start = minOf(sel.start, sel.end).coerceIn(0, text.length)
-        val utf16End = maxOf(sel.start, sel.end).coerceIn(0, text.length)
-        val cpStart = text.codePointCount(0, utf16Start)
-        val cpEnd = text.codePointCount(0, utf16End)
-
-        val result = runCatching {
-            toggleInline(text, cpStart.toUInt(), cpEnd.toUInt(), mark)
-        }.getOrNull() ?: return
-
-        val a = utf16Index(result.text, result.selStart.toInt())
-        val b = utf16Index(result.text, result.selEnd.toInt())
-        value = TextFieldValue(result.text, TextRange(a, b))
-        vm.setDraft(result.text)
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -657,60 +601,63 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
             }
         }
 
-        BasicTextField(
-            value = value,
-            onValueChange = { next ->
-                val assisted = applyEditorAssists(value, next)
-                value = assisted
-                vm.setDraft(assisted.text)
-                updateSuggestions(assisted.text, assisted.selection.start)
-            },
-            textStyle = TextStyle(
-                fontSize = 15.sp,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurface,
-            ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(16.dp)
-                .onPreviewKeyEvent { event ->
-                    // hardware keyboards: Tab indents, Shift-Tab outdents
-                    if (event.type == KeyEventType.KeyDown && event.key == Key.Tab) {
-                        applyIndent(event.isShiftPressed)
-                        true
+        // keyed on the note so the field — and its undo history — start fresh;
+        // otherwise undo after switching could pull the previous note's text in
+        key(state.selectedId) {
+            BasicTextField(
+                value = value,
+                onValueChange = { next ->
+                    val old = current()
+                    val assisted = EditorEdits.newline(
+                        old,
+                        EditText(next.text, next.selection.start, next.selection.end),
+                    )
+                    if (assisted != null) {
+                        value = TextFieldValue(assisted.text, TextRange(assisted.selStart, assisted.selEnd))
+                        vm.setDraft(assisted.text)
+                        updateSuggestions(assisted.text, assisted.selStart)
                     } else {
-                        false
+                        value = next
+                        vm.setDraft(next.text)
+                        updateSuggestions(next.text, next.selection.start)
                     }
                 },
-        )
+                textStyle = TextStyle(
+                    fontSize = 15.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.Tab) {
+                            apply(EditorEdits.indent(current(), outdent = event.isShiftPressed))
+                            true
+                        } else {
+                            false
+                        }
+                    },
+            )
+        }
 
         // Sits directly above the keyboard (an input accessory bar).
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         EditorToolbar(
-            onOutdent = { applyIndent(true) },
-            onIndent = { applyIndent(false) },
-            onBullet = { applyBlock(BlockKind.BULLET) },
-            onOrdered = { applyBlock(BlockKind.ORDERED) },
-            onTask = { applyBlock(BlockKind.TASK) },
-            onHeading = { applyBlock(BlockKind.HEADING) },
-            onQuote = { applyBlock(BlockKind.QUOTE) },
-            onToggleTask = { applyTaskToggle() },
-            onBold = { toggleWrap("**") },
+            onOutdent = { apply(EditorEdits.indent(current(), outdent = true)) },
+            onIndent = { apply(EditorEdits.indent(current(), outdent = false)) },
+            onBullet = { apply(EditorEdits.block(current(), BlockKind.BULLET)) },
+            onOrdered = { apply(EditorEdits.block(current(), BlockKind.ORDERED)) },
+            onTask = { apply(EditorEdits.block(current(), BlockKind.TASK)) },
+            onHeading = { apply(EditorEdits.block(current(), BlockKind.HEADING)) },
+            onQuote = { apply(EditorEdits.block(current(), BlockKind.QUOTE)) },
+            onToggleTask = { apply(EditorEdits.taskToggle(current())) },
+            onBold = { apply(EditorEdits.toggleInline(current(), "**")) },
         )
     }
-}
-
-private fun utf16Index(text: String, codePoints: Int): Int {
-    var i = 0
-    var n = 0
-    while (n < codePoints && i < text.length) {
-        i += Character.charCount(text.codePointAt(i))
-        n++
-    }
-    return i
 }
 
 @Composable
@@ -757,37 +704,3 @@ private fun EditorToolbar(
     }
 }
 
-/**
- * Return-key list continuation, decided by the core.
- *
- * Works for a newline inserted anywhere, not just at the end of the document:
- * true for a caret in the middle of a note, which is the common case.
- */
-private fun applyEditorAssists(old: TextFieldValue, next: TextFieldValue): TextFieldValue {
-    val caret = old.selection.start.coerceIn(0, old.text.length)
-    val insertedNewline = next.text.length == old.text.length + 1 &&
-        next.text == old.text.substring(0, caret) + "\n" + old.text.substring(caret)
-    if (!insertedNewline) return next
-
-    val lineStart = old.text.lastIndexOf('\n', startIndex = (caret - 1).coerceAtLeast(0))
-        .let { if (it < 0) 0 else it + 1 }
-    // careful: lastIndexOf with startIndex 0 still matches at 0 only when the char is there
-    val start = if (caret == 0) 0 else lineStart
-    val line = old.text.substring(start, caret)
-
-    val action = runCatching { listAction(line) }.getOrNull() ?: return next
-
-    return when (action) {
-        is ListAction.Continue -> {
-            val marker = action.marker
-            val text = old.text.substring(0, caret) + "\n" + marker + old.text.substring(caret)
-            TextFieldValue(text, TextRange(caret + 1 + marker.length))
-        }
-        is ListAction.Replace -> {
-            // empty item: outdent one level, or drop the marker at the left margin
-            val text = old.text.substring(0, start) + action.marker + old.text.substring(caret)
-            TextFieldValue(text, TextRange(start + action.marker.length))
-        }
-        else -> next
-    }
-}

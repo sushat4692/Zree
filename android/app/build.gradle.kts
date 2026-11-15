@@ -26,6 +26,15 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 
+    testOptions {
+        unitTests.all {
+            // JVM tests run on the host, so point JNA at the macOS build of the core
+            val coreLib = rootProject.projectDir.parentFile.resolve("target/release").absolutePath
+            it.systemProperty("jna.library.path", coreLib)
+            it.systemProperty("java.library.path", coreLib)
+        }
+    }
+
     sourceSets {
         getByName("main") {
             // uniffi-generated Kotlin bindings
@@ -46,6 +55,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.documentfile:documentfile:1.0.1")
+    testImplementation("junit:junit:4.13.2")
+    // the desktop jar carries libjnidispatch for the host JVM
+    testImplementation("net.java.dev.jna:jna:5.17.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
     // uniffi's generated Kotlin uses JNA to reach the Rust library
     implementation("net.java.dev.jna:jna:5.17.0@aar")

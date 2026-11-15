@@ -380,6 +380,14 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         val r = repo ?: return
         val st = r.status()
         _state.value = _state.value.copy(git = st)
+
+        // Left-over edits (a crash, or the app was killed) are committed and pushed
+        // on the next launch instead of waiting for the timer.
+        if (_state.value.autoSync && st.changed > 0u && st.conflicts.isEmpty() && !st.merging) {
+            runCatching { runSync(auto = true) }
+            return
+        }
+
         if (st.changed != 0u || st.behind == 0u || st.conflicts.isNotEmpty() || st.merging) return
         runCatching { r.pull() }
         withContext(Dispatchers.IO) { refresh() }
