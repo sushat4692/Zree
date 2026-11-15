@@ -157,3 +157,30 @@ fn reports_remotes_and_handles_missing_repo() {
     assert!(git.fetch().is_err());
     assert!(git.push().is_err());
 }
+
+#[test]
+fn ffi_clone_is_what_the_app_calls() {
+    let sandbox = Sandbox::new();
+    let (a_dir, a) = sandbox.vault("a");
+    write(&a_dir.join("n.md"), "ノート\n");
+    a.commit_all("init").unwrap();
+    a.push().unwrap();
+
+    let dest = sandbox.path("cloned");
+    let dest_str = dest.display().to_string();
+    assert!(!zree_core::ffi::is_git_repo(dest_str.clone()));
+
+    let repo = zree_core::ffi::GitRepo::clone(
+        sandbox.remote.clone(),
+        dest_str.clone(),
+        None,
+        None,
+    )
+    .unwrap();
+
+    assert!(zree_core::ffi::is_git_repo(dest_str));
+    assert!(dest.join("n.md").is_file());
+    let status = repo.status().unwrap();
+    assert_eq!(status.changed, 0, "fresh clone should be clean");
+    assert_eq!(status.remote_url, sandbox.remote);
+}
