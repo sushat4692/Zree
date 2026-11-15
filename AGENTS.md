@@ -49,7 +49,7 @@ The design is sized against this real data:
 | Note links | Standard Markdown only: `[label](relative/path.md)`, clickable. Accepts percent-encoded or raw names |
 | Quick capture | **Rejected** — the habit is "open the app and write" |
 | Templates | Deferred |
-| Images | Move to standard `![](path)` with `assets/YYYY-MM-DD-HHMMSS.ext`; migration happens **after the app ships** |
+| Images | Standard `![](path)` written by the app, attachments under `assets/YYYY-MM-DD-HHMMSS.ext`; `![[file]]` is still read for compatibility |
 | Distribution | macOS: ad-hoc signed `.app` / Android: sideloaded APK |
 | Visual identity | Icon Composer bundle is the single source of truth; UI palettes (SwiftUI + Compose) are sampled from it |
 
@@ -99,4 +99,3 @@ cargo run --release --example probe -- /path/to/vault
       pushing to GitHub), conflict UI, SAF import/export
 - [x] Editor assists shared by both platforms: list continuation, outdent, Tab/Shift-Tab,
       tag completion, block buttons, bold toggle
-- [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)

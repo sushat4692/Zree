@@ -98,7 +98,6 @@ The rules live in the core, so Android behaves identically.
 - [x] Clone onboarding, Keychain-backed PAT, pull on launch
 - [x] Android: clone/setup, tree switching, list, search, tags, editor with autosave and IME,
       preview with link navigation, auto-sync, conflict UI, SAF import/export
-- [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)
 
 ## Tests
 
