@@ -478,8 +478,8 @@ fn notes_can_be_sorted_four_ways() {
     expected.sort();
     assert_eq!(title_asc, expected);
 
-    // every row carries a snippet for the list
-    assert!(index.list_rows(SortOrder::UpdatedDesc).iter().any(|r| !r.snippet.is_empty()));
+    // the list does not need a snippet
+    assert!(index.list_rows(SortOrder::UpdatedDesc).iter().all(|r| r.snippet.is_empty()));
 
     title_asc.reverse();
     assert_eq!(titles(SortOrder::TitleDesc), title_asc);

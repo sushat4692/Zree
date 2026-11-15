@@ -174,7 +174,9 @@ impl Index {
             .map(|e| Hit {
                 id: e.meta.id.clone(),
                 title: e.meta.title.clone(),
-                snippet: first_line(&e.body),
+                // the list shows title / dates / tags only; a snippet costs a scan
+                // of the body for every note on every reload
+                snippet: String::new(),
                 score: 0,
                 tags: e.meta.tags.clone(),
                 mtime_ms: e.meta.mtime_ms,

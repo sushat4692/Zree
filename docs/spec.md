@@ -14,6 +14,8 @@ either fix the code or fix this document — do not let them drift.
   - `assets/` (attachments only)
 - Note id = path relative to the vault, `/` separated. e.g. `ワンネス メンタリング 230502.md`
 - Title = file name without the extension
+- A list row shows the title, the updated and created dates and its tags — no body
+  snippet (search results do carry a snippet)
 - Order: newest modified first, ties broken by title ascending
 
 ## 2. File operations

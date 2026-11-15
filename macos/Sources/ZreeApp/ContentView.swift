@@ -155,12 +155,6 @@ struct RowView: View {
             Text(row.title)
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(1)
-            if !row.snippet.isEmpty {
-                Text(row.snippet)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
             HStack(spacing: 4) {
                 Text("更新 \(Self.format(row.mtimeMs))")
                 if row.createdMs > 0 {

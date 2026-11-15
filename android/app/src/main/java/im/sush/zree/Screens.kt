@@ -291,14 +291,6 @@ fun ListScreen(vm: ZreeViewModel, state: UiState) {
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
                     Text(row.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                    if (row.snippet.isNotEmpty()) {
-                        Text(
-                            row.snippet,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                        )
-                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             "更新 ${rowDate(row.mtimeMs)}",
