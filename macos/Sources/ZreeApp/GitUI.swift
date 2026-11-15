@@ -122,7 +122,29 @@ struct GitSettingsSheet: View {
 
     var body: some View {
         @Bindable var app = app
+        ScrollView {
         VStack(alignment: .leading, spacing: 14) {
+            Text("表示")
+                .font(.headline)
+
+            DisplaySettingsBlock(
+                title: "エディタ",
+                family: $app.editorFontFamily,
+                size: $app.editorFontSize,
+                lineHeight: $app.editorLineHeight,
+                families: app.availableFontFamilies
+            )
+
+            DisplaySettingsBlock(
+                title: "プレビュー",
+                family: $app.previewFontFamily,
+                size: $app.previewFontSize,
+                lineHeight: $app.previewLineHeight,
+                families: app.availableFontFamilies
+            )
+
+            Divider()
+
             Text("Git同期")
                 .font(.headline)
 
@@ -195,6 +217,49 @@ struct GitSettingsSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 460)
+        .frame(width: 460, height: 620)
+        }
+        .onDisappear { app.saveDisplaySettings() }
+    }
+}
+
+/// Font family / size / line height for one pane.
+private struct DisplaySettingsBlock: View {
+    let title: String
+    @Binding var family: String?
+    @Binding var size: Double
+    @Binding var lineHeight: Double
+    let families: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.caption).bold().foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                Text("フォント").font(.caption).frame(width: 56, alignment: .leading)
+                Picker("", selection: $family) {
+                    Text("システム").tag(nil as String?)
+                    Divider()
+                    ForEach(families, id: \.self) { name in
+                        Text(name).tag(name as String?)
+                    }
+                }
+                .labelsHidden()
+                .frame(maxWidth: 260)
+            }
+
+            HStack(spacing: 8) {
+                Text("サイズ").font(.caption).frame(width: 56, alignment: .leading)
+                Stepper(value: $size, in: 10...32, step: 1) {
+                    Text("\(Int(size)) pt").monospacedDigit()
+                }
+            }
+
+            HStack(spacing: 8) {
+                Text("行間").font(.caption).frame(width: 56, alignment: .leading)
+                Slider(value: $lineHeight, in: 1.0...2.2, step: 0.05)
+                Text(String(format: "%.2f", lineHeight)).monospacedDigit().font(.caption)
+            }
+        }
     }
 }

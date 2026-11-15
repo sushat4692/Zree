@@ -461,3 +461,28 @@ fn inline_marker_toggles_instead_of_stacking() {
     let r = toggle_inline("😀", 1, 1, "**");
     assert_eq!(r.text, "😀****");
 }
+
+#[test]
+fn notes_can_be_sorted_four_ways() {
+    use zree_core::search::SortOrder;
+
+    let (_dir, vault) = fixture();
+    let index = Index::build(&vault).unwrap();
+
+    let titles = |order| -> Vec<String> {
+        index.notes(order).into_iter().map(|n| n.title).collect()
+    };
+
+    let mut title_asc = titles(SortOrder::TitleAsc);
+    let mut expected = title_asc.clone();
+    expected.sort();
+    assert_eq!(title_asc, expected);
+
+    title_asc.reverse();
+    assert_eq!(titles(SortOrder::TitleDesc), title_asc);
+
+    // updated orders are each other's reverse (no ties in the fixture)
+    let mut updated = titles(SortOrder::UpdatedDesc);
+    updated.reverse();
+    assert_eq!(titles(SortOrder::UpdatedAsc), updated);
+}

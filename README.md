@@ -62,7 +62,7 @@ background; macOS has no splash by convention.
 | ⇧⌘O | Open a tree (folder) |
 | ⇧⌘C | Clone a vault from Git |
 | ⇧⌘U | Sync (commit → pull → push) |
-| ⌘, | Settings (auto-sync interval, remote URL, PAT) |
+| ⌘, | Settings (fonts for editor and preview, auto-sync interval, remote URL, PAT) |
 | ⇧⌘R | Reindex (e.g. after pulling) |
 | ⇧⌘F | Reveal in Finder |
 

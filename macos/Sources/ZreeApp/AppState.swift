@@ -1,3 +1,4 @@
+import SwiftUI
 import AppKit
 import Foundation
 import Observation
@@ -65,6 +66,14 @@ final class AppState {
     var cloneMessage: String?
     var cloning = false
 
+    // Display settings (editor and preview are configured separately)
+    var editorFontFamily: String?
+    var editorFontSize: Double = 14
+    var editorLineHeight: Double = 1.4
+    var previewFontFamily: String?
+    var previewFontSize: Double = 15
+    var previewLineHeight: Double = 1.6
+
     private let defaults = UserDefaults.standard
     private enum Keys {
         static let vault = "vaultPath"
@@ -73,6 +82,12 @@ final class AppState {
         static let username = "gitUsername"
         static let autoSyncOn = "autoSyncEnabled"
         static let autoSyncMinutes = "autoSyncMinutes"
+        static let editorFontFamily = "editorFontFamily"
+        static let editorFontSize = "editorFontSize"
+        static let editorLineHeight = "editorLineHeight"
+        static let previewFontFamily = "previewFontFamily"
+        static let previewFontSize = "previewFontSize"
+        static let previewLineHeight = "previewLineHeight"
     }
 
     // MARK: - Vault
@@ -90,6 +105,15 @@ final class AppState {
             autoSyncMinutes = savedMinutes
         }
         restoringPrefs = false
+
+        if defaults.object(forKey: Keys.editorFontSize) != nil {
+            editorFontFamily = defaults.string(forKey: Keys.editorFontFamily)
+            editorFontSize = defaults.double(forKey: Keys.editorFontSize)
+            editorLineHeight = defaults.double(forKey: Keys.editorLineHeight)
+            previewFontFamily = defaults.string(forKey: Keys.previewFontFamily)
+            previewFontSize = defaults.double(forKey: Keys.previewFontSize)
+            previewLineHeight = defaults.double(forKey: Keys.previewLineHeight)
+        }
         if let path = defaults.string(forKey: Keys.vault), FileManager.default.fileExists(atPath: path) {
             openVault(path)
         }
@@ -623,6 +647,46 @@ final class AppState {
         } catch {
             errorMessage = describe(error)
         }
+    }
+
+    // MARK: - Display settings
+
+    func saveDisplaySettings() {
+        defaults.set(editorFontFamily, forKey: Keys.editorFontFamily)
+        defaults.set(editorFontSize, forKey: Keys.editorFontSize)
+        defaults.set(editorLineHeight, forKey: Keys.editorLineHeight)
+        defaults.set(previewFontFamily, forKey: Keys.previewFontFamily)
+        defaults.set(previewFontSize, forKey: Keys.previewFontSize)
+        defaults.set(previewLineHeight, forKey: Keys.previewLineHeight)
+    }
+
+    /// Font families installed on this Mac, plus nil for the system font.
+    var availableFontFamilies: [String] {
+        NSFontManager.shared.availableFontFamilies.sorted()
+    }
+
+    var editorFont: NSFont {
+        if let family = editorFontFamily, let font = NSFont(name: family, size: editorFontSize) {
+            return font
+        }
+        return NSFont.monospacedSystemFont(ofSize: editorFontSize, weight: .regular)
+    }
+
+    var editorParagraphStyle: NSMutableParagraphStyle {
+        let style = NSMutableParagraphStyle()
+        style.lineHeightMultiple = max(0.8, editorLineHeight)
+        return style
+    }
+
+    var previewFont: Font {
+        if let family = previewFontFamily {
+            return .custom(family, size: previewFontSize)
+        }
+        return .system(size: previewFontSize)
+    }
+
+    var previewLineSpacing: CGFloat {
+        max(0, previewFontSize * (previewLineHeight - 1))
     }
 
     // MARK: - Editor assists

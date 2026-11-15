@@ -18,7 +18,7 @@ pub mod vault;
 pub use complete::{completion_context, list_action, CompletionContext, CompletionKind, ListAction, NoteSuggestion};
 pub use error::NoteError;
 pub use markdown::{parse_blocks, parse_inline, Block, Inline};
-pub use search::{Hit, Index, TagCount};
+pub use search::{Hit, Index, SortOrder, TagCount};
 pub use vault::{NoteMeta, Vault};
 
 /// Convenience facade: a vault plus its in-memory search index.

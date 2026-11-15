@@ -19,6 +19,8 @@ struct PreviewView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(18)
             .textSelection(.enabled)
+            .font(app.previewFont)
+            .lineSpacing(app.previewLineSpacing)
         }
         .background(Color(nsColor: ZreePalette.editorBackground))
         .environment(\.openURL, OpenURLAction { url in

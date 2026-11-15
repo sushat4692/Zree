@@ -5,6 +5,8 @@ import SwiftUI
 /// and it stays fast on long notes.
 struct MarkdownEditor: NSViewRepresentable {
     @Binding var text: String
+    var font: NSFont
+    var lineHeight: Double
     @Environment(AppState.self) private var app
 
     func makeCoordinator() -> Coordinator {
@@ -27,7 +29,7 @@ struct MarkdownEditor: NSViewRepresentable {
         textView.isAutomaticTextReplacementEnabled = false
         textView.isAutomaticSpellingCorrectionEnabled = false
         textView.isContinuousSpellCheckingEnabled = false
-        textView.font = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
+        textView.font = font
         textView.backgroundColor = ZreePalette.editorBackground
         textView.textColor = ZreePalette.editorText
         textView.insertionPointColor = NSColor(ZreePalette.accent)
@@ -42,6 +44,9 @@ struct MarkdownEditor: NSViewRepresentable {
         context.coordinator.parent = self
         context.coordinator.app = app
         guard let textView = scroll.documentView as? NSTextView else { return }
+        applyTypography(to: textView)
+        applyTypography(to: textView)
+
         if textView.string != text {
             // Replacing the text behind the undo manager's back leaves it holding
             // ranges from the previous note; pressing ⌘Z then crashed in
@@ -54,6 +59,35 @@ struct MarkdownEditor: NSViewRepresentable {
             textView.undoManager?.removeAllActions()
             textView.breakUndoCoalescing()
         }
+    }
+
+    /// Fonts and line height are attributes only, so they never enter the undo stack.
+    private func applyTypography(to textView: NSTextView) {
+        let style = NSMutableParagraphStyle()
+        style.lineHeightMultiple = max(0.8, lineHeight)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: style,
+            .foregroundColor: ZreePalette.editorText,
+        ]
+
+        textView.font = font
+        textView.defaultParagraphStyle = style
+        textView.typingAttributes = attributes
+
+        guard let storage = textView.textStorage else { return }
+        let full = NSRange(location: 0, length: storage.length)
+        if full.length == 0 { return }
+
+        let needsUpdate: Bool = {
+            guard let current = storage.attribute(.font, at: 0, effectiveRange: nil) as? NSFont else { return true }
+            return current != font
+        }()
+        guard needsUpdate else { return }
+
+        storage.beginEditing()
+        storage.setAttributes(attributes, range: full)
+        storage.endEditing()
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {

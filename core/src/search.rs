@@ -19,6 +19,15 @@ pub struct Hit {
     pub mtime_ms: i64,
 }
 
+/// Order for the note list (search results keep relevance order).
+#[derive(Debug, Clone, PartialEq, uniffi::Enum)]
+pub enum SortOrder {
+    UpdatedDesc,
+    UpdatedAsc,
+    TitleAsc,
+    TitleDesc,
+}
+
 #[derive(Debug, Clone)]
 pub struct Entry {
     pub meta: NoteMeta,
@@ -132,6 +141,22 @@ impl Index {
             hits.truncate(limit);
         }
         hits
+    }
+
+    /// All notes in the requested order (no relevance scoring).
+    pub fn notes(&self, order: SortOrder) -> Vec<NoteMeta> {
+        let mut out: Vec<NoteMeta> = self.entries.iter().map(|e| e.meta.clone()).collect();
+        match order {
+            SortOrder::UpdatedDesc => {
+                out.sort_by(|a, b| b.mtime_ms.cmp(&a.mtime_ms).then(a.title.cmp(&b.title)))
+            }
+            SortOrder::UpdatedAsc => {
+                out.sort_by(|a, b| a.mtime_ms.cmp(&b.mtime_ms).then(a.title.cmp(&b.title)))
+            }
+            SortOrder::TitleAsc => out.sort_by(|a, b| a.title.cmp(&b.title)),
+            SortOrder::TitleDesc => out.sort_by(|a, b| b.title.cmp(&a.title)),
+        }
+        out
     }
 
     /// Tag cloud: every tag with its note count, most used first.

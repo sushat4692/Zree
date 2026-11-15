@@ -226,13 +226,17 @@ struct DetailView: View {
     }
 
     private var editor: some View {
-        MarkdownEditor(text: Binding(
+        MarkdownEditor(
+            text: Binding(
             get: { app.body },
-            set: { newValue in
-                app.body = newValue
-                app.bodyDidChange()
-            }
-        ))
+                set: { newValue in
+                    app.body = newValue
+                    app.bodyDidChange()
+                }
+            ),
+            font: app.editorFont,
+            lineHeight: app.editorLineHeight
+        )
     }
 }
 

@@ -91,6 +91,11 @@ impl ZreeSession {
         index.search(&query, &tags, limit as usize)
     }
 
+    /// The whole list in the requested order (used when nothing is being searched).
+    pub fn list_sorted(&self, order: crate::search::SortOrder) -> Vec<NoteMeta> {
+        self.current_index().notes(order)
+    }
+
     /// Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
     pub fn suggest_tags(&self, prefix: String, limit: u32) -> Vec<String> {
         self.current_index().suggest_tags(&prefix, limit as usize)
