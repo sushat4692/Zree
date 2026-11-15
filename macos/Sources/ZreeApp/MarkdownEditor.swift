@@ -1,4 +1,5 @@
 import AppKit
+import ZreeCore
 import SwiftUI
 
 /// Plain NSTextView: the most reliable Japanese IME path on macOS,
@@ -168,28 +169,94 @@ struct MarkdownEditor: NSViewRepresentable {
         @MainActor
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            scheduleRestyle(textView)
+            handleCaretMove(textView)
+        }
+
+        /// Last block signature applied per line, so we only restyle when the kind changes.
+        private var lineKinds: [Int: String] = [:]
+        private var activeLineRange: NSRange?
+
+        @MainActor
+        private func kindSignature(_ textView: NSTextView, lineRange: NSRange) -> String {
+            let ns = textView.string as NSString
+            guard lineRange.location + lineRange.length <= ns.length else { return "blank" }
+            let block = ZreeCore.lineBlock(line: ns.substring(with: lineRange))
+            switch block {
+            case .heading(let level, _, _): return "h\(level)"
+            case .listItem: return "list"
+            case .quote: return "quote"
+            case .code: return "code"
+            case .rule: return "rule"
+            case .blank: return "blank"
+            default: return "para"
+            }
         }
 
         @MainActor
-        private func scheduleRestyle(_ textView: NSTextView) {
-            restyleTask?.cancel()
-            let work = DispatchWorkItem { [weak self, weak textView] in
-                guard let self, let textView, let app = self.app else { return }
-                let edited = self.pendingEditRange ?? NSRange(location: textView.selectedRange().location, length: 0)
-                self.pendingEditRange = nil
-                EditorStyling.restyleChangedLines(
+        private func lineRange(at location: Int, in textView: NSTextView) -> NSRange {
+            let ns = textView.string as NSString
+            let clamped = max(0, min(location, ns.length))
+            return ns.lineRange(for: NSRange(location: clamped, length: 0))
+        }
+
+        /// Typing must continue in the font the caret currently sits in.
+        @MainActor
+        private func refreshTypingAttributes(_ textView: NSTextView) {
+            let range = lineRange(at: textView.selectedRange().location, in: textView)
+            let line = (textView.string as NSString).substring(with: range)
+            let style = EditorStyling.styleOfLine(line, baseFont: parent.font)
+            textView.typingAttributes = EditorStyling.typingAttributes(
+                for: style,
+                baseFont: parent.font,
+                baseColor: ZreePalette.editorText,
+                lineHeight: parent.lineHeight
+            )
+            activeLineRange = range
+        }
+
+        /// After an edit: only react when the line's block kind actually changed.
+        @MainActor
+        private func handleEdit(_ textView: NSTextView) {
+            let edited = pendingEditRange ?? textView.selectedRange()
+            pendingEditRange = nil
+
+            let range = lineRange(at: edited.location, in: textView)
+            let signature = kindSignature(textView, lineRange: range)
+            let index = range.location
+
+            if lineKinds[index] != signature {
+                lineKinds[index] = signature
+                EditorStyling.restyleLine(
                     textView,
-                    app: app,
-                    editedRange: edited,
-                    baseFont: self.parent.font,
+                    lineRange: range,
+                    baseFont: parent.font,
                     baseColor: ZreePalette.editorText,
-                    lineHeight: self.parent.lineHeight,
+                    lineHeight: parent.lineHeight,
                     mutedColor: .tertiaryLabelColor
                 )
             }
-            restyleTask = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.03, execute: work)
+            refreshTypingAttributes(textView)
+        }
+
+        /// Leaving a line is the moment to render its inline styling.
+        @MainActor
+        private func handleCaretMove(_ textView: NSTextView) {
+            let newRange = lineRange(at: textView.selectedRange().location, in: textView)
+
+            if let old = activeLineRange, old != newRange {
+                let ns = textView.string as NSString
+                if old.location + old.length <= ns.length {
+                    EditorStyling.restyleLine(
+                        textView,
+                        lineRange: old,
+                        baseFont: parent.font,
+                        baseColor: ZreePalette.editorText,
+                        lineHeight: parent.lineHeight,
+                        mutedColor: .tertiaryLabelColor
+                    )
+                }
+            }
+            refreshTypingAttributes(textView)
         }
 
         var pendingEditRange: NSRange?
@@ -198,6 +265,7 @@ struct MarkdownEditor: NSViewRepresentable {
         @MainActor
         func restyleWholeDocument(_ textView: NSTextView) {
             guard let app else { return }
+            lineKinds.removeAll()
             EditorStyling.restyle(
                 textView,
                 app: app,
@@ -207,9 +275,8 @@ struct MarkdownEditor: NSViewRepresentable {
                 lineHeight: parent.lineHeight,
                 mutedColor: .tertiaryLabelColor
             )
+            refreshTypingAttributes(textView)
         }
-
-        var restyleTask: DispatchWorkItem?
 
         @MainActor
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {

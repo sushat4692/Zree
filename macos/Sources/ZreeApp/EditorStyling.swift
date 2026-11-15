@@ -100,6 +100,41 @@ enum EditorStyling {
     /// re-classifies the edited line (via the core's single-line parser) and rewrites
     /// attributes for that line alone. A fence line falls back to a full restyle,
     /// because it changes how every following line is classified.
+    /// Restyle exactly one line (block kind changed, or the caret just left it).
+    @MainActor
+    static func restyleLine(
+        _ textView: NSTextView,
+        lineRange: NSRange,
+        baseFont: NSFont,
+        baseColor: NSColor,
+        lineHeight: Double,
+        mutedColor: NSColor
+    ) {
+        guard let storage = textView.textStorage, lineRange.location + lineRange.length <= storage.length else { return }
+        if textView.hasMarkedText() { return }
+
+        let text = storage.string as NSString
+        let line = text.substring(with: lineRange)
+        let style = styleOfLine(line, baseFont: baseFont)
+
+        textView.undoManager?.disableUndoRegistration()
+        storage.beginEditing()
+        storage.setAttributes(baseline(baseFont, baseColor, lineHeight), range: lineRange)
+        if lineRange.length > 0 {
+            applyLine(
+                storage,
+                lineRange: lineRange,
+                line: line,
+                style: style,
+                baseFont: baseFont,
+                baseColor: baseColor,
+                mutedColor: mutedColor
+            )
+        }
+        storage.endEditing()
+        textView.undoManager?.enableUndoRegistration()
+    }
+
     @MainActor
     static func restyleChangedLines(
         _ textView: NSTextView,
@@ -163,6 +198,24 @@ enum EditorStyling {
         textView.undoManager?.enableUndoRegistration()
     }
 
+    /// Style for one line, computed on demand (single-line parse).
+    @MainActor
+    static func styleOfLine(_ line: String, baseFont: NSFont) -> Style? {
+        let block = ZreeCore.lineBlock(line: line)
+        if case .blank = block { return nil }
+        return style(for: block, baseFont: baseFont)?.style
+    }
+
+    /// Attributes new characters should take, so typing never changes size or weight.
+    static func typingAttributes(for style: Style?, baseFont: NSFont, baseColor: NSColor, lineHeight: Double) -> [NSAttributedString.Key: Any] {
+        var attributes = baseline(baseFont, baseColor, lineHeight)
+        if let style, !style.isRule {
+            attributes[.font] = style.font
+            attributes[.foregroundColor] = style.color == baseColor ? baseColor : style.color
+        }
+        return attributes
+    }
+
     private static func baseline(_ font: NSFont, _ color: NSColor, _ lineHeight: Double) -> [NSAttributedString.Key: Any] {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineHeightMultiple = max(0.8, lineHeight)
@@ -219,8 +272,7 @@ enum EditorStyling {
                     ?? NSFont.systemFont(ofSize: baseFont.pointSize * scale),
                 toHaveTrait: .boldFontMask
             )
-            let color: NSColor = level <= 2 ? ZreePalette.headingAccent : .labelColor
-            return (Int(line), Style(font: font, color: color, markerLength: Int(level) + 1))
+            return (Int(line), Style(font: font, color: .labelColor, markerLength: Int(level) + 1))
 
         case let .listItem(_, _, _, text, line):
             let marker = text.isEmpty ? 1 : 2   // "- " / "1. " — the muted part

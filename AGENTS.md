@@ -107,11 +107,18 @@ cargo run --release --example probe -- /path/to/vault
 
 ## Editor rendering (macOS)
 
-The editor renders Markdown in place: headings are larger and bold, list/quote markers
-muted, inline bold/italic/strike/code styled, `---` drawn as a rule by a custom
-NSLayoutManager. **Styling never depends on the caret position** — a heading is the same
-size whether or not the caret is on it; otherwise the document reflows while typing.
-Markers are never hidden. Only attributes change, so undo/IME/caret are unaffected.
+The editor renders Markdown in place: headings larger and bold, list/quote markers muted,
+inline bold/italic/strike/code styled, `---` drawn as a rule by a custom NSLayoutManager.
+Markers are never hidden and only attributes change (undo/IME/caret unaffected).
+
+Parsing is done once per document, then only when it can change the result:
+
+- typing does **not** re-parse; `typingAttributes` follow the line's style, so characters
+  appear at the size they will keep (no "types small, snaps big" effect)
+- the edited line is re-classified only when its block kind changes (`# ` typed, list
+  marker added, fence opened) — a single-line parse in the core
+- a line is restyled when the caret leaves it, which is when inline styling appears
+- a fence line falls back to a full restyle, since it reclassifies the lines below
 
 ## Known follow-ups
 
