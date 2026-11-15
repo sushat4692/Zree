@@ -585,27 +585,36 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
     }
 }
 
-/** Return-key list continuation, decided by the core. */
+/**
+ * Return-key list continuation, decided by the core.
+ *
+ * Works for a newline inserted anywhere, not just at the end of the document:
+ * true for a caret in the middle of a note, which is the common case.
+ */
 private fun applyEditorAssists(old: TextFieldValue, next: TextFieldValue): TextFieldValue {
-    val appendedNewline = next.text.length == old.text.length + 1 &&
-        next.text.startsWith(old.text) &&
-        next.text.endsWith("\n") &&
-        next.selection.start == next.text.length
-    if (!appendedNewline) return next
+    val caret = old.selection.start.coerceIn(0, old.text.length)
+    val insertedNewline = next.text.length == old.text.length + 1 &&
+        next.text == old.text.substring(0, caret) + "\n" + old.text.substring(caret)
+    if (!insertedNewline) return next
 
-    val lineStart = old.text.lastIndexOf('\n') + 1
-    val line = old.text.substring(lineStart)
+    val lineStart = old.text.lastIndexOf('\n', startIndex = (caret - 1).coerceAtLeast(0))
+        .let { if (it < 0) 0 else it + 1 }
+    // careful: lastIndexOf with startIndex 0 still matches at 0 only when the char is there
+    val start = if (caret == 0) 0 else lineStart
+    val line = old.text.substring(start, caret)
+
     val action = runCatching { listAction(line) }.getOrNull() ?: return next
 
     return when (action) {
         is ListAction.Continue -> {
-            val text = old.text + "\n" + action.marker
-            TextFieldValue(text, TextRange(text.length))
+            val marker = action.marker
+            val text = old.text.substring(0, caret) + "\n" + marker + old.text.substring(caret)
+            TextFieldValue(text, TextRange(caret + 1 + marker.length))
         }
         is ListAction.Remove -> {
             // empty item: drop the marker instead of continuing the list
-            val text = old.text.substring(0, lineStart)
-            TextFieldValue(text, TextRange(text.length))
+            val text = old.text.substring(0, start) + old.text.substring(caret)
+            TextFieldValue(text, TextRange(start))
         }
         else -> next
     }

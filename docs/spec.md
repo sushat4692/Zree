@@ -94,7 +94,7 @@ Clicking a link navigates to that note (the UI intercepts it as `zree://note?id=
 
 Decided in the core (`complete.rs`), wired by each UI.
 
-**Return at the end of a line** (`list_action`):
+**Return** (`list_action`), for a caret anywhere in the document:
 
 | Line | Result |
 |---|---|
@@ -102,7 +102,7 @@ Decided in the core (`complete.rs`), wired by each UI.
 | `- [x] text` | continue with `- [ ] ` |
 | `2. text` | continue with `3. ` |
 | `> text` | continue with `> ` |
-| `- ` (empty item) | remove the marker instead of continuing |
+| `- ` (empty item) | remove the marker, leaving an empty line (Obsidian behaviour) |
 | anything else | no assist |
 
 **Completion** (`completion_context` + `suggest_tags` / `suggest_notes`):
