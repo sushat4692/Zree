@@ -21,6 +21,9 @@ struct PreviewView: View {
             .textSelection(.enabled)
         }
         .background(Color(nsColor: .textBackgroundColor))
+        .environment(\.openURL, OpenURLAction { url in
+            app.openNoteLink(url) ? .handled : .systemAction
+        })
     }
 
     @ViewBuilder

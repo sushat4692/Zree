@@ -193,3 +193,35 @@ fn list_items_capture_indent_and_checkboxes() {
 fn normalize_is_idempotent_for_mixed_width() {
     assert_eq!(search::normalize("ＡＢＣ　ｄｅｆ"), search::normalize("abc def"));
 }
+
+#[test]
+fn resolves_markdown_links_in_every_notation() {
+    let (_dir, vault) = fixture();
+    let wide = "ワンネス メンタリング 230502.md";
+
+    // percent-encoded (spaces)
+    assert_eq!(
+        vault.resolve_link("1on1導入講座 240404.md", "ワンネス%20メンタリング%20230502.md").as_deref(),
+        Some(wide)
+    );
+    // raw, unencoded
+    assert_eq!(
+        vault.resolve_link("sub/メモ.md", "../ワンネス メンタリング 230502.md").as_deref(),
+        Some(wide)
+    );
+    // same directory, no extension
+    assert_eq!(vault.resolve_link("sub/メモ.md", "メモ").as_deref(), Some("sub/メモ.md"));
+    // anchor / query are ignored
+    assert_eq!(vault.resolve_link("sub/メモ.md", "メモ.md#課題").as_deref(), Some("sub/メモ.md"));
+    // vault-absolute
+    assert_eq!(vault.resolve_link("sub/メモ.md", "/sub/メモ.md").as_deref(), Some("sub/メモ.md"));
+    // fully percent-encoded japanese
+    assert_eq!(
+        vault.resolve_link("sub/メモ.md", "%E3%83%A1%E3%83%A2.md").as_deref(),
+        Some("sub/メモ.md")
+    );
+    // external links and misses
+    assert_eq!(vault.resolve_link("sub/メモ.md", "https://example.com/x.md"), None);
+    assert_eq!(vault.resolve_link("sub/メモ.md", "存在しない.md"), None);
+    assert_eq!(vault.resolve_link("sub/メモ.md", "#見出しだけ"), None);
+}

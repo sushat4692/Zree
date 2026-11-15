@@ -652,6 +652,11 @@ public protocol ZreeSessionProtocol: AnyObject, Sendable {
      */
     func resolveAsset(id: String, src: String) throws  -> String
     
+    /**
+     * Resolve a Markdown link to a note id in this vault (None if external/missing).
+     */
+    func resolveLink(id: String, href: String)  -> String?
+    
     func root()  -> String
     
     func search(query: String, tags: [String], limit: UInt32)  -> [Hit]
@@ -842,6 +847,20 @@ open func resolveAsset(id: String, src: String)throws  -> String  {
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),
         FfiConverterString.lower(src),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Resolve a Markdown link to a note id in this vault (None if external/missing).
+     */
+open func resolveLink(id: String, href: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_zreesession_resolve_link(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(id),
+        FfiConverterString.lower(href),uniffiCallStatus
     )
 })
 }
@@ -1763,6 +1782,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_resolve_asset() != 902) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_zreesession_resolve_link() != 42995) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_root() != 44698) {

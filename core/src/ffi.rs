@@ -133,6 +133,11 @@ impl ZreeSession {
         Err(NoteError::NotFound(src))
     }
 
+    /// Resolve a Markdown link to a note id in this vault (None if external/missing).
+    pub fn resolve_link(&self, id: String, href: String) -> Option<String> {
+        self.vault.resolve_link(&id, &href)
+    }
+
     /// Force a reindex (after a git pull, or when files changed outside the app).
     pub fn reindex(&self) -> Result<(), NoteError> {
         let rebuilt = Index::build(&self.vault)?;

@@ -9,6 +9,8 @@
 - **Git-synced Tree** — Gitのツリー構造に乗せる。バージョン管理とデバイス間同期
 - **Self-organizing** — 書くことに集中。自動タグ付けが思考を木構造へ編む（将来）
 
+繋がり方は **タグが主、標準Markdownリンクが従**。`[[wikilink]]` は使わない。
+
 識別子: `im.sush.zree`
 
 ## 構成
@@ -54,6 +56,7 @@ open build/Zree.app
 - [x] コア: Vault IO / 検索 / タグ / Markdown
 - [x] uniffi バインディング（Swift、Kotlinは生成可能）
 - [x] macOS: 一覧・検索・タグ絞り込み・編集・自動保存・プレビュー
+- [x] ノート間リンク（標準Markdown `[表示名](ノート.md)` をクリックで遷移）
 - [ ] Git同期（libgit2）＋衝突UI
 - [ ] Android
 

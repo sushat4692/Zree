@@ -308,6 +308,11 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_rename(uint64_t ptr, RustBuffe
 RustBuffer uniffi_zree_core_fn_method_zreesession_resolve_asset(uint64_t ptr, RustBuffer id, RustBuffer src, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_RESOLVE_LINK
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_RESOLVE_LINK
+RustBuffer uniffi_zree_core_fn_method_zreesession_resolve_link(uint64_t ptr, RustBuffer id, RustBuffer href, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_ROOT
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_ROOT
 RustBuffer uniffi_zree_core_fn_method_zreesession_root(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -650,6 +655,12 @@ uint16_t uniffi_zree_core_checksum_method_zreesession_rename(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_RESOLVE_ASSET
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_RESOLVE_ASSET
 uint16_t uniffi_zree_core_checksum_method_zreesession_resolve_asset(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_RESOLVE_LINK
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_RESOLVE_LINK
+uint16_t uniffi_zree_core_checksum_method_zreesession_resolve_link(void
     
 );
 #endif

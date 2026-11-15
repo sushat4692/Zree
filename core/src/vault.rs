@@ -172,6 +172,52 @@ impl Vault {
         self.meta_for(&to)
     }
 
+    /// Resolve a Markdown link href to a note id in this vault.
+    ///
+    /// Accepts relative paths, vault-absolute paths, percent-encoded or raw
+    /// file names, with or without the `.md` extension. Anchors (`#h`) and
+    /// queries are ignored. External links return None.
+    pub fn resolve_link(&self, note_id: &str, href: &str) -> Option<String> {
+        let href = href.trim();
+        if href.is_empty() || href.starts_with('#') {
+            return None;
+        }
+        let lower = href.to_ascii_lowercase();
+        if lower.starts_with("http://")
+            || lower.starts_with("https://")
+            || lower.starts_with("mailto:")
+            || lower.starts_with("zree:")
+        {
+            return None;
+        }
+        let path_part = href.split('#').next().unwrap_or("").split('?').next().unwrap_or("");
+        let decoded = percent_decode(path_part);
+        let decoded = decoded.trim();
+        if decoded.is_empty() {
+            return None;
+        }
+
+        let base = self.path_of(note_id).ok().and_then(|p| p.parent().map(|d| d.to_path_buf()))?;
+        let joined = if let Some(abs) = decoded.strip_prefix('/') {
+            self.root.join(abs)
+        } else {
+            base.join(decoded)
+        };
+
+        let mut candidates = vec![normalize_components(&joined)];
+        if joined.extension().is_none() {
+            let mut with_ext = joined.clone();
+            with_ext.set_extension("md");
+            candidates.push(normalize_components(&with_ext));
+        }
+        for candidate in candidates {
+            if candidate.is_file() && candidate.starts_with(&self.root) {
+                return Some(self.relative_id(&candidate));
+            }
+        }
+        None
+    }
+
     /// Move a note into `.trash/` instead of deleting it.
     pub fn trash(&self, id: &str) -> Result<String, NoteError> {
         let from = self.path_of(id)?;
@@ -190,6 +236,26 @@ impl Vault {
         fs::rename(&from, &candidate)?;
         Ok(self.relative_id(&candidate))
     }
+}
+
+/// Minimal percent-decoding (UTF-8 aware) so `%20` and `%E3%83%A1` work.
+fn percent_decode(input: &str) -> String {
+    let bytes = input.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).ok();
+            if let Some(byte) = hex.and_then(|h| u8::from_str_radix(h, 16).ok()) {
+                out.push(byte);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).to_string()
 }
 
 fn file_stem(path: &Path) -> String {

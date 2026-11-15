@@ -305,13 +305,36 @@ final class AppState {
                 out.append(a)
             case .link(let label, let url):
                 var a = AttributedString(label)
-                a.link = URL(string: url)
+                a.link = noteLink(for: url) ?? URL(string: url)
                 out.append(a)
             case .image(let src, let alt):
                 out.append(AttributedString(alt.isEmpty ? "[画像: \(src)]" : alt))
             }
         }
         return out
+    }
+
+    /// In-app link to another note, using a `zree://note?id=` URL so the
+    /// preview can intercept it instead of handing it to the browser.
+    func noteLink(for href: String) -> URL? {
+        guard let session, let id = selectedID else { return nil }
+        guard let target = session.resolveLink(id: id, href: href) else { return nil }
+        var components = URLComponents()
+        components.scheme = "zree"
+        components.host = "note"
+        components.queryItems = [URLQueryItem(name: "id", value: target)]
+        return components.url
+    }
+
+    /// Returns true when the URL pointed at a note in this vault.
+    @discardableResult
+    func openNoteLink(_ url: URL) -> Bool {
+        guard url.scheme == "zree",
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let target = components.queryItems?.first(where: { $0.name == "id" })?.value
+        else { return false }
+        select(target)
+        return true
     }
 
     func imageURL(for src: String) -> URL? {
