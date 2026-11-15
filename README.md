@@ -66,6 +66,9 @@ background; macOS has no splash by convention.
 | ⇧⌘R | Reindex (e.g. after pulling) |
 | ⇧⌘F | Reveal in Finder |
 
+Typing `#` offers tag candidates; Return continues list items, checkboxes and quotes.
+The rules live in the core, so Android behaves identically.
+
 ## Git sync
 
 - The vault **is** the repository (`.git` lives next to the notes).

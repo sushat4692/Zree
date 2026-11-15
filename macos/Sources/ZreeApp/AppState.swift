@@ -625,6 +625,20 @@ final class AppState {
         }
     }
 
+    // MARK: - Editor assists
+
+    func listAction(_ line: String) -> ListAction {
+        ZreeCore.listAction(line: line)
+    }
+
+    func completionContext(_ beforeCursor: String) -> CompletionContext? {
+        ZreeCore.completionContext(beforeCursor: beforeCursor)
+    }
+
+    func suggestTags(_ prefix: String, limit: UInt32 = 8) -> [String] {
+        session?.suggestTags(prefix: prefix, limit: limit) ?? []
+    }
+
     // MARK: - Preview helpers
 
     func blocks(of text: String) -> [Block] {

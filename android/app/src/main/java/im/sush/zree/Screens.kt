@@ -21,6 +21,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import uniffi.zree_core.CompletionKind
+import uniffi.zree_core.ListAction
+import uniffi.zree_core.completionContext
+import uniffi.zree_core.listAction
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -33,6 +39,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -346,22 +353,7 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
                 onLink = vm::openLink,
             )
         } else {
-            // The editor itself: a plain text field, so the platform IME handles
-            // Japanese input exactly as it does in any other Android app.
-            BasicTextField(
-                value = state.draft,
-                onValueChange = vm::setDraft,
-                textStyle = TextStyle(
-                    fontSize = 15.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurface,
-                ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-            )
+            MarkdownField(vm, state)
         }
     }
 }
@@ -506,5 +498,115 @@ fun ConflictsScreen(vm: ZreeViewModel, state: UiState) {
                 Button(onClick = vm::finishMerge, enabled = !state.busy) { Text("マージ確定") }
             }
         }
+    }
+}
+
+/**
+ * The editor itself: a plain text field, so the platform IME handles Japanese
+ * input exactly as it does in any other Android app, plus the two assists whose
+ * decisions live in the Rust core (list continuation, tag completion).
+ */
+@Composable
+private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
+    var value by remember(state.selectedId) {
+        mutableStateOf(TextFieldValue(state.draft, TextRange(state.draft.length)))
+    }
+    var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    fun updateSuggestions(text: String, cursor: Int) {
+        val before = text.substring(0, cursor.coerceIn(0, text.length))
+        val ctx = runCatching { completionContext(before) }.getOrNull()
+        val list = when {
+            ctx == null -> emptyList()
+            ctx.kind == CompletionKind.TAG -> vm.suggestTags(ctx.prefix)
+            else -> emptyList()
+        }
+        suggestions = list
+    }
+
+    fun applySuggestion(tag: String) {
+        val cursor = value.selection.start.coerceIn(0, value.text.length)
+        val before = value.text.substring(0, cursor)
+        val ctx = runCatching { completionContext(before) }.getOrNull() ?: return
+        val start = cursor - ctx.prefix.length
+        val newText = value.text.substring(0, start) + tag + value.text.substring(cursor)
+        val next = TextFieldValue(newText, TextRange(start + tag.length))
+        value = next
+        vm.setDraft(newText)
+        suggestions = emptyList()
+    }
+
+    LaunchedEffect(state.selectedId) {
+        // keep the field in sync when the note changes underneath us
+        if (value.text != state.draft) {
+            value = TextFieldValue(state.draft, TextRange(state.draft.length))
+        }
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        if (suggestions.isNotEmpty()) {
+            LazyRow(
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                items(suggestions, key = { it }) { tag ->
+                    Text(
+                        "#$tag",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
+                            .clickable { applySuggestion(tag) }
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                    )
+                }
+            }
+        }
+
+        BasicTextField(
+            value = value,
+            onValueChange = { next ->
+                val assisted = applyEditorAssists(value, next)
+                value = assisted
+                vm.setDraft(assisted.text)
+                updateSuggestions(assisted.text, assisted.selection.start)
+            },
+            textStyle = TextStyle(
+                fontSize = 15.sp,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurface,
+            ),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        )
+    }
+}
+
+/** Return-key list continuation, decided by the core. */
+private fun applyEditorAssists(old: TextFieldValue, next: TextFieldValue): TextFieldValue {
+    val appendedNewline = next.text.length == old.text.length + 1 &&
+        next.text.startsWith(old.text) &&
+        next.text.endsWith("\n") &&
+        next.selection.start == next.text.length
+    if (!appendedNewline) return next
+
+    val lineStart = old.text.lastIndexOf('\n') + 1
+    val line = old.text.substring(lineStart)
+    val action = runCatching { listAction(line) }.getOrNull() ?: return next
+
+    return when (action) {
+        is ListAction.Continue -> {
+            val text = old.text + "\n" + action.marker
+            TextFieldValue(text, TextRange(text.length))
+        }
+        is ListAction.Remove -> {
+            // empty item: drop the marker instead of continuing the list
+            val text = old.text.substring(0, lineStart)
+            TextFieldValue(text, TextRange(text.length))
+        }
+        else -> next
     }
 }

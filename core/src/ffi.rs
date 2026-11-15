@@ -91,6 +91,16 @@ impl ZreeSession {
         index.search(&query, &tags, limit as usize)
     }
 
+    /// Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+    pub fn suggest_tags(&self, prefix: String, limit: u32) -> Vec<String> {
+        self.current_index().suggest_tags(&prefix, limit as usize)
+    }
+
+    /// Note candidates for the given prefix (no `[`), newest first.
+    pub fn suggest_notes(&self, prefix: String, limit: u32) -> Vec<crate::complete::NoteSuggestion> {
+        self.current_index().suggest_notes(&prefix, limit as usize)
+    }
+
     pub fn tags(&self) -> Vec<TagCount> {
         self.current_index().tags()
     }
@@ -166,6 +176,18 @@ impl ZreeSession {
 }
 
 pub use crate::git::SyncReport;
+
+/// Marker continuation when Return is pressed at the end of `line`.
+#[uniffi::export]
+pub fn list_action(line: String) -> crate::complete::ListAction {
+    crate::complete::list_action(&line)
+}
+
+/// Whether the text before the caret sits in something completable.
+#[uniffi::export]
+pub fn completion_context(before_cursor: String) -> Option<crate::complete::CompletionContext> {
+    crate::complete::completion_context(&before_cursor)
+}
 
 /// Point libgit2's TLS backend at a PEM bundle.
 ///

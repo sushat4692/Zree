@@ -675,7 +675,11 @@ internal object IntegrityCheckingUniffiLib {
     }
 
     internal fun ensureInitialized() = Unit
+    external fun uniffi_zree_core_checksum_func_completion_context(
+    ): Int
     external fun uniffi_zree_core_checksum_func_is_git_repo(
+    ): Int
+    external fun uniffi_zree_core_checksum_func_list_action(
     ): Int
     external fun uniffi_zree_core_checksum_func_set_git_ca_bundle(
     ): Int
@@ -730,6 +734,10 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_zree_core_checksum_method_zreesession_root(
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_search(
+    ): Int
+    external fun uniffi_zree_core_checksum_method_zreesession_suggest_notes(
+    ): Int
+    external fun uniffi_zree_core_checksum_method_zreesession_suggest_tags(
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_tags(
     ): Int
@@ -833,14 +841,22 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_search(`ptr`: Long,`query`: RustBuffer.ByValue,`tags`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_zree_core_fn_method_zreesession_suggest_notes(`ptr`: Long,`prefix`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_zree_core_fn_method_zreesession_suggest_tags(`ptr`: Long,`prefix`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_tags(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_trash(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_write(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`seenMtimeMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_zree_core_fn_func_completion_context(`beforeCursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_is_git_repo(`root`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
+    external fun uniffi_zree_core_fn_func_list_action(`line`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_set_git_ca_bundle(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
     external fun ffi_zree_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -962,7 +978,13 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
+    if ((lib.uniffi_zree_core_checksum_func_completion_context() and 0xFFFF) != 57142) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_zree_core_checksum_func_is_git_repo() and 0xFFFF) != 9204) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_func_list_action() and 0xFFFF) != 23922) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_func_set_git_ca_bundle() and 0xFFFF) != 19378) {
@@ -1004,7 +1026,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_method_gitrepo_status() and 0xFFFF) != 33761) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_zree_core_checksum_method_gitrepo_sync() and 0xFFFF) != 28853) {
+    if ((lib.uniffi_zree_core_checksum_method_gitrepo_sync() and 0xFFFF) != 48534) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_blocks() and 0xFFFF) != 2554) {
@@ -1044,6 +1066,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_search() and 0xFFFF) != 28001) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_suggest_notes() and 0xFFFF) != 29125) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_suggest_tags() and 0xFFFF) != 38199) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_tags() and 0xFFFF) != 56009) {
@@ -2068,6 +2096,16 @@ public interface ZreeSessionInterface {
     
     fun `search`(`query`: kotlin.String, `tags`: List<kotlin.String>, `limit`: kotlin.UInt): List<Hit>
     
+    /**
+     * Note candidates for the given prefix (no `[`), newest first.
+     */
+    fun `suggestNotes`(`prefix`: kotlin.String, `limit`: kotlin.UInt): List<NoteSuggestion>
+    
+    /**
+     * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+     */
+    fun `suggestTags`(`prefix`: kotlin.String, `limit`: kotlin.UInt): List<kotlin.String>
+    
     fun `tags`(): List<TagCount>
     
     fun `trash`(`id`: kotlin.String): kotlin.String
@@ -2391,6 +2429,42 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
     }
     
 
+    
+    /**
+     * Note candidates for the given prefix (no `[`), newest first.
+     */override fun `suggestNotes`(`prefix`: kotlin.String, `limit`: kotlin.UInt): List<NoteSuggestion> {
+            return FfiConverterSequenceTypeNoteSuggestion.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_method_zreesession_suggest_notes(
+        it,
+        
+        FfiConverterString.lower(`prefix`),
+        FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+     */override fun `suggestTags`(`prefix`: kotlin.String, `limit`: kotlin.UInt): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_method_zreesession_suggest_tags(
+        it,
+        
+        FfiConverterString.lower(`prefix`),
+        FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
     override fun `tags`(): List<TagCount> {
             return FfiConverterSequenceTypeTagCount.lift(
     callWithHandle {
@@ -2536,6 +2610,49 @@ public object FfiConverterTypeCommitInfo: FfiConverterRustBuffer<CommitInfo> {
             FfiConverterString.write(value.`summary`, buf)
             FfiConverterString.write(value.`author`, buf)
             FfiConverterLong.write(value.`timeMs`, buf)
+    }
+}
+
+
+
+data class CompletionContext (
+    var `kind`: CompletionKind
+    , 
+    /**
+     * Text typed so far, without the trigger character. The UI replaces
+     * `cursor - prefix.length .. cursor` with the chosen candidate, so no
+     * byte/UTF-16 offset arithmetic is needed across the FFI boundary.
+     */
+    var `prefix`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCompletionContext: FfiConverterRustBuffer<CompletionContext> {
+    override fun read(buf: ByteBuffer): CompletionContext {
+        return CompletionContext(
+            FfiConverterTypeCompletionKind.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CompletionContext) = (
+            FfiConverterTypeCompletionKind.allocationSize(value.`kind`) +
+            FfiConverterString.allocationSize(value.`prefix`)
+    )
+
+    override fun write(value: CompletionContext, buf: ByteBuffer) {
+            FfiConverterTypeCompletionKind.write(value.`kind`, buf)
+            FfiConverterString.write(value.`prefix`, buf)
     }
 }
 
@@ -2734,6 +2851,44 @@ public object FfiConverterTypeNoteMeta: FfiConverterRustBuffer<NoteMeta> {
             FfiConverterLong.write(value.`mtimeMs`, buf)
             FfiConverterULong.write(value.`bytes`, buf)
             FfiConverterSequenceString.write(value.`tags`, buf)
+    }
+}
+
+
+
+data class NoteSuggestion (
+    var `id`: kotlin.String
+    , 
+    var `title`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNoteSuggestion: FfiConverterRustBuffer<NoteSuggestion> {
+    override fun read(buf: ByteBuffer): NoteSuggestion {
+        return NoteSuggestion(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NoteSuggestion) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`title`)
+    )
+
+    override fun write(value: NoteSuggestion, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`title`, buf)
     }
 }
 
@@ -3067,6 +3222,41 @@ public object FfiConverterTypeBlock : FfiConverterRustBuffer<Block>{
 
 
 
+enum class CompletionKind {
+    
+    TAG,
+    NOTE,
+    NOTE_TARGET;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCompletionKind: FfiConverterRustBuffer<CompletionKind> {
+    override fun read(buf: ByteBuffer) = try {
+        CompletionKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CompletionKind) = 4UL
+
+    override fun write(value: CompletionKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
 enum class ConflictChoice {
     
     MINE,
@@ -3302,6 +3492,115 @@ public object FfiConverterTypeInline : FfiConverterRustBuffer<Inline>{
                 buf.putInt(7)
                 FfiConverterString.write(value.`text`, buf)
                 FfiConverterString.write(value.`url`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * What to do when the user presses Return at the end of `line`.
+ */
+sealed class ListAction {
+    
+    /**
+     * Insert a new list marker after the newline.
+     */
+    data class Continue(
+        val `marker`: kotlin.String) : ListAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The current item is empty: drop the marker instead of continuing.
+     */
+    data class Remove(
+        val `indent`: kotlin.UInt) : ListAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Not a list item.
+     */
+    object None : ListAction()
+    
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeListAction : FfiConverterRustBuffer<ListAction>{
+    override fun read(buf: ByteBuffer): ListAction {
+        return when(buf.getInt()) {
+            1 -> ListAction.Continue(
+                FfiConverterString.read(buf),
+                )
+            2 -> ListAction.Remove(
+                FfiConverterUInt.read(buf),
+                )
+            3 -> ListAction.None
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: ListAction): ULong = when(value) {
+        is ListAction.Continue -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`marker`)
+            )
+        }
+        is ListAction.Remove -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`indent`)
+            )
+        }
+        is ListAction.None -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: ListAction, buf: ByteBuffer) {
+        when(value) {
+            is ListAction.Continue -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`marker`, buf)
+                Unit
+            }
+            is ListAction.Remove -> {
+                buf.putInt(2)
+                FfiConverterUInt.write(value.`indent`, buf)
+                Unit
+            }
+            is ListAction.None -> {
+                buf.putInt(3)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -3568,6 +3867,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeCompletionContext: FfiConverterRustBuffer<CompletionContext?> {
+    override fun read(buf: ByteBuffer): CompletionContext? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeCompletionContext.read(buf)
+    }
+
+    override fun allocationSize(value: CompletionContext?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeCompletionContext.allocationSize(value)
+        }
+    }
+
+    override fun write(value: CompletionContext?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeCompletionContext.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
@@ -3680,6 +4011,34 @@ public object FfiConverterSequenceTypeNoteMeta: FfiConverterRustBuffer<List<Note
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeNoteSuggestion: FfiConverterRustBuffer<List<NoteSuggestion>> {
+    override fun read(buf: ByteBuffer): List<NoteSuggestion> {
+        val len = buf.getInt()
+        return List<NoteSuggestion>(len) {
+            FfiConverterTypeNoteSuggestion.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<NoteSuggestion>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeNoteSuggestion.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<NoteSuggestion>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeNoteSuggestion.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeTagCount: FfiConverterRustBuffer<List<TagCount>> {
     override fun read(buf: ByteBuffer): List<TagCount> {
         val len = buf.getInt()
@@ -3758,6 +4117,20 @@ public object FfiConverterSequenceTypeInline: FfiConverterRustBuffer<List<Inline
     }
 }
         /**
+         * Whether the text before the caret sits in something completable.
+         */ fun `completionContext`(`beforeCursor`: kotlin.String): CompletionContext? {
+            return FfiConverterOptionalTypeCompletionContext.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_func_completion_context(
+    
+        
+        FfiConverterString.lower(`beforeCursor`),_status)
+}
+    )
+    }
+    
+
+        /**
          * True when the folder is a Git working copy.
          */ fun `isGitRepo`(`root`: kotlin.String): kotlin.Boolean {
             return FfiConverterBoolean.lift(
@@ -3766,6 +4139,20 @@ public object FfiConverterSequenceTypeInline: FfiConverterRustBuffer<List<Inline
     
         
         FfiConverterString.lower(`root`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Marker continuation when Return is pressed at the end of `line`.
+         */ fun `listAction`(`line`: kotlin.String): ListAction {
+            return FfiConverterTypeListAction.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_zree_core_fn_func_list_action(
+    
+        
+        FfiConverterString.lower(`line`),_status)
 }
     )
     }

@@ -27,6 +27,7 @@ fn fixture() -> (tempfile::TempDir, Vault) {
     .unwrap();
 
     fs::write(root.join("sub/メモ.md"), "今日の記事を書いた。\n").unwrap();
+    fs::write(root.join("リンク元.md"), "#リンク\n[相手](sub/メモ.md)\n").unwrap();
 
     let vault = Vault::open(root).unwrap();
     (dir, vault)
@@ -37,7 +38,7 @@ fn lists_markdown_only_and_skips_hidden_dirs() {
     let (_dir, vault) = fixture();
     let notes = vault.list().unwrap();
     let ids: Vec<&str> = notes.iter().map(|n| n.id.as_str()).collect();
-    assert_eq!(notes.len(), 3, "got {ids:?}");
+    assert_eq!(notes.len(), 4, "got {ids:?}");
     assert!(ids.contains(&"sub/メモ.md"));
     assert!(!ids.iter().any(|i| i.contains("workspace.json")));
     assert!(!ids.iter().any(|i| i.starts_with("assets/")));
@@ -152,7 +153,7 @@ fn tag_filter_and_tag_cloud() {
 fn empty_query_lists_everything() {
     let (_dir, vault) = fixture();
     let index = Index::build(&vault).unwrap();
-    assert_eq!(index.search("", &[], 0).len(), 3);
+    assert_eq!(index.search("", &[], 0).len(), 4);
 }
 
 #[test]
@@ -250,4 +251,104 @@ fn inline_markers_consume_the_whole_delimiter() {
         !leftover.contains('*') && !leftover.contains('~') && !leftover.contains('`'),
         "stray markers survived: {leftover:?}"
     );
+}
+
+#[test]
+fn list_continuation_rules() {
+    use zree_core::complete::{list_action, ListAction};
+
+    assert_eq!(
+        list_action("- 買い物"),
+        ListAction::Continue { marker: "- ".into() }
+    );
+    assert_eq!(
+        list_action("  - 入れ子"),
+        ListAction::Continue { marker: "  - ".into() }
+    );
+    assert_eq!(
+        list_action("- [x] 済み"),
+        ListAction::Continue { marker: "- [ ] ".into() }
+    );
+    assert_eq!(
+        list_action("3. 手順"),
+        ListAction::Continue { marker: "4. ".into() }
+    );
+    assert_eq!(
+        list_action("> 引用"),
+        ListAction::Continue { marker: "> ".into() }
+    );
+    // empty items end the list instead of growing it
+    assert_eq!(list_action("- "), ListAction::Remove { indent: 0 });
+    assert_eq!(list_action("  * "), ListAction::Remove { indent: 2 });
+    assert_eq!(list_action("- [ ] "), ListAction::Remove { indent: 0 });
+    // not a list
+    assert_eq!(list_action("普通の段落"), ListAction::None);
+    assert_eq!(list_action("#見出しではない"), ListAction::None);
+}
+
+#[test]
+fn completion_context_detection() {
+    use zree_core::complete::{completion_context, CompletionKind};
+
+    let ctx = completion_context("本文 #お客").unwrap();
+    assert_eq!(ctx.kind, CompletionKind::Tag);
+    assert_eq!(ctx.prefix, "お客");
+
+    // inside a sentence, not at a word boundary
+    assert!(completion_context("a#b").is_none());
+    // a heading is not a tag (the space after # is what separates them)
+    assert!(completion_context("# 見出し").is_none());
+    // fenced code is ignored
+    assert!(completion_context("```\n#お客").is_none());
+    assert!(completion_context("```\ncode\n```\n#お客").is_some());
+
+    let link = completion_context("参考 [お客様").unwrap();
+    assert_eq!(link.kind, CompletionKind::Note);
+    assert_eq!(link.prefix, "お客様");
+
+    let target = completion_context("参考 [x](お客").unwrap();
+    assert_eq!(target.kind, CompletionKind::NoteTarget);
+    assert_eq!(target.prefix, "お客");
+}
+
+#[test]
+fn suggestions_filter_by_prefix_and_ignore_width() {
+    let (_dir, vault) = fixture();
+    let index = Index::build(&vault).unwrap();
+
+    let tags = index.suggest_tags("ワン", 10);
+    assert_eq!(tags, vec!["ワンネス"]);
+
+    // full-width / half-width and case collapse
+    assert_eq!(index.suggest_tags("ｃｕｂ", 10), vec!["CUBLIC様"]);
+
+    let notes = index.suggest_notes("リンク", 10);
+    assert!(notes.iter().any(|n| n.title == "リンク元"));
+}
+
+#[test]
+fn full_width_hash_from_japanese_ime_is_accepted() {
+    use zree_core::complete::{completion_context, CompletionKind};
+
+    // Japanese IMEs turn "\#" into "＃"; both must behave the same
+    assert_eq!(tags::extract("- ＃お客様"), vec!["お客様"]);
+    let ctx = completion_context("- ＃お客").unwrap();
+    assert_eq!(ctx.kind, CompletionKind::Tag);
+    assert_eq!(ctx.prefix, "お客");
+    // full-width space also separates a tag
+    let ctx = completion_context("本文　＃お客").unwrap();
+    assert_eq!(ctx.prefix, "お客");
+}
+
+#[test]
+fn tag_completion_accepts_list_markers_as_boundary() {
+    use zree_core::complete::{completion_context, CompletionKind};
+
+    // an IME can eat the space after "- ", so "-#tag" must still complete
+    let ctx = completion_context("-\u{ff03}").unwrap();
+    assert_eq!(ctx.kind, CompletionKind::Tag);
+    assert_eq!(ctx.prefix, "");
+    assert_eq!(completion_context("- #お客").unwrap().prefix, "お客");
+    // but a word glued to the hash is not a tag
+    assert!(completion_context("ab#cd").is_none());
 }

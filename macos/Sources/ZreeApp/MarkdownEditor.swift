@@ -5,6 +5,7 @@ import SwiftUI
 /// and it stays fast on long notes.
 struct MarkdownEditor: NSViewRepresentable {
     @Binding var text: String
+    @Environment(AppState.self) private var app
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -16,6 +17,7 @@ struct MarkdownEditor: NSViewRepresentable {
         scroll.drawsBackground = true
 
         guard let textView = scroll.documentView as? NSTextView else { return scroll }
+        context.coordinator.app = app
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.allowsUndo = true
@@ -38,6 +40,7 @@ struct MarkdownEditor: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.parent = self
+        context.coordinator.app = app
         guard let textView = scroll.documentView as? NSTextView else { return }
         if textView.string != text {
             let selected = textView.selectedRange()
@@ -48,6 +51,7 @@ struct MarkdownEditor: NSViewRepresentable {
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: MarkdownEditor
+        var app: AppState?
 
         init(_ parent: MarkdownEditor) {
             self.parent = parent
@@ -56,6 +60,39 @@ struct MarkdownEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
+
+            // offer tag candidates right after the user types '#'
+            let ns = textView.string as NSString
+            let caret = textView.selectedRange().location
+            if caret > 0, caret <= ns.length {
+                let previous = ns.substring(with: NSRange(location: caret - 1, length: 1))
+                if previous == "#" || previous == "＃" {
+                    textView.complete(nil)
+                }
+            }
+        }
+
+        @MainActor
+        func textView(
+            _ textView: NSTextView,
+            shouldChangeTextIn affectedCharRange: NSRange,
+            replacementString: String?
+        ) -> Bool {
+            guard replacementString == "\n" else { return true }
+            return !handleReturn(textView, at: affectedCharRange.location)
+        }
+
+        @MainActor
+        func textView(
+            _ textView: NSTextView,
+            completions words: [String],
+            forPartialWordRange charRange: NSRange,
+            indexOfSelectedItem index: UnsafeMutablePointer<Int>?
+        ) -> [String] {
+            let candidates = completions(for: textView, range: charRange)
+            if candidates.isEmpty { return words }
+            index?.pointee = -1
+            return candidates
         }
     }
 }

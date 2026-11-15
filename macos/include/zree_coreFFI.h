@@ -413,6 +413,16 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_root(uint64_t ptr, RustCallSta
 RustBuffer uniffi_zree_core_fn_method_zreesession_search(uint64_t ptr, RustBuffer query, RustBuffer tags, uint32_t limit, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_SUGGEST_NOTES
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_SUGGEST_NOTES
+RustBuffer uniffi_zree_core_fn_method_zreesession_suggest_notes(uint64_t ptr, RustBuffer prefix, uint32_t limit, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_SUGGEST_TAGS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_SUGGEST_TAGS
+RustBuffer uniffi_zree_core_fn_method_zreesession_suggest_tags(uint64_t ptr, RustBuffer prefix, uint32_t limit, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_TAGS
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_TAGS
 RustBuffer uniffi_zree_core_fn_method_zreesession_tags(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -428,9 +438,19 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_trash(uint64_t ptr, RustBuffer
 RustBuffer uniffi_zree_core_fn_method_zreesession_write(uint64_t ptr, RustBuffer id, RustBuffer body, int64_t seen_mtime_ms, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_COMPLETION_CONTEXT
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_COMPLETION_CONTEXT
+RustBuffer uniffi_zree_core_fn_func_completion_context(RustBuffer before_cursor, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_IS_GIT_REPO
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_IS_GIT_REPO
 int8_t uniffi_zree_core_fn_func_is_git_repo(RustBuffer root, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_LIST_ACTION
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_LIST_ACTION
+RustBuffer uniffi_zree_core_fn_func_list_action(RustBuffer line, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_SET_GIT_CA_BUNDLE
@@ -698,9 +718,21 @@ void ffi_zree_core_rust_future_free_void(uint64_t handle
 void ffi_zree_core_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_COMPLETION_CONTEXT
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_COMPLETION_CONTEXT
+uint16_t uniffi_zree_core_checksum_func_completion_context(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_IS_GIT_REPO
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_IS_GIT_REPO
 uint16_t uniffi_zree_core_checksum_func_is_git_repo(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_LIST_ACTION
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_LIST_ACTION
+uint16_t uniffi_zree_core_checksum_func_list_action(void
     
 );
 #endif
@@ -863,6 +895,18 @@ uint16_t uniffi_zree_core_checksum_method_zreesession_root(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SEARCH
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SEARCH
 uint16_t uniffi_zree_core_checksum_method_zreesession_search(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_NOTES
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_NOTES
+uint16_t uniffi_zree_core_checksum_method_zreesession_suggest_notes(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_TAGS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_TAGS
+uint16_t uniffi_zree_core_checksum_method_zreesession_suggest_tags(void
     
 );
 #endif

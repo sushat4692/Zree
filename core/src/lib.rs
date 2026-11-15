@@ -6,6 +6,7 @@
 
 uniffi::setup_scaffolding!();
 
+pub mod complete;
 pub mod error;
 pub mod ffi;
 pub mod git;
@@ -14,6 +15,7 @@ pub mod search;
 pub mod tags;
 pub mod vault;
 
+pub use complete::{completion_context, list_action, CompletionContext, CompletionKind, ListAction, NoteSuggestion};
 pub use error::NoteError;
 pub use markdown::{parse_blocks, parse_inline, Block, Inline};
 pub use search::{Hit, Index, TagCount};

@@ -190,6 +190,11 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         if (_state.value.preview) refreshPreview()
     }
 
+    /** Synchronous: a prefix scan over a few hundred tags is microseconds. */
+    fun suggestTags(prefix: String, limit: Int = 8): List<String> =
+        runCatching { session?.suggestTags(prefix, limit.toUInt()) ?: emptyList() }
+            .getOrDefault(emptyList())
+
     fun togglePreview() {
         val on = !_state.value.preview
         _state.value = _state.value.copy(preview = on)

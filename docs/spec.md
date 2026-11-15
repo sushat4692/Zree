@@ -90,6 +90,34 @@ Resolution rules (`resolve_link`):
 
 Clicking a link navigates to that note (the UI intercepts it as `zree://note?id=<id>`).
 
+## 5b. Editor assists
+
+Decided in the core (`complete.rs`), wired by each UI.
+
+**Return at the end of a line** (`list_action`):
+
+| Line | Result |
+|---|---|
+| `- text` / `* text` / `+ text` | continue with the same marker and indent |
+| `- [x] text` | continue with `- [ ] ` |
+| `2. text` | continue with `3. ` |
+| `> text` | continue with `> ` |
+| `- ` (empty item) | remove the marker instead of continuing |
+| anything else | no assist |
+
+**Completion** (`completion_context` + `suggest_tags` / `suggest_notes`):
+
+- `#pre` or `＃pre` at a word boundary → tag candidates (prefix match on the tag index,
+  NFKC + lowercase, so width and case do not matter)
+- a boundary is: start of line, whitespace (ASCII or full-width), or a list marker /
+  opening punctuation (`- * + > [ ( / 、 。 「 （`). Japanese IMEs swallow the space after
+  `- `, so `-#tag` must still complete
+- `[pre` → note titles, `](pre` → note paths (candidates come from the index)
+- nothing is offered inside a fenced code block
+- the UI replaces `caret - prefix.length .. caret`, so no byte/UTF-16 offsets cross the FFI
+
+Full-width `＃` is also accepted by tag extraction, because Japanese IMEs produce it.
+
 ## 6. Git
 
 - The vault itself is the repository (`.git` next to the notes)

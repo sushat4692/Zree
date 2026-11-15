@@ -50,14 +50,14 @@ pub fn extract(body: &str) -> Vec<String> {
                 continue;
             }
 
-            if c == '#' {
+            if c == '#' || c == '＃' {
                 let at_start = i == 0 || chars[i - 1].is_whitespace();
                 if at_start {
                     let mut j = i + 1;
                     let mut buf = String::new();
                     while j < chars.len() {
                         let ch = chars[j];
-                        if ch.is_whitespace() || ch == '#' || TERMINATORS.contains(&ch) {
+                        if ch.is_whitespace() || ch == '#' || ch == '＃' || TERMINATORS.contains(&ch) {
                             break;
                         }
                         buf.push(ch);

@@ -957,6 +957,16 @@ public protocol ZreeSessionProtocol: AnyObject, Sendable {
     
     func search(query: String, tags: [String], limit: UInt32)  -> [Hit]
     
+    /**
+     * Note candidates for the given prefix (no `[`), newest first.
+     */
+    func suggestNotes(prefix: String, limit: UInt32)  -> [NoteSuggestion]
+    
+    /**
+     * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+     */
+    func suggestTags(prefix: String, limit: UInt32)  -> [String]
+    
     func tags()  -> [TagCount]
     
     func trash(id: String) throws  -> String
@@ -1182,6 +1192,34 @@ open func search(query: String, tags: [String], limit: UInt32) -> [Hit]  {
 })
 }
     
+    /**
+     * Note candidates for the given prefix (no `[`), newest first.
+     */
+open func suggestNotes(prefix: String, limit: UInt32) -> [NoteSuggestion]  {
+    return try!  FfiConverterSequenceTypeNoteSuggestion.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_zreesession_suggest_notes(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(prefix),
+        FfiConverterUInt32.lower(limit),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+     */
+open func suggestTags(prefix: String, limit: UInt32) -> [String]  {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_zreesession_suggest_tags(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(prefix),
+        FfiConverterUInt32.lower(limit),uniffiCallStatus
+    )
+})
+}
+    
 open func tags() -> [TagCount]  {
     return try!  FfiConverterSequenceTypeTagCount.lift(try! rustCall() {
         uniffiCallStatus in
@@ -1323,6 +1361,70 @@ public func FfiConverterTypeCommitInfo_lift(_ buf: RustBuffer) throws -> CommitI
 #endif
 public func FfiConverterTypeCommitInfo_lower(_ value: CommitInfo) -> RustBuffer {
     return FfiConverterTypeCommitInfo.lower(value)
+}
+
+
+public struct CompletionContext: Equatable, Hashable {
+    public var kind: CompletionKind
+    /**
+     * Text typed so far, without the trigger character. The UI replaces
+     * `cursor - prefix.length .. cursor` with the chosen candidate, so no
+     * byte/UTF-16 offset arithmetic is needed across the FFI boundary.
+     */
+    public var prefix: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(kind: CompletionKind, 
+        /**
+         * Text typed so far, without the trigger character. The UI replaces
+         * `cursor - prefix.length .. cursor` with the chosen candidate, so no
+         * byte/UTF-16 offset arithmetic is needed across the FFI boundary.
+         */prefix: String) {
+        self.kind = kind
+        self.prefix = prefix
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension CompletionContext: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCompletionContext: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CompletionContext {
+        return
+            try CompletionContext(
+                kind: FfiConverterTypeCompletionKind.read(from: &buf), 
+                prefix: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CompletionContext, into buf: inout [UInt8]) {
+        FfiConverterTypeCompletionKind.write(value.kind, into: &buf)
+        FfiConverterString.write(value.prefix, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCompletionContext_lift(_ buf: RustBuffer) throws -> CompletionContext {
+    return try FfiConverterTypeCompletionContext.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCompletionContext_lower(_ value: CompletionContext) -> RustBuffer {
+    return FfiConverterTypeCompletionContext.lower(value)
 }
 
 
@@ -1563,6 +1665,60 @@ public func FfiConverterTypeNoteMeta_lift(_ buf: RustBuffer) throws -> NoteMeta 
 #endif
 public func FfiConverterTypeNoteMeta_lower(_ value: NoteMeta) -> RustBuffer {
     return FfiConverterTypeNoteMeta.lower(value)
+}
+
+
+public struct NoteSuggestion: Equatable, Hashable {
+    public var id: String
+    public var title: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, title: String) {
+        self.id = id
+        self.title = title
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension NoteSuggestion: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeNoteSuggestion: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NoteSuggestion {
+        return
+            try NoteSuggestion(
+                id: FfiConverterString.read(from: &buf), 
+                title: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: NoteSuggestion, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterString.write(value.title, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeNoteSuggestion_lift(_ buf: RustBuffer) throws -> NoteSuggestion {
+    return try FfiConverterTypeNoteSuggestion.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeNoteSuggestion_lower(_ value: NoteSuggestion) -> RustBuffer {
+    return FfiConverterTypeNoteSuggestion.lower(value)
 }
 
 
@@ -1814,6 +1970,79 @@ public func FfiConverterTypeBlock_lower(_ value: Block) -> RustBuffer {
 
 
 
+public enum CompletionKind: Equatable, Hashable {
+    
+    case tag
+    case note
+    case noteTarget
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension CompletionKind: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCompletionKind: FfiConverterRustBuffer {
+    typealias SwiftType = CompletionKind
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CompletionKind {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .tag
+        
+        case 2: return .note
+        
+        case 3: return .noteTarget
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: CompletionKind, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .tag:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .note:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .noteTarget:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCompletionKind_lift(_ buf: RustBuffer) throws -> CompletionKind {
+    return try FfiConverterTypeCompletionKind.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCompletionKind_lower(_ value: CompletionKind) -> RustBuffer {
+    return FfiConverterTypeCompletionKind.lower(value)
+}
+
+
+
+
 public enum ConflictChoice: Equatable, Hashable {
     
     case mine
@@ -2006,6 +2235,97 @@ public func FfiConverterTypeInline_lift(_ buf: RustBuffer) throws -> Inline {
 #endif
 public func FfiConverterTypeInline_lower(_ value: Inline) -> RustBuffer {
     return FfiConverterTypeInline.lower(value)
+}
+
+
+
+/**
+ * What to do when the user presses Return at the end of `line`.
+ */
+
+public enum ListAction: Equatable, Hashable {
+    
+    /**
+     * Insert a new list marker after the newline.
+     */
+    case `continue`(marker: String
+    )
+    /**
+     * The current item is empty: drop the marker instead of continuing.
+     */
+    case remove(indent: UInt32
+    )
+    /**
+     * Not a list item.
+     */
+    case none
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension ListAction: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeListAction: FfiConverterRustBuffer {
+    typealias SwiftType = ListAction
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListAction {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .`continue`(marker: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .remove(indent: try FfiConverterUInt32.read(from: &buf)
+        )
+        
+        case 3: return .none
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: ListAction, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .`continue`(marker):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(marker, into: &buf)
+            
+        
+        case let .remove(indent):
+            writeInt(&buf, Int32(2))
+            FfiConverterUInt32.write(indent, into: &buf)
+            
+        
+        case .none:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeListAction_lift(_ buf: RustBuffer) throws -> ListAction {
+    return try FfiConverterTypeListAction.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeListAction_lower(_ value: ListAction) -> RustBuffer {
+    return FfiConverterTypeListAction.lower(value)
 }
 
 
@@ -2261,6 +2581,30 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeCompletionContext: FfiConverterRustBuffer {
+    typealias SwiftType = CompletionContext?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeCompletionContext.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeCompletionContext.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -2361,6 +2705,31 @@ fileprivate struct FfiConverterSequenceTypeNoteMeta: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeNoteSuggestion: FfiConverterRustBuffer {
+    typealias SwiftType = [NoteSuggestion]
+
+    public static func write(_ value: [NoteSuggestion], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeNoteSuggestion.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [NoteSuggestion] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [NoteSuggestion]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeNoteSuggestion.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeTagCount: FfiConverterRustBuffer {
     typealias SwiftType = [TagCount]
 
@@ -2433,6 +2802,17 @@ fileprivate struct FfiConverterSequenceTypeInline: FfiConverterRustBuffer {
     }
 }
 /**
+ * Whether the text before the caret sits in something completable.
+ */
+public func completionContext(beforeCursor: String) -> CompletionContext?  {
+    return try!  FfiConverterOptionTypeCompletionContext.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_completion_context(
+        FfiConverterString.lower(beforeCursor),uniffiCallStatus
+    )
+})
+}
+/**
  * True when the folder is a Git working copy.
  */
 public func isGitRepo(root: String) -> Bool  {
@@ -2440,6 +2820,17 @@ public func isGitRepo(root: String) -> Bool  {
         uniffiCallStatus in
     uniffi_zree_core_fn_func_is_git_repo(
         FfiConverterString.lower(root),uniffiCallStatus
+    )
+})
+}
+/**
+ * Marker continuation when Return is pressed at the end of `line`.
+ */
+public func listAction(line: String) -> ListAction  {
+    return try!  FfiConverterTypeListAction_lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_list_action(
+        FfiConverterString.lower(line),uniffiCallStatus
     )
 })
 }
@@ -2472,7 +2863,13 @@ private let initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
+    if (uniffi_zree_core_checksum_func_completion_context() != 57142) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_zree_core_checksum_func_is_git_repo() != 9204) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_func_list_action() != 23922) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_func_set_git_ca_bundle() != 19378) {
@@ -2554,6 +2951,12 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_search() != 28001) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_zreesession_suggest_notes() != 29125) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_zreesession_suggest_tags() != 38199) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_tags() != 56009) {
