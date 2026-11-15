@@ -44,6 +44,9 @@ public enum EditorStyling {
         public var markerLength: Int = 0
         /// `---` lines are drawn as a divider instead of text.
         public var isRule: Bool = false
+        /// Space above / below the line (headings breathe, body text does not).
+        public var spacingBefore: CGFloat = 0
+        public var spacingAfter: CGFloat = 0
     }
 
     /// Style every line (used when a note is opened or re-read).
@@ -81,7 +84,8 @@ public enum EditorStyling {
                     style: styles[line],
                     baseFont: baseFont,
                     baseColor: baseColor,
-                    mutedColor: mutedColor
+                    mutedColor: mutedColor,
+                    lineHeight: lineHeight
                 )
             }
             if newline.location == NSNotFound { break }
@@ -127,7 +131,8 @@ public enum EditorStyling {
                 style: style,
                 baseFont: baseFont,
                 baseColor: baseColor,
-                mutedColor: mutedColor
+                mutedColor: mutedColor,
+                lineHeight: lineHeight
             )
         }
         storage.endEditing()
@@ -187,7 +192,8 @@ public enum EditorStyling {
                     style: style,
                     baseFont: baseFont,
                     baseColor: baseColor,
-                    mutedColor: mutedColor
+                    mutedColor: mutedColor,
+                    lineHeight: lineHeight
                 )
             }
             cursor = one.location + one.length
@@ -237,9 +243,25 @@ public enum EditorStyling {
     }
 
     private static func baseline(_ font: NSFont, _ color: NSColor, _ lineHeight: Double) -> [NSAttributedString.Key: Any] {
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineHeightMultiple = max(0.8, lineHeight)
+        let paragraph = paragraphStyle(fontSize: font.pointSize, lineHeight: lineHeight)
         return [.font: font, .paragraphStyle: paragraph, .foregroundColor: color]
+    }
+
+    /// Fixed line height instead of `lineHeightMultiple`: the multiple puts the glyphs at
+    /// the bottom of the line box, which made the caret sit visibly above the text.
+    private static func paragraphStyle(
+        fontSize: CGFloat,
+        lineHeight: Double,
+        spacingBefore: CGFloat = 0,
+        spacingAfter: CGFloat = 0
+    ) -> NSMutableParagraphStyle {
+        let paragraph = NSMutableParagraphStyle()
+        let height = fontSize * max(0.9, lineHeight)
+        paragraph.minimumLineHeight = height
+        paragraph.maximumLineHeight = height
+        paragraph.paragraphSpacingBefore = spacingBefore
+        paragraph.paragraphSpacing = spacingAfter
+        return paragraph
     }
 
     private static func applyLine(
@@ -249,7 +271,8 @@ public enum EditorStyling {
         style: Style?,
         baseFont: NSFont,
         baseColor: NSColor,
-        mutedColor: NSColor
+        mutedColor: NSColor,
+        lineHeight: Double
     ) {
         if let style, style.isRule {
             storage.addAttribute(.zreeRule, value: true, range: lineRange)
@@ -259,6 +282,15 @@ public enum EditorStyling {
 
         if let style {
             storage.addAttribute(.font, value: style.font, range: lineRange)
+            if style.spacingBefore > 0 || style.spacingAfter > 0 {
+                let paragraph = paragraphStyle(
+                    fontSize: style.font.pointSize,
+                    lineHeight: lineHeight,
+                    spacingBefore: style.spacingBefore,
+                    spacingAfter: style.spacingAfter
+                )
+                storage.addAttribute(.paragraphStyle, value: paragraph, range: lineRange)
+            }
             if style.markerLength > 0 {
                 let markerLength = min(style.markerLength, lineRange.length)
                 storage.addAttribute(
@@ -287,12 +319,20 @@ public enum EditorStyling {
             case 3: 1.22
             default: 1.1
             }
+            let size = baseFont.pointSize * scale
             let font = NSFontManager.shared.convert(
-                NSFont(descriptor: baseFont.fontDescriptor, size: baseFont.pointSize * scale)
-                    ?? NSFont.systemFont(ofSize: baseFont.pointSize * scale),
+                NSFont(descriptor: baseFont.fontDescriptor, size: size)
+                    ?? NSFont.systemFont(ofSize: size),
                 toHaveTrait: .boldFontMask
             )
-            return (Int(line), Style(font: font, color: .labelColor, markerLength: Int(level) + 1))
+            let factor: CGFloat = level == 1 ? 1.0 : (level == 2 ? 0.75 : 0.55)
+            return (Int(line), Style(
+                font: font,
+                color: .labelColor,
+                markerLength: Int(level) + 1,
+                spacingBefore: size * 0.75 * factor,
+                spacingAfter: size * 0.22 * factor
+            ))
 
         case let .listItem(_, _, _, text, line):
             let marker = text.isEmpty ? 1 : 2   // "- " / "1. " — the muted part

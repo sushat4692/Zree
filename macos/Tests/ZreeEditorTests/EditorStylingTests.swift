@@ -271,6 +271,31 @@ final class EditorStylingTests: XCTestCase {
         XCTAssertEqual(repaired.pointSize, baseFont.pointSize, accuracy: 0.01)
     }
 
+    func test_headings_get_space_above_and_below() {
+        let text = "本文\n# 見出し\n本文"
+        let textView = makeTextView(text)
+        style(textView, text)
+        let ns = text as NSString
+        let headingLocation = ns.range(of: "# 見出し").location
+        let paragraph = textView.textStorage!.attribute(
+            .paragraphStyle, at: headingLocation, effectiveRange: nil
+        ) as? NSParagraphStyle
+        XCTAssertNotNil(paragraph)
+        XCTAssertGreaterThan(paragraph?.paragraphSpacingBefore ?? 0, 0)
+        XCTAssertGreaterThan(paragraph?.paragraphSpacing ?? 0, 0)
+    }
+
+    func test_body_lines_use_a_fixed_line_height_so_the_caret_matches() {
+        let text = "本文です"
+        let textView = makeTextView(text)
+        style(textView, text)
+        let paragraph = textView.textStorage!.attribute(
+            .paragraphStyle, at: 0, effectiveRange: nil
+        ) as? NSParagraphStyle
+        XCTAssertEqual(paragraph?.minimumLineHeight ?? 0, paragraph?.maximumLineHeight ?? -1, accuracy: 0.01)
+        XCTAssertEqual(paragraph?.lineHeightMultiple ?? 0, 0, accuracy: 0.01, "no multiple: it offsets the glyphs from the caret")
+    }
+
     func test_list_markers_are_muted_but_text_is_not() {
         let text = "- 項目"
         let textView = makeTextView(text)

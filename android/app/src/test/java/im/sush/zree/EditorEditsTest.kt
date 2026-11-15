@@ -2,6 +2,7 @@ package im.sush.zree
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import uniffi.zree_core.BlockKind
 
@@ -99,8 +100,28 @@ class EditorEditsTest {
 
     @Test
     fun line_range_handles_first_and_last_line() {
-        assertEquals(0 until 3, EditorEdits.lineRange("abc\ndef", 2))
-        assertEquals(4 until 7, EditorEdits.lineRange("abc\ndef", 5))
-        assertEquals(0 until 0, EditorEdits.lineRange("", 0))
+        assertEquals(0, EditorEdits.lineRange("abc\ndef", 2).start)
+        assertEquals(3, EditorEdits.lineRange("abc\ndef", 2).end)
+        assertEquals(4, EditorEdits.lineRange("abc\ndef", 5).start)
+        assertEquals(7, EditorEdits.lineRange("abc\ndef", 5).end)
+        assertTrue(EditorEdits.lineRange("", 0).isEmpty)
+    }
+
+    @Test
+    fun block_buttons_work_on_an_empty_last_line() {
+        // the crash: substring(19, 18) when the caret sat on an empty final line
+        val text = "# 見出し\n- 項目\n"
+        val caret = text.length
+        val result = EditorEdits.block(EditText(text, caret, caret), BlockKind.HEADING)
+        assertEquals("# 見出し\n- 項目\n# ", result.text)
+
+        val bullet = EditorEdits.block(EditText("", 0, 0), BlockKind.BULLET)
+        assertEquals("- ", bullet.text)
+    }
+
+    @Test
+    fun indent_and_inline_toggles_survive_an_empty_document() {
+        assertEquals("", EditorEdits.indent(EditText("", 0, 0), outdent = false).text)
+        assertEquals("****", EditorEdits.toggleInline(EditText("", 0, 0), "**").text)
     }
 }

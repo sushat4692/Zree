@@ -26,12 +26,22 @@ data class EditText(val text: String, val selStart: Int, val selEnd: Int) {
  * string surgery and the UTF-16 offsets that the UI needs.
  */
 object EditorEdits {
-    /** Line containing [caret], as `start until end` (newline excluded). */
-    fun lineRange(text: String, caret: Int): IntRange {
+    /**
+     * Line containing [caret]: `start` inclusive, `end` exclusive.
+     *
+     * Not an IntRange: an empty last line gives start == end, and `until` turns that into
+     * an empty range whose `last` is end - 1, which produced `substring(19, 18)` and
+     * crashed the toolbar buttons on the last line.
+     */
+    data class LineSpan(val start: Int, val end: Int) {
+        val isEmpty: Boolean get() = start >= end
+    }
+
+    fun lineRange(text: String, caret: Int): LineSpan {
         val at = caret.coerceIn(0, text.length)
         val start = if (at == 0) 0 else text.lastIndexOf('\n', at - 1).let { if (it < 0) 0 else it + 1 }
         val end = text.indexOf('\n', at).let { if (it < 0) text.length else it }
-        return start until end
+        return LineSpan(start, maxOf(start, end))
     }
 
     /**
@@ -45,7 +55,7 @@ object EditorEdits {
         if (!inserted) return null
 
         val range = lineRange(old.text, caret)
-        val line = old.text.substring(range.first, caret)
+        val line = old.text.substring(range.start, caret)
         return when (val action = runCatching { listAction(line) }.getOrNull()) {
             is ListAction.Continue -> {
                 val marker = action.marker
@@ -54,8 +64,8 @@ object EditorEdits {
                 EditText(text, c, c)
             }
             is ListAction.Replace -> {
-                val text = old.text.substring(0, range.first) + action.marker + old.text.substring(caret)
-                val c = range.first + action.marker.length
+                val text = old.text.substring(0, range.start) + action.marker + old.text.substring(caret)
+                val c = range.start + action.marker.length
                 EditText(text, c, c)
             }
             else -> null
@@ -92,13 +102,13 @@ object EditorEdits {
     private fun rewriteLine(current: EditText, transform: (String) -> String): EditText {
         val caret = current.selStart.coerceIn(0, current.text.length)
         val range = lineRange(current.text, caret)
-        val line = current.text.substring(range.first, range.last)
+        val line = current.text.substring(range.start, range.end)
         val rewritten = runCatching { transform(line) }.getOrNull() ?: return current
         if (rewritten == line) return current
 
-        val text = current.text.substring(0, range.first) + rewritten + current.text.substring(range.last)
+        val text = current.text.substring(0, range.start) + rewritten + current.text.substring(range.end)
         val target = (caret + rewritten.length - line.length)
-            .coerceIn(range.first, range.first + rewritten.length)
+            .coerceIn(range.start, range.start + rewritten.length)
         return EditText(text, target, target)
     }
 
