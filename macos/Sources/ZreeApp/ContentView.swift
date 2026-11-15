@@ -235,14 +235,14 @@ struct DetailView: View {
             Divider()
             EditorToolbar()
             Divider()
-            if app.preview {
-                HSplitView {
-                    editor
-                    PreviewView()
-                        .frame(minWidth: 260)
-                }
-            } else {
+            // Always the same structure: the editor keeps its identity (and its undo
+            // history) when the preview is toggled; only the right pane comes and goes.
+            HSplitView {
                 editor
+                if app.preview {
+                    PreviewView()
+                        .frame(minWidth: 260, idealWidth: 380)
+                }
             }
         }
     }
