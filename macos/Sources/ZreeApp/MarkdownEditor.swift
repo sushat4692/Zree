@@ -68,6 +68,7 @@ struct MarkdownEditor: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 24, height: 20)
         textView.string = text
         context.coordinator.restyleWholeDocument(textView)
+
         return scroll
     }
 
@@ -110,19 +111,15 @@ struct MarkdownEditor: NSViewRepresentable {
 
     /// Fonts and line height are attributes only, so they never enter the undo stack.
     private func applyTypography(to textView: NSTextView) {
-        let style = NSMutableParagraphStyle()
-        style.lineHeightMultiple = max(0.8, lineHeight)
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .paragraphStyle: style,
-            .foregroundColor: ZreePalette.editorText,
-        ]
-
-        textView.font = font
-        textView.defaultParagraphStyle = style
-        // typingAttributes are owned by the coordinator: they depend on the caret's line,
-        // and this method runs on every SwiftUI update (each keystroke included).
-        _ = attributes
+        // No `textView.font` here: that setter replaces the font of the whole text and
+        // erased the rendering on every update.
+        EditorStyling.applyDefaults(
+            textView,
+            baseFont: font,
+            baseColor: ZreePalette.editorText,
+            lineHeight: lineHeight,
+            mutedColor: .tertiaryLabelColor
+        )
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate {

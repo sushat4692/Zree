@@ -199,6 +199,43 @@ final class EditorStylingTests: XCTestCase {
         )
     }
 
+    /// The bug that survived several rounds: `textView.font = ...` rewrites the font of
+    /// the entire text, so the styling vanished on the next SwiftUI update.
+    func test_styling_survives_the_view_defaults_being_applied_again() {
+        let text = "# 見出し\n本文 **太字**"
+        let textView = makeTextView(text)
+        style(textView, text)
+        let before = font(textView, at: 0).pointSize
+
+        EditorStyling.applyDefaults(
+            textView,
+            baseFont: baseFont,
+            baseColor: baseColor,
+            lineHeight: 1.6,
+            mutedColor: mutedColor
+        )
+
+        XCTAssertEqual(font(textView, at: 0).pointSize, before, "applying defaults must not rewrite fonts")
+    }
+
+    /// Renders the styled text to /tmp/zree-proof.png so a human (or an agent) can look at
+    /// the actual pixels instead of trusting attributes.
+    func test_render_proof_image() throws {
+        let text = "# 見出し1\n本文です。**太字**と `code` と ~~打消し~~。\n## 見出し2\n- 箇条書き\n---\nおわり"
+        let textView = makeTextView(text)
+        style(textView, text)
+        textView.frame = NSRect(x: 0, y: 0, width: 640, height: 260)
+        textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+
+        guard let rep = textView.bitmapImageRepForCachingDisplay(in: textView.bounds) else {
+            return XCTFail("no bitmap")
+        }
+        textView.cacheDisplay(in: textView.bounds, to: rep)
+        let url = URL(fileURLWithPath: "/tmp/zree-proof.png")
+        try rep.representation(using: .png, properties: [:])?.write(to: url)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+    }
+
     func test_list_markers_are_muted_but_text_is_not() {
         let text = "- 項目"
         let textView = makeTextView(text)

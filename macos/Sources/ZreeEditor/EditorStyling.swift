@@ -214,6 +214,28 @@ public enum EditorStyling {
         return attributes
     }
 
+    /// View defaults for a text view.
+    ///
+    /// It must **not** assign `textView.font`: that setter rewrites the font of the whole
+    /// text, which silently undid every heading and every bold run on the next SwiftUI
+    /// update (colours survived, so it looked like only fonts were ignored).
+    public static func applyDefaults(
+        _ textView: NSTextView,
+        baseFont: NSFont,
+        baseColor: NSColor,
+        lineHeight: Double,
+        mutedColor: NSColor
+    ) {
+        textView.backgroundColor = ZreePalette.editorBackground
+        textView.insertionPointColor = NSColor(ZreePalette.accent)
+        textView.typingAttributes = typingAttributes(
+            for: nil,
+            baseFont: baseFont,
+            baseColor: baseColor,
+            lineHeight: lineHeight
+        )
+    }
+
     private static func baseline(_ font: NSFont, _ color: NSColor, _ lineHeight: Double) -> [NSAttributedString.Key: Any] {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineHeightMultiple = max(0.8, lineHeight)
