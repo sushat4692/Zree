@@ -66,6 +66,26 @@ struct SidebarView: View {
                 Divider()
             }
 
+            HStack(spacing: 6) {
+                Text(app.status)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Menu {
+                    Button("更新が新しい順") { app.sortOrder = .updatedDesc }
+                    Button("更新が古い順") { app.sortOrder = .updatedAsc }
+                    Button("タイトル順 A→Z") { app.sortOrder = .titleAsc }
+                    Button("タイトル順 Z→A") { app.sortOrder = .titleDesc }
+                } label: {
+                    Text("⇅ \(app.sortOrderLabel)")
+                        .font(.caption2)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+            }
+            .padding(.horizontal, 10)
+            .padding(.bottom, 4)
+
             List(selection: Binding(
                 get: { app.selectedID },
                 set: { app.select($0) }

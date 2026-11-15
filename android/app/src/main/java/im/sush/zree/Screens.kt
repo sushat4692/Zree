@@ -27,7 +27,10 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import uniffi.zree_core.CompletionKind
 import uniffi.zree_core.ListAction
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import uniffi.zree_core.BlockKind
+import uniffi.zree_core.SortOrder
 import uniffi.zree_core.completionContext
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -272,6 +275,8 @@ fun ListScreen(vm: ZreeViewModel, state: UiState) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(Modifier.width(8.dp))
+            SortMenu(state) { vm.setSortOrder(it) }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = vm::newNote) { Text("新規") }
         }
@@ -704,3 +709,39 @@ private fun EditorToolbar(
     }
 }
 
+
+/** Sort order for the list (only applies when nothing is being searched). */
+@Composable
+private fun SortMenu(state: UiState, onSelect: (SortOrder) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+
+    Box {
+        Text(
+            text = when (state.sortOrder) {
+                SortOrder.UPDATED_DESC -> "更新順↓"
+                SortOrder.UPDATED_ASC -> "更新順↑"
+                SortOrder.TITLE_ASC -> "名前順↑"
+                SortOrder.TITLE_DESC -> "名前順↓"
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .clickable { open = true }
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+        )
+
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            listOf(
+                SortOrder.UPDATED_DESC to "更新が新しい順",
+                SortOrder.UPDATED_ASC to "更新が古い順",
+                SortOrder.TITLE_ASC to "タイトル順 (A→Z)",
+                SortOrder.TITLE_DESC to "タイトル順 (Z→A)",
+            ).forEach { (order, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = { open = false; onSelect(order) },
+                )
+            }
+        }
+    }
+}

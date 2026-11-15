@@ -43,6 +43,11 @@ Inline tags only; no frontmatter.
 - Case is preserved. Duplicates collapse to the first occurrence.
 - Filtering with several tags is AND.
 
+## 3b. List order
+
+`SortOrder`: updated (newest/oldest first) or title (A→Z / Z→A). It only applies when the
+list is unfiltered; a search keeps relevance order. Both apps persist the choice.
+
 ## 4. Search
 
 Japanese is written without spaces, so nothing is tokenised.

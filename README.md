@@ -66,6 +66,7 @@ background; macOS has no splash by convention.
 | ⇧⌘R | Reindex (e.g. after pulling) |
 | ⇧⌘F | Reveal in Finder |
 
+The list can be ordered by updated time or title (both platforms remember the choice).
 Typing `#` offers tag candidates; Return continues list items, checkboxes and quotes.
 The rules live in the core, so Android behaves identically.
 

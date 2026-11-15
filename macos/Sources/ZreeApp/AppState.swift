@@ -74,6 +74,31 @@ final class AppState {
     var previewFontSize: Double = 15
     var previewLineHeight: Double = 1.6
 
+    var sortOrder: ZreeCore.SortOrder = .updatedDesc {
+        didSet {
+            defaults.set(sortOrderLabelStored, forKey: Keys.sortOrder)
+            reloadRows()
+        }
+    }
+
+    private var sortOrderLabelStored: String {
+        switch sortOrder {
+        case .updatedDesc: "updatedDesc"
+        case .updatedAsc: "updatedAsc"
+        case .titleAsc: "titleAsc"
+        case .titleDesc: "titleDesc"
+        }
+    }
+
+    var sortOrderLabel: String {
+        switch sortOrder {
+        case .updatedDesc: "更新順 ↓"
+        case .updatedAsc: "更新順 ↑"
+        case .titleAsc: "名前順 A→Z"
+        case .titleDesc: "名前順 Z→A"
+        }
+    }
+
     private let defaults = UserDefaults.standard
     private enum Keys {
         static let vault = "vaultPath"
@@ -88,6 +113,7 @@ final class AppState {
         static let previewFontFamily = "previewFontFamily"
         static let previewFontSize = "previewFontSize"
         static let previewLineHeight = "previewLineHeight"
+        static let sortOrder = "sortOrder"
     }
 
     // MARK: - Vault
@@ -105,6 +131,13 @@ final class AppState {
             autoSyncMinutes = savedMinutes
         }
         restoringPrefs = false
+
+        switch defaults.string(forKey: Keys.sortOrder) {
+        case "updatedAsc": sortOrder = .updatedAsc
+        case "titleAsc": sortOrder = .titleAsc
+        case "titleDesc": sortOrder = .titleDesc
+        default: break
+        }
 
         if defaults.object(forKey: Keys.editorFontSize) != nil {
             editorFontFamily = defaults.string(forKey: Keys.editorFontFamily)
@@ -170,7 +203,9 @@ final class AppState {
             rows = []
             return
         }
-        let hits = session.search(query: query, tags: Array(selectedTags), limit: 0)
+        let hits: [Hit] = (query.trimmingCharacters(in: .whitespaces).isEmpty && selectedTags.isEmpty)
+            ? session.listRows(order: sortOrder)
+            : session.search(query: query, tags: Array(selectedTags), limit: 0)
         rows = hits.map {
             NoteRow(
                 id: $0.id,
