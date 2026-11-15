@@ -43,9 +43,16 @@ struct MarkdownEditor: NSViewRepresentable {
         context.coordinator.app = app
         guard let textView = scroll.documentView as? NSTextView else { return }
         if textView.string != text {
+            // Replacing the text behind the undo manager's back leaves it holding
+            // ranges from the previous note; pressing ⌘Z then crashed in
+            // -[NSUndoManager undoNestedGroup]. Loading a note is not an edit, so
+            // drop the stack around the change.
+            textView.undoManager?.removeAllActions()
             let selected = textView.selectedRange()
             textView.string = text
             textView.setSelectedRange(NSRange(location: min(selected.location, text.utf16.count), length: 0))
+            textView.undoManager?.removeAllActions()
+            textView.breakUndoCoalescing()
         }
     }
 
