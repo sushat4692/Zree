@@ -66,6 +66,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -705,7 +706,14 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
                 ),
                 visualTransformation = transformation,
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default, keyboardType = KeyboardType.Text),
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Default,
+                    keyboardType = KeyboardType.Text,
+                    // Markdown must keep what is typed: autocorrect turned "aaa" into "AAA",
+                    // undid deletions of "- " and rewrote punctuation
+                    autoCorrectEnabled = false,
+                    capitalization = KeyboardCapitalization.None,
+                ),
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()

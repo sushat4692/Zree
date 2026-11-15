@@ -168,6 +168,12 @@ text the app saves never changes and the caret/IME are untouched.
   heading stays near the normal line spacing
 - `---` becomes a struck-through transparent line rather than a full-width rule
 
+## Keyboard behaviour
+
+Autocorrect and auto-capitalisation are **off** for the note editor: they rewrite what was
+typed ("aaa" -> "AAA"), re-insert the space that was just deleted ("- " -> "-" -> back to
+"- "), and mangle Markdown punctuation. The title field keeps them.
+
 ## Editor toolbar
 
 The editor's assist bar sits at the bottom of the screen, directly above the soft keyboard
