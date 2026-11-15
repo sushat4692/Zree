@@ -86,11 +86,24 @@ we must verify anyway.
 
 ## Phase 2 — feature parity with macOS
 
-- note list + incremental Japanese search (core already handles normalization)
-- tag strip + filter
-- editor (`BasicTextField` with `TextFieldState`) and a preview pane rendered from the `Block` stream
-- link navigation (`zree://note?id=` equivalent: just call into the session)
-- autosave with the same mtime overwrite guard
+Verified on the device:
+
+- [x] setup screen: clone from Git (URL + PAT) or create an empty vault
+- [x] note list with Japanese titles, snippets and per-note tags
+- [x] tag strip filter (top 40 tags, AND)
+- [x] editor: title field, rename, plain `BasicTextField`
+- [x] autosave 700 ms after typing stops, with the same mtime overwrite guard
+- [x] manual sync button and pull-on-open (same rules as macOS)
+
+Still missing:
+
+- [ ] Japanese IME under heavy composition / long notes (a short romaji→kana round trip worked:
+      typed `appended-line`, the IME produced `あっぺんでｄ−ぃね`, and autosave persisted it)
+- [ ] Markdown preview pane rendered from the `Block` stream
+- [ ] link navigation
+- [ ] auto-sync timer (Android currently syncs on open and on demand)
+- [ ] conflict UI
+- [ ] SAF import / export
 
 ## Phase 3 — Git
 

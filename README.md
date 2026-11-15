@@ -73,7 +73,7 @@ open build/Zree.app
 - [x] Standard Markdown links that navigate between notes
 - [x] Git sync (commit/pull/push, fast-forward, merge) with a conflict UI
 - [x] Clone onboarding, Keychain-backed PAT, pull on launch
-- [~] Android: builds end-to-end (Gradle + cross-compiled core .so + APK); no runtime check on a device yet
+- [~] Android: runs on a device — clone/setup, list, search, tags, editor with autosave, manual sync
 - [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)
 
 ## Tests
