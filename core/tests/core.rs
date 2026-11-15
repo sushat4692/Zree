@@ -257,30 +257,36 @@ fn inline_markers_consume_the_whole_delimiter() {
 fn list_continuation_rules() {
     use zree_core::complete::{list_action, ListAction};
 
-    assert_eq!(
-        list_action("- 買い物"),
-        ListAction::Continue { marker: "- ".into() }
-    );
-    assert_eq!(
-        list_action("  - 入れ子"),
-        ListAction::Continue { marker: "  - ".into() }
-    );
+    // continuation keeps the marker and the indentation
+    assert_eq!(list_action("- 買い物"), ListAction::Continue { marker: "- ".into() });
+    assert_eq!(list_action("* あ"), ListAction::Continue { marker: "* ".into() });
+    assert_eq!(list_action("+ あ"), ListAction::Continue { marker: "+ ".into() });
+    assert_eq!(list_action("  - 入れ子"), ListAction::Continue { marker: "  - ".into() });
+    assert_eq!(list_action("    - 深い"), ListAction::Continue { marker: "    - ".into() });
+    assert_eq!(list_action("\t- タブ"), ListAction::Continue { marker: "\t- ".into() });
+    assert_eq!(list_action("  1. 手順"), ListAction::Continue { marker: "  2. ".into() });
+    assert_eq!(list_action("3. 手順"), ListAction::Continue { marker: "4. ".into() });
+    assert_eq!(list_action("10. 手順"), ListAction::Continue { marker: "11. ".into() });
+    assert_eq!(list_action("> 引用"), ListAction::Continue { marker: "> ".into() });
+    assert_eq!(list_action("  > 入れ子引用"), ListAction::Continue { marker: "  > ".into() });
     assert_eq!(
         list_action("- [x] 済み"),
         ListAction::Continue { marker: "- [ ] ".into() }
     );
     assert_eq!(
-        list_action("3. 手順"),
-        ListAction::Continue { marker: "4. ".into() }
+        list_action("- [ ] 未了"),
+        ListAction::Continue { marker: "- [ ] ".into() }
     );
-    assert_eq!(
-        list_action("> 引用"),
-        ListAction::Continue { marker: "> ".into() }
-    );
-    // empty items end the list instead of growing it
-    assert_eq!(list_action("- "), ListAction::Remove { indent: 0 });
-    assert_eq!(list_action("  * "), ListAction::Remove { indent: 2 });
-    assert_eq!(list_action("- [ ] "), ListAction::Remove { indent: 0 });
+
+    // empty items: outdent one level, then leave the list
+    assert_eq!(list_action("- "), ListAction::Replace { marker: "".into() });
+    assert_eq!(list_action("  - "), ListAction::Replace { marker: "- ".into() });
+    assert_eq!(list_action("    - "), ListAction::Replace { marker: "  - ".into() });
+    assert_eq!(list_action("\t- "), ListAction::Replace { marker: "- ".into() });
+    assert_eq!(list_action("  1. "), ListAction::Replace { marker: "1. ".into() });
+    assert_eq!(list_action("  > "), ListAction::Replace { marker: "> ".into() });
+    assert_eq!(list_action("- [ ] "), ListAction::Replace { marker: "".into() });
+
     // not a list
     assert_eq!(list_action("普通の段落"), ListAction::None);
     assert_eq!(list_action("#見出しではない"), ListAction::None);

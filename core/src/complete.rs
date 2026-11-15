@@ -8,58 +8,47 @@ use crate::search::{normalize, Index};
 /// What to do when the user presses Return at the end of `line`.
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
 pub enum ListAction {
-    /// Insert a new list marker after the newline.
+    /// Insert a newline and this marker.
     Continue { marker: String },
-    /// The current item is empty: drop the marker instead of continuing.
-    Remove { indent: u32 },
+    /// The current item is empty: replace the marker on this line with `marker`
+    /// (an empty string ends the list, a shorter one outdents a level).
+    Replace { marker: String },
     /// Not a list item.
     None,
 }
 
 /// Marker continuation for `- `, `* `, `+ `, `1. `, `- [ ] `, `- [x] ` and `> `.
 pub fn list_action(line: &str) -> ListAction {
-    let indent_chars = line.chars().take_while(|c| *c == ' ' || *c == '\t').count();
-    let indent_len = line[..indent_chars].chars().count();
-    let indent: String = line.chars().take(indent_len).collect();
-    let rest = &line[indent_len..];
+    let indent: String = line.chars().take_while(|c| *c == ' ' || *c == '\t').collect();
+    let rest = &line[indent.len()..];
 
-    // blockquote
     if let Some(after) = rest.strip_prefix("> ") {
         if after.trim().is_empty() {
-            return ListAction::Remove { indent: indent_len as u32 };
+            return outdent(&indent, "> ");
         }
         return ListAction::Continue { marker: format!("{indent}> ") };
     }
 
-    // bullet, optionally a task checkbox
     for bullet in ['-', '*', '+'] {
-        if let Some(after) = rest.strip_prefix(bullet) {
-            let (boxed, body) = match after.strip_prefix(' ') {
-                Some(b) => (false, b),
-                None => continue,
-            };
-            let (checked, body) = split_checkbox(body);
-            if body.trim().is_empty() && !boxed {
-                return ListAction::Remove { indent: indent_len as u32 };
-            }
-            if body.trim().is_empty() && boxed {
-                return ListAction::Remove { indent: indent_len as u32 };
-            }
-            let marker = if checked.is_some() {
-                format!("{indent}{bullet} [ ] ")
-            } else {
-                format!("{indent}{bullet} ")
-            };
-            return ListAction::Continue { marker };
+        let Some(after) = rest.strip_prefix(bullet) else { continue };
+        let Some(after_space) = after.strip_prefix(' ') else { continue };
+        let (checked, body) = split_checkbox(after_space);
+        let bare = if checked.is_some() {
+            format!("{bullet} [ ] ")
+        } else {
+            format!("{bullet} ")
+        };
+        if body.trim().is_empty() {
+            return outdent(&indent, &bare);
         }
+        return ListAction::Continue { marker: format!("{indent}{bare}") };
     }
 
-    // ordered list
     let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
     if !digits.is_empty() {
         if let Some(after) = rest[digits.len()..].strip_prefix(". ") {
             if after.trim().is_empty() {
-                return ListAction::Remove { indent: indent_len as u32 };
+                return outdent(&indent, &format!("{digits}. "));
             }
             let next = digits.parse::<u32>().unwrap_or(1) + 1;
             return ListAction::Continue { marker: format!("{indent}{next}. ") };
@@ -67,6 +56,25 @@ pub fn list_action(line: &str) -> ListAction {
     }
 
     ListAction::None
+}
+
+/// An empty item loses one indent step; at the left margin the marker goes away.
+fn outdent(indent: &str, marker: &str) -> ListAction {
+    let shallower = if let Some(rest) = indent.strip_suffix("  ") {
+        rest
+    } else if let Some(rest) = indent.strip_suffix('\t') {
+        rest
+    } else if let Some(rest) = indent.strip_suffix(' ') {
+        rest
+    } else {
+        ""
+    };
+
+    if shallower.len() == indent.len() {
+        // no indentation to remove: leave the list entirely
+        return ListAction::Replace { marker: String::new() };
+    }
+    ListAction::Replace { marker: format!("{shallower}{marker}") }
 }
 
 fn split_checkbox(s: &str) -> (Option<bool>, &str) {

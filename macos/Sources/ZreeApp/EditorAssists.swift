@@ -24,10 +24,10 @@ extension MarkdownEditor.Coordinator {
             textView.insertText("\n" + marker, replacementRange: NSRange(location: location, length: 0))
             return true
 
-        case .remove:
-            // empty item: drop the marker and leave the line blank
+        case .replace(let marker):
+            // empty item: outdent one level, or drop the marker at the left margin
             let range = NSRange(location: start, length: location - start)
-            textView.insertText("", replacementRange: range)
+            textView.insertText(marker, replacementRange: range)
             return true
 
         default:

@@ -101,8 +101,10 @@ Decided in the core (`complete.rs`), wired by each UI.
 | `- text` / `* text` / `+ text` | continue with the same marker and indent |
 | `- [x] text` | continue with `- [ ] ` |
 | `2. text` | continue with `3. ` |
-| `> text` | continue with `> ` |
-| `- ` (empty item) | remove the marker, leaving an empty line (Obsidian behaviour) |
+| `> text` | continue with `> ` (indentation preserved) |
+| empty item, no indent | remove the marker, leaving an empty line |
+| empty item, indented | outdent one level (2 spaces, 1 tab or 1 space per step) |
+| empty item in a nested ordered list | outdent, keeping the current number |
 | anything else | no assist |
 
 **Completion** (`completion_context` + `suggest_tags` / `suggest_notes`):

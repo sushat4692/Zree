@@ -611,10 +611,10 @@ private fun applyEditorAssists(old: TextFieldValue, next: TextFieldValue): TextF
             val text = old.text.substring(0, caret) + "\n" + marker + old.text.substring(caret)
             TextFieldValue(text, TextRange(caret + 1 + marker.length))
         }
-        is ListAction.Remove -> {
-            // empty item: drop the marker instead of continuing the list
-            val text = old.text.substring(0, start) + old.text.substring(caret)
-            TextFieldValue(text, TextRange(start))
+        is ListAction.Replace -> {
+            // empty item: outdent one level, or drop the marker at the left margin
+            val text = old.text.substring(0, start) + action.marker + old.text.substring(caret)
+            TextFieldValue(text, TextRange(start + action.marker.length))
         }
         else -> next
     }

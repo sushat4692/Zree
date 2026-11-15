@@ -3508,7 +3508,7 @@ public object FfiConverterTypeInline : FfiConverterRustBuffer<Inline>{
 sealed class ListAction {
     
     /**
-     * Insert a new list marker after the newline.
+     * Insert a newline and this marker.
      */
     data class Continue(
         val `marker`: kotlin.String) : ListAction()
@@ -3520,10 +3520,11 @@ sealed class ListAction {
     }
     
     /**
-     * The current item is empty: drop the marker instead of continuing.
+     * The current item is empty: replace the marker on this line with `marker`
+     * (an empty string ends the list, a shorter one outdents a level).
      */
-    data class Remove(
-        val `indent`: kotlin.UInt) : ListAction()
+    data class Replace(
+        val `marker`: kotlin.String) : ListAction()
         
     {
         
@@ -3556,8 +3557,8 @@ public object FfiConverterTypeListAction : FfiConverterRustBuffer<ListAction>{
             1 -> ListAction.Continue(
                 FfiConverterString.read(buf),
                 )
-            2 -> ListAction.Remove(
-                FfiConverterUInt.read(buf),
+            2 -> ListAction.Replace(
+                FfiConverterString.read(buf),
                 )
             3 -> ListAction.None
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
@@ -3572,11 +3573,11 @@ public object FfiConverterTypeListAction : FfiConverterRustBuffer<ListAction>{
                 + FfiConverterString.allocationSize(value.`marker`)
             )
         }
-        is ListAction.Remove -> {
+        is ListAction.Replace -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
-                + FfiConverterUInt.allocationSize(value.`indent`)
+                + FfiConverterString.allocationSize(value.`marker`)
             )
         }
         is ListAction.None -> {
@@ -3594,9 +3595,9 @@ public object FfiConverterTypeListAction : FfiConverterRustBuffer<ListAction>{
                 FfiConverterString.write(value.`marker`, buf)
                 Unit
             }
-            is ListAction.Remove -> {
+            is ListAction.Replace -> {
                 buf.putInt(2)
-                FfiConverterUInt.write(value.`indent`, buf)
+                FfiConverterString.write(value.`marker`, buf)
                 Unit
             }
             is ListAction.None -> {

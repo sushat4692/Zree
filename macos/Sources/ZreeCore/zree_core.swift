@@ -2246,14 +2246,15 @@ public func FfiConverterTypeInline_lower(_ value: Inline) -> RustBuffer {
 public enum ListAction: Equatable, Hashable {
     
     /**
-     * Insert a new list marker after the newline.
+     * Insert a newline and this marker.
      */
     case `continue`(marker: String
     )
     /**
-     * The current item is empty: drop the marker instead of continuing.
+     * The current item is empty: replace the marker on this line with `marker`
+     * (an empty string ends the list, a shorter one outdents a level).
      */
-    case remove(indent: UInt32
+    case replace(marker: String
     )
     /**
      * Not a list item.
@@ -2283,7 +2284,7 @@ public struct FfiConverterTypeListAction: FfiConverterRustBuffer {
         case 1: return .`continue`(marker: try FfiConverterString.read(from: &buf)
         )
         
-        case 2: return .remove(indent: try FfiConverterUInt32.read(from: &buf)
+        case 2: return .replace(marker: try FfiConverterString.read(from: &buf)
         )
         
         case 3: return .none
@@ -2301,9 +2302,9 @@ public struct FfiConverterTypeListAction: FfiConverterRustBuffer {
             FfiConverterString.write(marker, into: &buf)
             
         
-        case let .remove(indent):
+        case let .replace(marker):
             writeInt(&buf, Int32(2))
-            FfiConverterUInt32.write(indent, into: &buf)
+            FfiConverterString.write(marker, into: &buf)
             
         
         case .none:
