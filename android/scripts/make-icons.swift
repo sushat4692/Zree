@@ -29,7 +29,10 @@ let densities: [(String, CGFloat)] = [
 ]
 
 let canvasDp: CGFloat = 108
-let artDp: CGFloat = canvasDp * 0.8   // icon.json uses scale 0.8
+// icon.json scales the layer to 0.8, but inside Android's 108dp canvas that made
+// the tree read too large next to other launcher icons; 0.64 of the canvas puts it
+// at roughly 80% of that, comfortably inside the 72dp safe zone.
+let artDp: CGFloat = canvasDp * 0.64
 
 for (suffix, scale) in densities {
     let px = Int((canvasDp * scale).rounded())
