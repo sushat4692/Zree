@@ -198,6 +198,12 @@ pub fn list_action(line: String) -> crate::complete::ListAction {
     crate::complete::list_action(&line)
 }
 
+/// Inline styling spans in a line (byte offsets into that line).
+#[uniffi::export]
+pub fn inline_spans(line: String) -> Vec<crate::complete::InlineSpan> {
+    crate::complete::inline_spans(&line)
+}
+
 /// Wrap or unwrap an inline marker such as `**` (idempotent toggle).
 #[uniffi::export]
 pub fn toggle_inline(text: String, selStart: u32, selEnd: u32, mark: String) -> crate::complete::ToggleResult {

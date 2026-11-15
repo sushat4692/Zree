@@ -1687,6 +1687,64 @@ public func FfiConverterTypeHit_lower(_ value: Hit) -> RustBuffer {
 }
 
 
+public struct InlineSpan: Equatable, Hashable {
+    public var start: UInt32
+    public var end: UInt32
+    public var kind: SpanKind
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(start: UInt32, end: UInt32, kind: SpanKind) {
+        self.start = start
+        self.end = end
+        self.kind = kind
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension InlineSpan: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeInlineSpan: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> InlineSpan {
+        return
+            try InlineSpan(
+                start: FfiConverterUInt32.read(from: &buf), 
+                end: FfiConverterUInt32.read(from: &buf), 
+                kind: FfiConverterTypeSpanKind.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: InlineSpan, into buf: inout [UInt8]) {
+        FfiConverterUInt32.write(value.start, into: &buf)
+        FfiConverterUInt32.write(value.end, into: &buf)
+        FfiConverterTypeSpanKind.write(value.kind, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeInlineSpan_lift(_ buf: RustBuffer) throws -> InlineSpan {
+    return try FfiConverterTypeInlineSpan.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeInlineSpan_lower(_ value: InlineSpan) -> RustBuffer {
+    return FfiConverterTypeInlineSpan.lower(value)
+}
+
+
 public struct NoteMeta: Equatable, Hashable {
     /**
      * Vault-relative path with `/` separators, e.g. `foo.md`
@@ -2912,6 +2970,89 @@ public func FfiConverterTypeSortOrder_lower(_ value: SortOrder) -> RustBuffer {
 }
 
 
+
+/**
+ * Inline styling found in one line, with **byte** offsets into that line.
+ */
+
+public enum SpanKind: Equatable, Hashable {
+    
+    case bold
+    case italic
+    case strike
+    case code
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension SpanKind: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSpanKind: FfiConverterRustBuffer {
+    typealias SwiftType = SpanKind
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SpanKind {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .bold
+        
+        case 2: return .italic
+        
+        case 3: return .strike
+        
+        case 4: return .code
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: SpanKind, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .bold:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .italic:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .strike:
+            writeInt(&buf, Int32(3))
+        
+        
+        case .code:
+            writeInt(&buf, Int32(4))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSpanKind_lift(_ buf: RustBuffer) throws -> SpanKind {
+    return try FfiConverterTypeSpanKind.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSpanKind_lower(_ value: SpanKind) -> RustBuffer {
+    return FfiConverterTypeSpanKind.lower(value)
+}
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -3087,6 +3228,31 @@ fileprivate struct FfiConverterSequenceTypeHit: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeInlineSpan: FfiConverterRustBuffer {
+    typealias SwiftType = [InlineSpan]
+
+    public static func write(_ value: [InlineSpan], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeInlineSpan.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [InlineSpan] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [InlineSpan]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeInlineSpan.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeNoteMeta: FfiConverterRustBuffer {
     typealias SwiftType = [NoteMeta]
 
@@ -3244,6 +3410,17 @@ public func indentLine(line: String, outdent: Bool) -> String?  {
 })
 }
 /**
+ * Inline styling spans in a line (byte offsets into that line).
+ */
+public func inlineSpans(line: String) -> [InlineSpan]  {
+    return try!  FfiConverterSequenceTypeInlineSpan.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_func_inline_spans(
+        FfiConverterString.lower(line),uniffiCallStatus
+    )
+})
+}
+/**
  * True when the folder is a Git working copy.
  */
 public func isGitRepo(root: String) -> Bool  {
@@ -3326,6 +3503,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_func_indent_line() != 57015) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_func_inline_spans() != 29170) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_func_is_git_repo() != 9204) {

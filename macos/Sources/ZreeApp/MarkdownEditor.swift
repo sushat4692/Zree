@@ -19,7 +19,17 @@ struct MarkdownEditor: NSViewRepresentable {
         scroll.drawsBackground = true
         scroll.autohidesScrollers = true
 
-        let textView = NSTextView(frame: .zero)
+        // a text system we control, so `---` lines can be drawn as real dividers
+        let storage = NSTextStorage()
+        let layoutManager = ZreeLayoutManager()
+        storage.addLayoutManager(layoutManager)
+        let container = NSTextContainer(
+            size: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        )
+        container.widthTracksTextView = true
+        layoutManager.addTextContainer(container)
+
+        let textView = NSTextView(frame: .zero, textContainer: container)
         textView.minSize = NSSize(width: 0, height: 0)
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         textView.isVerticallyResizable = true

@@ -521,18 +521,37 @@ fn git_creation_times_win_over_the_filesystem() {
 
     let (_dir, vault) = fixture();
     let mut index = Index::build(&vault).unwrap();
-    let before = index
-        .list_rows(SortOrder::CreatedAsc)
-        .first()
-        .map(|r| r.title.clone())
-        .unwrap();
+    let id = "1on1導入講座 240404.md";
 
-    // pretend Git says the note called "ようこそ" is the very oldest
-    let updated = index.apply_created_times(&[("ようこそ.md".to_string(), 1)]);
-    assert!(updated >= 1 || before == "ようこそ");
+    let updated = index.apply_created_times(&[(id.to_string(), 1)]);
+    assert_eq!(updated, 1, "the note exists and its time changed");
 
-    let oldest = index.list_rows(SortOrder::CreatedAsc).first().unwrap();
-    if index.entries.iter().any(|e| e.meta.id == "ようこそ.md") {
-        assert_eq!(oldest.created_ms, 1);
-    }
+    let rows = index.list_rows(SortOrder::CreatedAsc);
+    assert_eq!(rows.first().unwrap().id, id);
+    assert_eq!(rows.first().unwrap().created_ms, 1);
+
+    // applying the same times again is a no-op
+    assert_eq!(index.apply_created_times(&[(id.to_string(), 1)]), 0);
+}
+
+#[test]
+fn inline_spans_point_at_the_content_only() {
+    use zree_core::complete::{inline_spans, SpanKind};
+
+    let line = "**太字**と~~打消し~~と `code` と *斜体*";
+    let spans = inline_spans(line);
+    assert_eq!(spans.len(), 4);
+
+    let slice = |s: &zree_core::complete::InlineSpan| {
+        &line[s.start as usize..s.end as usize]
+    };
+    assert_eq!((slice(&spans[0]), &spans[0].kind), ("太字", &SpanKind::Bold));
+    assert_eq!((slice(&spans[1]), &spans[1].kind), ("打消し", &SpanKind::Strike));
+    assert_eq!((slice(&spans[2]), &spans[2].kind), ("code", &SpanKind::Code));
+    assert_eq!((slice(&spans[3]), &spans[3].kind), ("斜体", &SpanKind::Italic));
+
+    // nothing to style
+    assert!(inline_spans("ただの文").is_empty());
+    assert!(inline_spans("**未完了").is_empty());
+    assert!(inline_spans("****").is_empty());
 }

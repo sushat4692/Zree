@@ -327,6 +327,91 @@ pub fn toggle_inline(text: &str, sel_start: u32, sel_end: u32, mark: &str) -> To
     }
 }
 
+/// Inline styling found in one line, with **byte** offsets into that line.
+#[derive(Debug, Clone, PartialEq, uniffi::Enum)]
+pub enum SpanKind {
+    Bold,
+    Italic,
+    Strike,
+    Code,
+}
+
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct InlineSpan {
+    pub start: u32,
+    pub end: u32,
+    pub kind: SpanKind,
+}
+
+/// Find inline styling spans in a line (the *content*, not the markers).
+///
+/// Markers stay visible: the editor only changes attributes, never characters, so the
+/// caller turns these offsets into font/colour runs.
+pub fn inline_spans(line: &str) -> Vec<InlineSpan> {
+    let chars: Vec<char> = line.chars().collect();
+    let mut out: Vec<InlineSpan> = Vec::new();
+    let mut byte_at = vec![0u32; chars.len() + 1];
+    for (i, c) in chars.iter().enumerate() {
+        byte_at[i + 1] = byte_at[i] + c.len_utf8() as u32;
+    }
+
+    let mut i = 0usize;
+    while i < chars.len() {
+        let c = chars[i];
+
+        // `code`
+        if c == '`' {
+            if let Some((start, end, next)) = find_close(&chars, i, '`', 1) {
+                out.push(InlineSpan { start: byte_at[start], end: byte_at[end], kind: SpanKind::Code });
+                i = next;
+                continue;
+            }
+        }
+        // ~~strike~~
+        if c == '~' && i + 1 < chars.len() && chars[i + 1] == '~' {
+            if let Some((start, end, next)) = find_close(&chars, i, '~', 2) {
+                out.push(InlineSpan { start: byte_at[start], end: byte_at[end], kind: SpanKind::Strike });
+                i = next;
+                continue;
+            }
+        }
+        // **bold**
+        if c == '*' && i + 1 < chars.len() && chars[i + 1] == '*' {
+            if let Some((start, end, next)) = find_close(&chars, i, '*', 2) {
+                out.push(InlineSpan { start: byte_at[start], end: byte_at[end], kind: SpanKind::Bold });
+                i = next;
+                continue;
+            }
+        }
+        // *italic*
+        if c == '*' {
+            if let Some((start, end, next)) = find_close(&chars, i, '*', 1) {
+                out.push(InlineSpan { start: byte_at[start], end: byte_at[end], kind: SpanKind::Italic });
+                i = next;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    out
+}
+
+/// Content bounds of a delimited run: (start, end, index after the closing run).
+fn find_close(chars: &[char], open: usize, mark: char, width: usize) -> Option<(usize, usize, usize)> {
+    let start = open + width;
+    let mut j = start;
+    while j + width <= chars.len() {
+        if (0..width).all(|k| chars[j + k] == mark) {
+            if j == start {
+                return None;
+            }
+            return Some((start, j, j + width));
+        }
+        j += 1;
+    }
+    None
+}
+
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
 pub enum CompletionKind {
     Tag,

@@ -9,12 +9,41 @@ import ZreeCore
 ///
 /// Only text attributes change — never characters — so the caret, the IME and the
 /// undo stack are untouched (undo registration is suspended while styling).
+/// Attribute used to mark a line that should be drawn as a horizontal rule.
+extension NSAttributedString.Key {
+    static let zreeRule = NSAttributedString.Key("ZreeRule")
+}
+
+/// Draws a real horizontal line for `---` lines, without touching the characters.
+final class ZreeLayoutManager: NSLayoutManager {
+    override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint) {
+        super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
+        guard let storage = textStorage else { return }
+
+        let charRange = characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
+        storage.enumerateAttribute(.zreeRule, in: charRange, options: []) { value, range, _ in
+            guard value != nil, let container = textContainers.first else { return }
+            let glyphRange = self.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+            let rect = self.boundingRect(forGlyphRange: glyphRange, in: container)
+            let y = origin.y + rect.midY
+            let path = NSBezierPath()
+            path.move(to: NSPoint(x: origin.x, y: y))
+            path.line(to: NSPoint(x: origin.x + container.size.width, y: y))
+            path.lineWidth = 1
+            NSColor.separatorColor.setStroke()
+            path.stroke()
+        }
+    }
+}
+
 enum EditorStyling {
     struct Style {
         var font: NSFont
         var color: NSColor
         /// Range within the line that should look muted (list bullet, `#`, `>`, fences).
         var markerLength: Int = 0
+        /// `---` lines are drawn as a divider instead of text.
+        var isRule: Bool = false
     }
 
     static func restyle(
@@ -56,17 +85,29 @@ enum EditorStyling {
             let lineRange = NSRange(location: index, length: end - index)
 
             if line != caretLine, let style = styles[line], lineRange.length > 0 {
-                storage.addAttribute(.font, value: style.font, range: lineRange)
-                if style.markerLength > 0 {
-                    let markerLength = min(style.markerLength, lineRange.length)
-                    storage.addAttribute(
-                        .foregroundColor,
-                        value: mutedColor,
-                        range: NSRange(location: lineRange.location, length: markerLength)
+                if style.isRule {
+                    // drawn by ZreeLayoutManager; keep the characters but make them invisible
+                    storage.addAttribute(.zreeRule, value: true, range: lineRange)
+                    storage.addAttribute(.foregroundColor, value: NSColor.clear, range: lineRange)
+                } else {
+                    storage.addAttribute(.font, value: style.font, range: lineRange)
+                    if style.markerLength > 0 {
+                        let markerLength = min(style.markerLength, lineRange.length)
+                        storage.addAttribute(
+                            .foregroundColor,
+                            value: mutedColor,
+                            range: NSRange(location: lineRange.location, length: markerLength)
+                        )
+                    }
+                    if style.color != baseColor {
+                        storage.addAttribute(.foregroundColor, value: style.color, range: lineRange)
+                    }
+                    applyInline(
+                        storage,
+                        line: text.substring(with: lineRange),
+                        lineRange: lineRange,
+                        baseFont: style.font
                     )
-                }
-                if style.color != baseColor {
-                    storage.addAttribute(.foregroundColor, value: style.color, range: lineRange)
                 }
             }
 
@@ -106,11 +147,61 @@ enum EditorStyling {
             return (Int(line), Style(font: font, color: .secondaryLabelColor))
 
         case let .rule(line):
-            return (Int(line), Style(font: baseFont, color: .secondaryLabelColor))
+            return (Int(line), Style(font: baseFont, color: .clear, isRule: true))
 
         default:
             return nil
         }
+    }
+
+    /// Bold / italic / strike / inline code inside one line of the document.
+    static func applyInline(
+        _ storage: NSTextStorage,
+        line: String,
+        lineRange: NSRange,
+        baseFont: NSFont
+    ) {
+        let spans = ZreeCore.inlineSpans(line: line)
+        guard !spans.isEmpty else { return }
+
+        let bold = NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
+        let italic = NSFontManager.shared.convert(baseFont, toHaveTrait: .italicFontMask)
+        let mono = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize * 0.95, weight: .regular)
+
+        for span in spans {
+            let start = utf16Index(in: line, byteOffset: Int(span.start))
+            let end = utf16Index(in: line, byteOffset: Int(span.end))
+            guard end > start else { continue }
+            let range = NSRange(location: lineRange.location + start, length: end - start)
+
+            switch span.kind {
+            case .bold:
+                storage.addAttribute(.font, value: bold, range: range)
+            case .italic:
+                storage.addAttribute(.font, value: italic, range: range)
+            case .strike:
+                storage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: range)
+            case .code:
+                storage.addAttribute(.font, value: mono, range: range)
+                storage.addAttribute(
+                    .backgroundColor,
+                    value: NSColor.secondaryLabelColor.withAlphaComponent(0.12),
+                    range: range
+                )
+            }
+        }
+    }
+
+    /// Byte offset (as the core reports it) to a UTF-16 index for the same string.
+    static func utf16Index(in text: String, byteOffset: Int) -> Int {
+        var bytes = 0
+        var utf16 = 0
+        for scalar in text.unicodeScalars {
+            if bytes >= byteOffset { break }
+            bytes += UTF8.width(scalar)
+            utf16 += UTF16.width(scalar)
+        }
+        return utf16
     }
 
     /// 1-based line number of a UTF-16 offset.

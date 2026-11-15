@@ -468,6 +468,11 @@ RustBuffer uniffi_zree_core_fn_func_format_block(RustBuffer line, RustBuffer kin
 RustBuffer uniffi_zree_core_fn_func_indent_line(RustBuffer line, int8_t outdent, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_INLINE_SPANS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_INLINE_SPANS
+RustBuffer uniffi_zree_core_fn_func_inline_spans(RustBuffer line, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_IS_GIT_REPO
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_IS_GIT_REPO
 int8_t uniffi_zree_core_fn_func_is_git_repo(RustBuffer root, RustCallStatus *_Nonnull out_status
@@ -768,6 +773,12 @@ uint16_t uniffi_zree_core_checksum_func_format_block(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_INDENT_LINE
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_INDENT_LINE
 uint16_t uniffi_zree_core_checksum_func_indent_line(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_INLINE_SPANS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_FUNC_INLINE_SPANS
+uint16_t uniffi_zree_core_checksum_func_inline_spans(void
     
 );
 #endif
