@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import NoteCore
+import ZreeCore
 
 struct PreviewView: View {
     @Environment(AppState.self) private var app

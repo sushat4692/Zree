@@ -1,12 +1,12 @@
 import SwiftUI
-import NoteCore
+import ZreeCore
 
 @main
-struct NoteMain: App {
+struct ZreeMain: App {
     @State private var app = AppState()
 
     var body: some Scene {
-        WindowGroup("Note") {
+        WindowGroup("Zree") {
             ContentView()
                 .environment(app)
                 .frame(minWidth: 860, minHeight: 560)

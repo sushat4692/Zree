@@ -1,5 +1,5 @@
 [package]
-name = "note-core"
+name = "zree-core"
 version = "0.1.0"
 edition = "2021"
 publish = false

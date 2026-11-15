@@ -1,7 +1,7 @@
-use note_core::markdown::{self, Block, Inline};
-use note_core::search::{self, Index};
-use note_core::tags;
-use note_core::vault::Vault;
+use zree_core::markdown::{self, Block, Inline};
+use zree_core::search::{self, Index};
+use zree_core::tags;
+use zree_core::vault::Vault;
 use std::fs;
 
 fn fixture() -> (tempfile::TempDir, Vault) {

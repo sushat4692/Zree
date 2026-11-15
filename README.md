@@ -2,21 +2,14 @@
 
 **Zero-friction Markdown tree.**（*Zero* + *Tree*）
 
-Obsidian の代替として作る、軽量な Markdown ノートアプリ。
-**macOS + Android**、UIは完全ネイティブ、ロジックは Rust の共有コア。
+軽量な Markdown ノートアプリ。**macOS + Android**、UIは完全ネイティブ、ロジックは Rust の共有コア。
 
 - **Zero friction** — 一瞬で起動する。肥大したUIなし、手動のフォルダ管理なし
 - **Markdown at its core** — 純粋でポータブルなプレーンテキスト
 - **Git-synced Tree** — Gitのツリー構造に乗せる。バージョン管理とデバイス間同期
 - **Self-organizing** — 書くことに集中。自動タグ付けが思考を木構造へ編む（将来）
 
-## なぜ作るか
-
-既存の Vault（365ノート / 453KB）を実測したところ、Obsidian の機能のごく一部しか使っていなかった:
-
-- フォルダ 0、frontmatter 0、dataview/mermaid/callout/表/数式 0、ノート間リンク 0
-- 使っているのは: 見出し、箇条書き、打消し、チェックボックス、インラインタグ、画像埋め込み、Git同期
-- タグは **99種**（`#お客様打合せ` x35, `#ワンネス` x16, `#マネジメント` x15, `#1on1` x13 …）
+識別子: `im.sush.zree`
 
 ## 構成
 
@@ -33,8 +26,8 @@ macOS は Xcode プロジェクトを使わず、SwiftPM + ad-hoc 署名で `.ap
 
 ```bash
 ./macos/scripts/sync-core.sh   # Rustをビルド → Swiftバインディング生成 → XCFramework
-./macos/scripts/bundle.sh      # build/Note.app を作る
-open build/Note.app
+./macos/scripts/bundle.sh      # build/Zree.app を作る
+open build/Zree.app
 ```
 
 ショートカット:
@@ -48,7 +41,7 @@ open build/Note.app
 | ⇧⌘R | 再インデックス（git pull 後など） |
 | ⇧⌘F | Finderで表示 |
 
-## 性能（実データ365ノート）
+## 性能（実データ365ノート / 443KB）
 
 | 項目 | 値 |
 |---|---|
@@ -67,6 +60,6 @@ open build/Note.app
 ## テスト
 
 ```bash
-cargo test -p note-core
+cargo test -p zree-core
 cargo run --release --example probe -- /path/to/vault
 ```

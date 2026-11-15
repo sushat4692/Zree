@@ -3,25 +3,29 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-echo "==> cargo build --release"
-cargo build --release -p note-core
+CRATE=zree_core
+PKG=zree-core
+BIND=/tmp/zree-bind
+
+echo "==> cargo build --release ($PKG)"
+cargo build --release -p "$PKG"
 
 echo "==> uniffi bindings (swift)"
-rm -rf /tmp/note-bind macos/include
-mkdir -p /tmp/note-bind macos/include macos/Frameworks macos/Sources/NoteCore
+rm -rf "$BIND" macos/include
+mkdir -p "$BIND" macos/include macos/Frameworks macos/Sources/ZreeCore
 cargo run -q --bin uniffi-bindgen -- generate \
-  --library target/release/libnote_core.dylib \
-  --language swift --out-dir /tmp/note-bind
+  --library "target/release/lib${CRATE}.dylib" \
+  --language swift --out-dir "$BIND"
 
-cp /tmp/note-bind/note_coreFFI.h macos/include/
-cp /tmp/note-bind/note_coreFFI.modulemap macos/include/module.modulemap
-cp /tmp/note-bind/note_core.swift macos/Sources/NoteCore/note_core.swift
+cp "$BIND/${CRATE}FFI.h" macos/include/
+cp "$BIND/${CRATE}FFI.modulemap" macos/include/module.modulemap
+cp "$BIND/${CRATE}.swift" macos/Sources/ZreeCore/
 
 echo "==> xcframework"
-rm -rf macos/Frameworks/note_coreFFI.xcframework
+rm -rf "macos/Frameworks/${CRATE}FFI.xcframework"
 xcodebuild -create-xcframework \
-  -library target/release/libnote_core.a \
+  -library "target/release/lib${CRATE}.a" \
   -headers macos/include \
-  -output macos/Frameworks/note_coreFFI.xcframework >/dev/null
+  -output "macos/Frameworks/${CRATE}FFI.xcframework" >/dev/null
 
-echo "ok: macos/Frameworks/note_coreFFI.xcframework"
+echo "ok: macos/Frameworks/${CRATE}FFI.xcframework"

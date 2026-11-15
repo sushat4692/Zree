@@ -1,5 +1,5 @@
-module note_coreFFI {
-    header "note_coreFFI.h"
+module zree_coreFFI {
+    header "zree_coreFFI.h"
     export *
     use "Darwin"
     use "_Builtin_stdbool"

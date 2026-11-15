@@ -5,19 +5,23 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>ja</string>
     <key>CFBundleExecutable</key>
-    <string>NoteApp</string>
+    <string>Zree</string>
     <key>CFBundleIdentifier</key>
-    <string>net.sus-happy.note</string>
+    <string>im.sush.zree</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Note</string>
+    <string>Zree</string>
+    <key>CFBundleDisplayName</key>
+    <string>Zree</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
     <string>0.1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.productivity</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>

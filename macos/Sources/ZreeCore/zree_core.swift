@@ -7,8 +7,8 @@ import Foundation
 // Depending on the consumer's build setup, the low-level FFI code
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
-#if canImport(note_coreFFI)
-import note_coreFFI
+#if canImport(zree_coreFFI)
+import zree_coreFFI
 #endif
 
 fileprivate extension RustBuffer {
@@ -25,13 +25,13 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_note_core_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_zree_core_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_note_core_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_zree_core_rustbuffer_free(self, $0) }
     }
 }
 
@@ -327,7 +327,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureNoteCoreInitialized()
+    uniffiEnsureZreeCoreInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -615,7 +615,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol NoteSessionProtocol: AnyObject, Sendable {
+public protocol ZreeSessionProtocol: AnyObject, Sendable {
     
     /**
      * Markdown token stream for a note on disk.
@@ -666,7 +666,7 @@ public protocol NoteSessionProtocol: AnyObject, Sendable {
     func write(id: String, body: String, seenMtimeMs: Int64) throws  -> NoteMeta
     
 }
-open class NoteSession: NoteSessionProtocol, @unchecked Sendable {
+open class ZreeSession: ZreeSessionProtocol, @unchecked Sendable {
     fileprivate let handle: UInt64
 
     /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
@@ -703,7 +703,7 @@ open class NoteSession: NoteSessionProtocol, @unchecked Sendable {
     @_documentation(visibility: private)
 #endif
     public func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_note_core_fn_clone_notesession(self.handle, $0) }
+        return try! rustCall { uniffi_zree_core_fn_clone_zreesession(self.handle, $0) }
     }
     // No primary constructor declared for this class.
 
@@ -713,17 +713,17 @@ open class NoteSession: NoteSessionProtocol, @unchecked Sendable {
             return
         }
 
-        try! rustCall { uniffi_note_core_fn_free_notesession(handle, $0) }
+        try! rustCall { uniffi_zree_core_fn_free_zreesession(handle, $0) }
     }
 
     
     /**
      * Open a vault folder. Fails if the folder does not exist.
      */
-public static func `open`(root: String)throws  -> NoteSession  {
-    return try  FfiConverterTypeNoteSession_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+public static func `open`(root: String)throws  -> ZreeSession  {
+    return try  FfiConverterTypeZreeSession_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_constructor_notesession_open(
+    uniffi_zree_core_fn_constructor_zreesession_open(
         FfiConverterString.lower(root),uniffiCallStatus
     )
 })
@@ -737,7 +737,7 @@ public static func `open`(root: String)throws  -> NoteSession  {
 open func blocks(id: String)throws  -> [Block]  {
     return try  FfiConverterSequenceTypeBlock.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_blocks(
+    uniffi_zree_core_fn_method_zreesession_blocks(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),uniffiCallStatus
     )
@@ -750,7 +750,7 @@ open func blocks(id: String)throws  -> [Block]  {
 open func blocksOf(text: String) -> [Block]  {
     return try!  FfiConverterSequenceTypeBlock.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_blocks_of(
+    uniffi_zree_core_fn_method_zreesession_blocks_of(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(text),uniffiCallStatus
     )
@@ -760,7 +760,7 @@ open func blocksOf(text: String) -> [Block]  {
 open func create(title: String?, body: String)throws  -> NoteMeta  {
     return try  FfiConverterTypeNoteMeta_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_create(
+    uniffi_zree_core_fn_method_zreesession_create(
             self.uniffiCloneHandle(),
         FfiConverterOptionString.lower(title),
         FfiConverterString.lower(body),uniffiCallStatus
@@ -774,7 +774,7 @@ open func create(title: String?, body: String)throws  -> NoteMeta  {
 open func imageSources(id: String)throws  -> [String]  {
     return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_image_sources(
+    uniffi_zree_core_fn_method_zreesession_image_sources(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),uniffiCallStatus
     )
@@ -784,7 +784,7 @@ open func imageSources(id: String)throws  -> [String]  {
 open func inline(text: String) -> [Inline]  {
     return try!  FfiConverterSequenceTypeInline.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_inline(
+    uniffi_zree_core_fn_method_zreesession_inline(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(text),uniffiCallStatus
     )
@@ -794,7 +794,7 @@ open func inline(text: String) -> [Inline]  {
 open func list()throws  -> [NoteMeta]  {
     return try  FfiConverterSequenceTypeNoteMeta.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_list(
+    uniffi_zree_core_fn_method_zreesession_list(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -803,7 +803,7 @@ open func list()throws  -> [NoteMeta]  {
 open func read(id: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_read(
+    uniffi_zree_core_fn_method_zreesession_read(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),uniffiCallStatus
     )
@@ -815,7 +815,7 @@ open func read(id: String)throws  -> String  {
      */
 open func reindex()throws   {try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_reindex(
+    uniffi_zree_core_fn_method_zreesession_reindex(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 }
@@ -824,7 +824,7 @@ open func reindex()throws   {try rustCallWithError(FfiConverterTypeNoteError_lif
 open func rename(id: String, title: String)throws  -> NoteMeta  {
     return try  FfiConverterTypeNoteMeta_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_rename(
+    uniffi_zree_core_fn_method_zreesession_rename(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),
         FfiConverterString.lower(title),uniffiCallStatus
@@ -838,7 +838,7 @@ open func rename(id: String, title: String)throws  -> NoteMeta  {
 open func resolveAsset(id: String, src: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_resolve_asset(
+    uniffi_zree_core_fn_method_zreesession_resolve_asset(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),
         FfiConverterString.lower(src),uniffiCallStatus
@@ -849,7 +849,7 @@ open func resolveAsset(id: String, src: String)throws  -> String  {
 open func root() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_root(
+    uniffi_zree_core_fn_method_zreesession_root(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -858,7 +858,7 @@ open func root() -> String  {
 open func search(query: String, tags: [String], limit: UInt32) -> [Hit]  {
     return try!  FfiConverterSequenceTypeHit.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_search(
+    uniffi_zree_core_fn_method_zreesession_search(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(query),
         FfiConverterSequenceString.lower(tags),
@@ -870,7 +870,7 @@ open func search(query: String, tags: [String], limit: UInt32) -> [Hit]  {
 open func tags() -> [TagCount]  {
     return try!  FfiConverterSequenceTypeTagCount.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_tags(
+    uniffi_zree_core_fn_method_zreesession_tags(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -879,7 +879,7 @@ open func tags() -> [TagCount]  {
 open func trash(id: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_trash(
+    uniffi_zree_core_fn_method_zreesession_trash(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),uniffiCallStatus
     )
@@ -892,7 +892,7 @@ open func trash(id: String)throws  -> String  {
 open func write(id: String, body: String, seenMtimeMs: Int64)throws  -> NoteMeta  {
     return try  FfiConverterTypeNoteMeta_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_note_core_fn_method_notesession_write(
+    uniffi_zree_core_fn_method_zreesession_write(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),
         FfiConverterString.lower(body),
@@ -909,24 +909,24 @@ open func write(id: String, body: String, seenMtimeMs: Int64)throws  -> NoteMeta
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-public struct FfiConverterTypeNoteSession: FfiConverter {
+public struct FfiConverterTypeZreeSession: FfiConverter {
     typealias FfiType = UInt64
-    typealias SwiftType = NoteSession
+    typealias SwiftType = ZreeSession
 
-    public static func lift(_ handle: UInt64) throws -> NoteSession {
-        return NoteSession(unsafeFromHandle: handle)
+    public static func lift(_ handle: UInt64) throws -> ZreeSession {
+        return ZreeSession(unsafeFromHandle: handle)
     }
 
-    public static func lower(_ value: NoteSession) -> UInt64 {
+    public static func lower(_ value: ZreeSession) -> UInt64 {
         return value.uniffiCloneHandle()
     }
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NoteSession {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ZreeSession {
         let handle: UInt64 = try readInt(&buf)
         return try lift(handle)
     }
 
-    public static func write(_ value: NoteSession, into buf: inout [UInt8]) {
+    public static func write(_ value: ZreeSession, into buf: inout [UInt8]) {
         writeInt(&buf, lower(value))
     }
 }
@@ -935,15 +935,15 @@ public struct FfiConverterTypeNoteSession: FfiConverter {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-public func FfiConverterTypeNoteSession_lift(_ handle: UInt64) throws -> NoteSession {
-    return try FfiConverterTypeNoteSession.lift(handle)
+public func FfiConverterTypeZreeSession_lift(_ handle: UInt64) throws -> ZreeSession {
+    return try FfiConverterTypeZreeSession.lift(handle)
 }
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-public func FfiConverterTypeNoteSession_lower(_ value: NoteSession) -> UInt64 {
-    return FfiConverterTypeNoteSession.lower(value)
+public func FfiConverterTypeZreeSession_lower(_ value: ZreeSession) -> UInt64 {
+    return FfiConverterTypeZreeSession.lower(value)
 }
 
 
@@ -1731,56 +1731,56 @@ private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
     let bindings_contract_version = 30
     // Get the scaffolding contract version by calling the into the dylib
-    let scaffolding_contract_version = ffi_note_core_uniffi_contract_version()
+    let scaffolding_contract_version = ffi_zree_core_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_blocks() != 19482) {
+    if (uniffi_zree_core_checksum_method_zreesession_blocks() != 2554) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_blocks_of() != 7896) {
+    if (uniffi_zree_core_checksum_method_zreesession_blocks_of() != 61892) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_create() != 52125) {
+    if (uniffi_zree_core_checksum_method_zreesession_create() != 50521) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_image_sources() != 48947) {
+    if (uniffi_zree_core_checksum_method_zreesession_image_sources() != 45829) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_inline() != 2781) {
+    if (uniffi_zree_core_checksum_method_zreesession_inline() != 58590) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_list() != 11505) {
+    if (uniffi_zree_core_checksum_method_zreesession_list() != 15367) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_read() != 59280) {
+    if (uniffi_zree_core_checksum_method_zreesession_read() != 27926) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_reindex() != 32943) {
+    if (uniffi_zree_core_checksum_method_zreesession_reindex() != 61749) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_rename() != 14959) {
+    if (uniffi_zree_core_checksum_method_zreesession_rename() != 13418) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_resolve_asset() != 23505) {
+    if (uniffi_zree_core_checksum_method_zreesession_resolve_asset() != 902) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_root() != 57913) {
+    if (uniffi_zree_core_checksum_method_zreesession_root() != 44698) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_search() != 7683) {
+    if (uniffi_zree_core_checksum_method_zreesession_search() != 28001) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_tags() != 37327) {
+    if (uniffi_zree_core_checksum_method_zreesession_tags() != 56009) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_trash() != 63706) {
+    if (uniffi_zree_core_checksum_method_zreesession_trash() != 28332) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_method_notesession_write() != 27729) {
+    if (uniffi_zree_core_checksum_method_zreesession_write() != 7119) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_note_core_checksum_constructor_notesession_open() != 3020) {
+    if (uniffi_zree_core_checksum_constructor_zreesession_open() != 47313) {
         return InitializationResult.apiChecksumMismatch
     }
 
@@ -1789,7 +1789,7 @@ private let initializationResult: InitializationResult = {
 
 // Make the ensure init function public so that other modules which have external type references to
 // our types can call it.
-public func uniffiEnsureNoteCoreInitialized() {
+public func uniffiEnsureZreeCoreInitialized() {
     switch initializationResult {
     case .ok:
         break

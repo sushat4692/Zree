@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 import Observation
-import NoteCore
+import ZreeCore
 
 struct NoteRow: Identifiable, Hashable {
     let id: String
@@ -16,7 +16,7 @@ struct NoteRow: Identifiable, Hashable {
 final class AppState {
     nonisolated init() {}
 
-    private(set) var session: NoteSession?
+    private(set) var session: ZreeSession?
     private(set) var vaultPath: String?
 
     var query: String = ""
@@ -66,7 +66,7 @@ final class AppState {
 
     func openVault(_ path: String) {
         do {
-            session = try NoteSession.open(root: path)
+            session = try ZreeSession.open(root: path)
             vaultPath = path
             defaults.set(path, forKey: Keys.vault)
             selectedID = nil

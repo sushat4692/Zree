@@ -10,20 +10,20 @@ use crate::vault::{NoteMeta, Vault};
 use std::sync::{Arc, Mutex};
 
 #[derive(uniffi::Object)]
-pub struct NoteSession {
+pub struct ZreeSession {
     vault: Vault,
     index: Mutex<Index>,
     dirty: Mutex<bool>,
 }
 
 #[uniffi::export]
-impl NoteSession {
+impl ZreeSession {
     /// Open a vault folder. Fails if the folder does not exist.
     #[uniffi::constructor]
     pub fn open(root: String) -> Result<Arc<Self>, NoteError> {
         let vault = Vault::open(&root)?;
         let index = Index::build(&vault)?;
-        Ok(Arc::new(NoteSession {
+        Ok(Arc::new(ZreeSession {
             vault,
             index: Mutex::new(index),
             dirty: Mutex::new(false),
@@ -142,7 +142,7 @@ impl NoteSession {
     }
 }
 
-impl NoteSession {
+impl ZreeSession {
     fn invalidate(&self) {
         *self.dirty.lock().unwrap() = true;
     }

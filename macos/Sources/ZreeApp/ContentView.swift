@@ -1,5 +1,5 @@
 import SwiftUI
-import NoteCore
+import ZreeCore
 
 struct ContentView: View {
     @Environment(AppState.self) private var app

@@ -1,6 +1,6 @@
 //! Smoke test against a real vault: `cargo run --release --example probe -- <vault>`
-use note_core::search::Index;
-use note_core::Vault;
+use zree_core::search::Index;
+use zree_core::Vault;
 use std::time::Instant;
 
 fn main() {
