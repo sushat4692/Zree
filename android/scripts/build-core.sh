@@ -25,6 +25,9 @@ export AR_aarch64_linux_android="llvm-ar"
 export RANLIB_aarch64_linux_android="llvm-ranlib"
 export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="aarch64-linux-android${API}-clang"
 
+# Android 16 requires 16 KB page alignment for arm64 shared libraries
+export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384"
+
 echo "==> ndk: $NDK"
 echo "==> cargo build --release --target $TARGET"
 cargo build --release --target "$TARGET" -p zree-core

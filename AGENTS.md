@@ -83,5 +83,6 @@ cargo run --release --example probe -- /path/to/vault
 - [x] Git sync (libgit2) with conflict UI
 - [x] Clone onboarding, Keychain-stored PAT, pull on launch
 - [x] Auto-sync every 5 minutes by default (commit → pull → push), plus a final sync on quit
-- [~] Android: toolchain installed, core cross-compiles, APK builds; no device run yet
+- [~] Android: toolchain installed, core cross-compiles and **runs on a real device**
+      (search/tags/markdown/git verified); UI still a spike screen
 - [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)
