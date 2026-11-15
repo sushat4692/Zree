@@ -84,29 +84,34 @@ enum EditorStyling {
             let end = newline.location == NSNotFound ? text.length : newline.location
             let lineRange = NSRange(location: index, length: end - index)
 
-            if line != caretLine, let style = styles[line], lineRange.length > 0 {
-                if style.isRule {
-                    // drawn by ZreeLayoutManager; keep the characters but make them invisible
+            if line != caretLine, lineRange.length > 0 {
+                let style = styles[line]
+
+                if let style, style.isRule {
+                    // drawn by ZreeLayoutManager; keep the characters but hide them
                     storage.addAttribute(.zreeRule, value: true, range: lineRange)
                     storage.addAttribute(.foregroundColor, value: NSColor.clear, range: lineRange)
                 } else {
-                    storage.addAttribute(.font, value: style.font, range: lineRange)
-                    if style.markerLength > 0 {
-                        let markerLength = min(style.markerLength, lineRange.length)
-                        storage.addAttribute(
-                            .foregroundColor,
-                            value: mutedColor,
-                            range: NSRange(location: lineRange.location, length: markerLength)
-                        )
+                    if let style {
+                        storage.addAttribute(.font, value: style.font, range: lineRange)
+                        if style.markerLength > 0 {
+                            let markerLength = min(style.markerLength, lineRange.length)
+                            storage.addAttribute(
+                                .foregroundColor,
+                                value: mutedColor,
+                                range: NSRange(location: lineRange.location, length: markerLength)
+                            )
+                        }
+                        if style.color != baseColor {
+                            storage.addAttribute(.foregroundColor, value: style.color, range: lineRange)
+                        }
                     }
-                    if style.color != baseColor {
-                        storage.addAttribute(.foregroundColor, value: style.color, range: lineRange)
-                    }
+                    // plain paragraphs get inline styling too
                     applyInline(
                         storage,
                         line: text.substring(with: lineRange),
                         lineRange: lineRange,
-                        baseFont: style.font
+                        baseFont: style?.font ?? baseFont
                     )
                 }
             }

@@ -58,9 +58,37 @@ enum EditorCommands {
 
         let newStart = utf16Index(result.text, scalars: Int(result.selStart))
         let newEnd = utf16Index(result.text, scalars: Int(result.selEnd))
-        let whole = NSRange(location: 0, length: (textView.string as NSString).length)
-        textView.insertText(result.text, replacementRange: whole)
-        textView.setSelectedRange(NSRange(location: newStart, length: newEnd - newStart))
+        apply(textView, text: result.text, selection: NSRange(location: newStart, length: newEnd - newStart))
+    }
+
+    /// Replace only the characters that actually changed.
+    ///
+    /// Replacing the whole document (the first version did) selects everything, scrolls
+    /// to the caret and turns one bold toggle into a single huge undo step.
+    private static func apply(_ textView: NSTextView, text newText: String, selection: NSRange) {
+        let old = textView.string as NSString
+        let new = newText as NSString
+        let oldLength = old.length
+        let newLength = new.length
+
+        var prefix = 0
+        let limit = min(oldLength, newLength)
+        while prefix < limit, old.character(at: prefix) == new.character(at: prefix) {
+            prefix += 1
+        }
+        var suffix = 0
+        while suffix < limit - prefix,
+              old.character(at: oldLength - 1 - suffix) == new.character(at: newLength - 1 - suffix) {
+            suffix += 1
+        }
+
+        let range = NSRange(location: prefix, length: oldLength - prefix - suffix)
+        let replacement = new.substring(
+            with: NSRange(location: prefix, length: newLength - prefix - suffix)
+        )
+        if replacement.isEmpty && range.length == 0 { return }
+        textView.insertText(replacement, replacementRange: range)
+        textView.setSelectedRange(selection)
     }
 
     private static func utf16Index(_ text: String, scalars: Int) -> Int {
