@@ -26,6 +26,12 @@ struct GitFooter: View {
                 if !st.conflicts.isEmpty {
                     Text("⚠\(st.conflicts.count)").font(.caption2).foregroundStyle(.red)
                 }
+                if app.autoSyncEnabled {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .help("自動同期: \(app.autoSyncMinutes)分ごと")
+                }
                 Button {
                     app.sync()
                 } label: {
@@ -133,6 +139,33 @@ struct GitSettingsSheet: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Toggle("自動同期（commit → pull → push）", isOn: $app.autoSyncEnabled)
+                    .toggleStyle(.switch)
+                HStack(spacing: 8) {
+                    Text("間隔").font(.caption).foregroundStyle(.secondary)
+                    Picker("", selection: $app.autoSyncMinutes) {
+                        Text("1分").tag(1)
+                        Text("5分").tag(5)
+                        Text("10分").tag(10)
+                        Text("15分").tag(15)
+                    }
+                    .labelsHidden()
+                    .frame(width: 100)
+                    .disabled(!app.autoSyncEnabled)
+                    if let last = app.lastSyncAt {
+                        Text("最終: \(last.formatted(date: .omitted, time: .shortened))")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                Text("変更があるときだけコミットします。衝突を検出したら停止して確認を求めます。")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+
+            Divider()
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("リモートURL").font(.caption).foregroundStyle(.secondary)

@@ -100,6 +100,17 @@ Clicking a link navigates to that note (the UI intercepts it as `zree://note?id=
   - diverged → real merge; on conflict **stop without pushing** and return the conflicted paths
 - Conflict resolution: `mine / theirs / both` (both = ours + newline + theirs). A merge commit finalises it
 - Pull on launch runs only when the worktree is clean, nothing is merging, there are no conflicts and behind > 0
+
+### Auto-sync
+
+- Off by default? No — **on by default**, interval 5 minutes (options: 1 / 5 / 10 / 15 / off)
+- Each tick: flush the editor, then run the same commit → pull → push
+- Skipped entirely while a merge is in progress or conflicts are unresolved
+- `commit_all` is a no-op when nothing changed, so an idle vault produces no commits
+- Commit message: `zree: autosync MM-DD HH:mm`
+- After 3 consecutive failures the loop stops and the error is shown once (so a missing PAT or
+  being offline cannot spam)
+- On quit: one final flush + sync, message suffix `(quit)`
 - Auth: HTTPS + PAT only (macOS Keychain). The ssh transport is not compiled in yet.
 
 ## 7. Errors

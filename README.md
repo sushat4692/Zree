@@ -43,7 +43,7 @@ open build/Zree.app
 | ⇧⌘O | Open a vault folder |
 | ⇧⌘C | Clone a vault from Git |
 | ⇧⌘U | Sync (commit → pull → push) |
-| ⌘, | Settings (remote URL, PAT) |
+| ⌘, | Settings (auto-sync interval, remote URL, PAT) |
 | ⇧⌘R | Reindex (e.g. after pulling) |
 | ⇧⌘F | Reveal in Finder |
 
@@ -55,6 +55,7 @@ open build/Zree.app
 - Conflicts are resolved per file as `mine / theirs / both`, then finalised with a merge commit.
 - Auth: HTTPS + PAT (stored in the macOS Keychain). ssh-agent is not compiled in yet.
 - Pulling on launch only happens when the worktree is clean, nothing is merging and the branch is actually behind.
+- **Auto-sync is on by default** (every 5 minutes: commit → pull → push). It only commits when files changed, pauses while conflicts are open, stops after 3 consecutive failures, and runs once more on quit. Configurable at ⌘, (1/5/10/15 min or off).
 
 ## Performance (real vault: 365 notes / 443 KB)
 

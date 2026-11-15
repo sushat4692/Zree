@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import ZreeCore
 
@@ -11,6 +12,9 @@ struct ZreeMain: App {
                 .environment(app)
                 .frame(minWidth: 860, minHeight: 560)
                 .task { app.restore() }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                    app.flushAndSyncBlocking()
+                }
         }
         .windowToolbarStyle(.unified)
         .commands {

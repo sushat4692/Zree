@@ -82,5 +82,6 @@ cargo run --release --example probe -- /path/to/vault
 - [x] Markdown link navigation (`zree://note?id=` intercepted by the preview)
 - [x] Git sync (libgit2) with conflict UI
 - [x] Clone onboarding, Keychain-stored PAT, pull on launch
+- [x] Auto-sync every 5 minutes by default (commit → pull → push), plus a final sync on quit
 - [~] Android: toolchain installed, core cross-compiles, APK builds; no device run yet
 - [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)

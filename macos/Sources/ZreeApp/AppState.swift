@@ -45,6 +45,18 @@ final class AppState {
     var remoteDraft = ""
     var tokenDraft = ""
 
+    // Auto-sync
+    var autoSyncEnabled: Bool = true {
+        didSet { autoSyncPrefsChanged() }
+    }
+    var autoSyncMinutes: Int = 5 {
+        didSet { autoSyncPrefsChanged() }
+    }
+    private var restoringPrefs = false
+    var lastSyncAt: Date?
+    private var autoSyncTask: Task<Void, Never>?
+    private var autoSyncFailures = 0
+
     // Clone flow
     var showClone = false
     var cloneURL = ""
@@ -59,12 +71,25 @@ final class AppState {
         static let lastNote = "lastNoteID"
         static let token = "gitToken"
         static let username = "gitUsername"
+        static let autoSyncOn = "autoSyncEnabled"
+        static let autoSyncMinutes = "autoSyncMinutes"
     }
 
     // MARK: - Vault
 
     func restore() {
         guard session == nil else { return }
+        // auto-sync preferences; suppress the setters' writes so they cannot
+        // clobber a value we have not read yet
+        restoringPrefs = true
+        if defaults.object(forKey: Keys.autoSyncOn) != nil {
+            autoSyncEnabled = defaults.bool(forKey: Keys.autoSyncOn)
+        }
+        let savedMinutes = defaults.integer(forKey: Keys.autoSyncMinutes)
+        if savedMinutes > 0 {
+            autoSyncMinutes = savedMinutes
+        }
+        restoringPrefs = false
         if let path = defaults.string(forKey: Keys.vault), FileManager.default.fileExists(atPath: path) {
             openVault(path)
         }
@@ -103,6 +128,7 @@ final class AppState {
                 select(first.id)
             }
             autoPullOnOpen()
+            restartAutoSync()
         } catch {
             errorMessage = describe(error)
         }
@@ -451,7 +477,7 @@ final class AppState {
                 try git.setRemote(url: remoteDraft)
             }
             let token = tokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-            try? git.setAuth(username: nil, token: token.isEmpty ? nil : token)
+            git.setAuth(username: nil, token: token.isEmpty ? nil : token)
             if token.isEmpty {
                 Keychain.delete(Keys.token)
             } else {
@@ -465,18 +491,87 @@ final class AppState {
     }
 
     func sync() {
-        guard let git else { return }
+        Task { await runSync(auto: false) }
+    }
+
+    private static func stamp() -> String {
+        let f = DateFormatter()
+        f.dateFormat = "MM-dd HH:mm"
+        return f.string(from: Date())
+    }
+
+    /// commit → pull → push, off the main thread.
+    private func runSync(auto: Bool) async {
+        guard let repo = git else { return }
         saveNow()
         gitBusy = true
-        defer { gitBusy = false }
-        do {
-            let report = try git.sync(message: "zree: sync from macOS")
+        let message = auto ? "zree: autosync \(Self.stamp())" : "zree: sync from macOS"
+        let result: Result<SyncReport, Error> = await Task.detached {
+            Result { try repo.sync(message: message) }
+        }.value
+        gitBusy = false
+
+        switch result {
+        case .success(let report):
+            autoSyncFailures = 0
             conflicts = report.conflicts
+            lastSyncAt = Date()
             refreshAll()
             refreshGitStatus()
-        } catch {
-            errorMessage = describe(error)
+            reloadSelectedIfClean()
+        case .failure(let error):
+            // a failing remote (missing PAT, offline) should not spam on every tick
+            autoSyncFailures += 1
+            if auto && autoSyncFailures >= 3 {
+                autoSyncEnabled = false
+                errorMessage = "自動同期を停止しました（3回連続で失敗）: \(describe(error))"
+            } else {
+                errorMessage = describe(error)
+            }
         }
+    }
+
+    // MARK: - Auto sync
+
+    private func autoSyncPrefsChanged() {
+        if !restoringPrefs {
+            defaults.set(autoSyncEnabled, forKey: Keys.autoSyncOn)
+            defaults.set(autoSyncMinutes, forKey: Keys.autoSyncMinutes)
+        }
+        restartAutoSync()
+    }
+
+    func restartAutoSync() {
+        autoSyncTask?.cancel()
+        autoSyncTask = nil
+        autoSyncFailures = 0
+        guard autoSyncEnabled, git != nil else { return }
+
+        let seconds = UInt64(max(1, autoSyncMinutes)) * 60 * 1_000_000_000
+        autoSyncTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: seconds)
+                if Task.isCancelled { break }
+                guard let self else { break }
+                guard !self.gitBusy else { continue }
+                if let st = self.gitStatus, st.merging || !st.conflicts.isEmpty {
+                    continue  // let the human resolve first
+                }
+                await self.runSync(auto: true)
+            }
+        }
+    }
+
+    /// Final save + sync when the app is quitting.
+    func flushAndSyncBlocking() {
+        saveNow()
+        autoSyncTask?.cancel()
+        guard let repo = git else { return }
+        // re-read the worktree: autosave may have just written files
+        refreshGitStatus()
+        if let st = gitStatus, st.merging || !st.conflicts.isEmpty { return }
+        _ = try? repo.sync(message: "zree: autosync \(Self.stamp()) (quit)")
+        refreshGitStatus()
     }
 
     func pullOnly() {
