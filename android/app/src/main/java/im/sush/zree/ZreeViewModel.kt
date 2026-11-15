@@ -169,13 +169,22 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     // MARK: - editing
 
     fun openNote(id: String) = io {
-        save()
+        val failure = runCatching { persistCurrent() }.exceptionOrNull()
+        if (failure != null) {
+            Log.e(TAG, "save before switching failed", failure)
+            _state.value = _state.value.copy(error = "保存できませんでした: ${failure.message}")
+        }
         openNoteInternal(id)
     }
 
     private suspend fun openNoteInternal(id: String) {
         val s = session ?: return
-        val body = s.read(id)
+        val body = runCatching { s.read(id) }.getOrElse {
+            Log.e(TAG, "open failed: $id", it)
+            _state.value = _state.value.copy(error = "開けませんでした: ${it.message}")
+            return
+        }
+        Log.i(TAG, "open $id (${body.length} chars)")
         val row = _state.value.rows.firstOrNull { it.id == id }
         seenMtime = row?.mtimeMs ?: 0L
         dirty = false
@@ -240,7 +249,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         val s = session ?: return@io
         val from = _state.value.selectedId ?: return@io
         val target = s.resolveLink(from, href) ?: return@io
-        save()
+        persistCurrent()
         openNoteInternal(target)
     }
 
@@ -261,11 +270,20 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun save() = io {
-        val s = session ?: return@io
-        val id = _state.value.selectedId ?: return@io
-        if (!dirty) return@io
-        val meta = s.write(id, _state.value.draft, seenMtime)
+    fun save() = io { persistCurrent() }
+
+    /**
+     * Write the current draft to the note it belongs to. Suspend, so callers that
+     * are about to switch notes can finish the write before the state changes;
+     * the old fire-and-forget version could land on the *new* note (it read
+     * `selectedId` when the coroutine finally ran).
+     */
+    private suspend fun persistCurrent() {
+        val s = session ?: return
+        val id = _state.value.selectedId ?: return
+        if (!dirty) return
+        val body = _state.value.draft
+        val meta = s.write(id, body, seenMtime)
         seenMtime = meta.mtimeMs
         dirty = false
     }
@@ -275,7 +293,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         val id = _state.value.selectedId ?: return@io
         val wanted = title.trim()
         if (wanted.isEmpty() || wanted == _state.value.title) return@io
-        save()
+        persistCurrent()
         val meta = s.rename(id, wanted)
         seenMtime = meta.mtimeMs
         _state.value = _state.value.copy(selectedId = meta.id, title = meta.title)
@@ -284,21 +302,26 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun backToList() {
         viewModelScope.launch {
-            save()
-            withContext(Dispatchers.IO) { refresh() }
+            val failure = withContext(Dispatchers.IO) { runCatching { persistCurrent() }.exceptionOrNull() }
+            if (failure != null) {
+                Log.e(TAG, "save on back failed", failure)
+            }
+            withContext(Dispatchers.IO) { runCatching { refresh() } }
+            // always leave the editor: a failing save must not trap the user here
             _state.value = _state.value.copy(
                 screen = Screen.List,
                 selectedId = null,
                 draft = "",
                 pblocks = emptyList(),
                 bitmaps = emptyMap(),
+                error = failure?.let { "保存できませんでした: ${it.message}" } ?: _state.value.error,
             )
         }
     }
 
     fun newNote() = io {
         val s = session ?: return@io
-        save()
+        persistCurrent()
         val meta = s.create(null, "")
         refresh()
         seenMtime = meta.mtimeMs
@@ -340,7 +363,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun runSync(auto: Boolean) {
         val r = repo ?: return
-        save()
+        persistCurrent()
         if (!auto) _state.value = _state.value.copy(busy = true, message = "同期中…")
         try {
             val message = if (auto) {
@@ -417,7 +440,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     /** Best-effort flush when the app leaves the foreground. */
     fun onAppBackground() {
         viewModelScope.launch(Dispatchers.IO) {
-            save()
+            persistCurrent()
             if (_state.value.autoSync) runSync(auto = true)
         }
     }
@@ -449,6 +472,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun finishMerge() = io {
         val r = repo ?: return@io
+        persistCurrent()
         r.commitMerge("zree: resolve conflicts")
         runCatching { r.push() }
         refreshConflicts(r)
