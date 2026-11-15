@@ -176,6 +176,29 @@ final class EditorStylingTests: XCTestCase {
         }
     }
 
+    /// Attributes alone are not proof: this checks that the layout really gives the
+    /// heading line more height, which is what a reader sees.
+    func test_heading_lines_occupy_more_height_than_body_lines() {
+        let text = "# 見出し\n本文です"
+        let textView = makeTextView(text)
+        style(textView, text)
+
+        guard let layout = textView.layoutManager, let container = textView.textContainer else {
+            return XCTFail("no layout manager")
+        }
+        layout.ensureLayout(for: container)
+
+        let headingHeight = layout.lineFragmentRect(forGlyphAt: 0, effectiveRange: nil).height
+        let bodyGlyph = layout.glyphIndexForCharacter(at: (text as NSString).range(of: "本文").location)
+        let bodyHeight = layout.lineFragmentRect(forGlyphAt: bodyGlyph, effectiveRange: nil).height
+
+        XCTAssertGreaterThan(
+            headingHeight,
+            bodyHeight * 1.2,
+            "the heading line must be visibly taller (heading \(headingHeight), body \(bodyHeight))"
+        )
+    }
+
     func test_list_markers_are_muted_but_text_is_not() {
         let text = "- 項目"
         let textView = makeTextView(text)
