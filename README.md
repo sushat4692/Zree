@@ -53,7 +53,7 @@ open build/Zree.app
 - Sync = commit all changes → pull → push. Nothing to commit is not an error.
 - Pull fast-forwards when possible; otherwise it merges. On conflicts it stops without pushing and hands the file list to the UI.
 - Conflicts are resolved per file as `mine / theirs / both`, then finalised with a merge commit.
-- Auth: HTTPS + PAT (stored in the macOS Keychain) or ssh-agent.
+- Auth: HTTPS + PAT (stored in the macOS Keychain). ssh-agent is not compiled in yet.
 - Pulling on launch only happens when the worktree is clean, nothing is merging and the branch is actually behind.
 
 ## Performance (real vault: 365 notes / 443 KB)
@@ -72,7 +72,7 @@ open build/Zree.app
 - [x] Standard Markdown links that navigate between notes
 - [x] Git sync (commit/pull/push, fast-forward, merge) with a conflict UI
 - [x] Clone onboarding, Keychain-backed PAT, pull on launch
-- [~] Android: skeleton + generated Kotlin bindings; build spike blocked on the SDK
+- [~] Android: builds end-to-end (Gradle + cross-compiled core .so + APK); no runtime check on a device yet
 - [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)
 
 ## Tests

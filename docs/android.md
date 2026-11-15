@@ -1,8 +1,28 @@
 # Zree Android — plan
 
-Status: **not started**. The Android SDK is not installed on this machine, and the disk is at 91%
-(41 GB free). This document splits the work into "doable without the SDK" and "needs the SDK",
-and records the decisions that must be made before the first build.
+Status: **build spike passed**. The toolchain is installed and the core cross-compiles; nothing has
+run on a device yet.
+
+Installed (command-line tools only, no Android Studio download):
+
+| Component | Version | Size |
+|---|---|---|
+| cmdline-tools | latest | 137 MB |
+| platform-tools | 37.0.1 | — |
+| platforms;android-34 | 3 | — |
+| build-tools | 34.0.0 | — |
+| NDK | 27.2.12479018 | 2.7 GB |
+| Gradle | 8.11.1 (wrapper committed) | 131 MB |
+
+`~/Library/Android/sdk` totals ~2.9 GB.
+
+### Spike results
+
+- `./android/scripts/build-core.sh` produced `libzree_core.so` (9.0 MB) for `aarch64-linux-android`
+  in 2m31s, including libgit2 and a vendored OpenSSL for HTTPS
+- `./gradlew :app:assembleDebug` builds an 18 MB APK containing `libzree_core.so` and JNA
+- the uniffi Kotlin bindings compile against JNA without changes
+- **not yet verified**: loading the library on a device, Japanese IME in `BasicTextField`
 
 ## Things to decide first
 
@@ -46,29 +66,16 @@ supposed to avoid. Only take this path if the NDK build fails.
 - [ ] Re-check the core for assumptions that break on Android: none known — `Vault::open` takes an
       absolute path and the core never touches macOS-only APIs
 
-## Phase 1 — the build spike (needs the SDK)
+## Phase 1 — the build spike
 
-Installed via **command-line tools only** (no Android Studio download):
+- [x] `cargo build --target aarch64-linux-android` produces `libzree_core.so`
+      (libgit2 + vendored OpenSSL cross-compile cleanly)
+- [x] Gradle assembles an APK that packages the `.so` and JNA
+- [ ] a Compose activity loads the `.so` through the bindings and shows a note count (needs a device)
+- [ ] verify Japanese input in `BasicTextField` (composition, cursor stability, long notes)
 
-| Component | Approx. size |
-|---|---|
-| `cmdline-tools` | ~150 MB |
-| `platforms;android-34` | ~60 MB |
-| `build-tools;34.0.0` | ~120 MB |
-| `ndk;27.x` | ~2.7 GB |
-| Gradle/AGP downloads | ~300 MB |
-
-Total ≈ 3.3 GB against 41 GB free. Feasible. Avoid emulator images (`~2 GB` each) — use a real
-device over USB, since IME behaviour is the thing we must verify anyway.
-
-Spike goals, in order:
-
-1. `cargo build --target aarch64-linux-android` produces `libzree_core.so`
-   (this is where libgit2/OpenSSL cross-compilation either works or does not)
-2. a Compose activity loads the `.so` through the generated bindings and prints the vault count
-3. verify Japanese input in `BasicTextField` (composition, cursor stability, long notes)
-
-If step 1 fights back, stop and re-evaluate option 3 above before writing UI code.
+Avoid emulator images (~2 GB each) — use a real device over USB, since IME behaviour is the thing
+we must verify anyway.
 
 ## Phase 2 — feature parity with macOS
 

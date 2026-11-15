@@ -43,4 +43,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
+    // uniffi's generated Kotlin uses JNA to reach the Rust library
+    implementation("net.java.dev.jna:jna:5.14.0@aar")
 }

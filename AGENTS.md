@@ -82,6 +82,5 @@ cargo run --release --example probe -- /path/to/vault
 - [x] Markdown link navigation (`zree://note?id=` intercepted by the preview)
 - [x] Git sync (libgit2) with conflict UI
 - [x] Clone onboarding, Keychain-stored PAT, pull on launch
-- [~] Android: Phase 0 done (bindings, Gradle skeleton, plan in docs/android.md);
-      Phase 1 (SDK install + libgit2 cross-compile spike) blocked on the SDK
+- [~] Android: toolchain installed, core cross-compiles, APK builds; no device run yet
 - [ ] Image syntax migration (`![[..]]` → `![](assets/..)`, 6 files)

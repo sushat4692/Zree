@@ -100,7 +100,7 @@ Clicking a link navigates to that note (the UI intercepts it as `zree://note?id=
   - diverged → real merge; on conflict **stop without pushing** and return the conflicted paths
 - Conflict resolution: `mine / theirs / both` (both = ours + newline + theirs). A merge commit finalises it
 - Pull on launch runs only when the worktree is clean, nothing is merging, there are no conflicts and behind > 0
-- Auth: HTTPS + PAT (macOS Keychain) or ssh-agent
+- Auth: HTTPS + PAT only (macOS Keychain). The ssh transport is not compiled in yet.
 
 ## 7. Errors
 
