@@ -211,6 +211,8 @@ struct DetailView: View {
             }
             Header()
             Divider()
+            EditorToolbar()
+            Divider()
             if app.preview {
                 HSplitView {
                     editor
@@ -279,5 +281,48 @@ struct Header: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
+    }
+}
+
+/// Same actions as the Android accessory bar.
+struct EditorToolbar: View {
+    @Environment(AppState.self) private var app
+
+    private struct Action: Identifiable {
+        let id = UUID()
+        let label: String
+        let help: String
+        let run: () -> Void
+    }
+
+    private var actions: [Action] {
+        [
+            Action(label: "⇤", help: "インデントを戻す (⇧Tab)") { EditorCommands.indent(outdent: true) },
+            Action(label: "⇥", help: "インデント (Tab)") { EditorCommands.indent(outdent: false) },
+            Action(label: "•", help: "箇条書き") { EditorCommands.block(.bullet) },
+            Action(label: "1.", help: "番号付き") { EditorCommands.block(.ordered) },
+            Action(label: "☐", help: "チェックボックス") { EditorCommands.block(.task) },
+            Action(label: "☑", help: "チェックを切り替え") { EditorCommands.toggleTask() },
+            Action(label: "#", help: "見出し") { EditorCommands.block(.heading) },
+            Action(label: "❝", help: "引用") { EditorCommands.block(.quote) },
+            Action(label: "B", help: "太字") { EditorCommands.toggleInline("**") },
+        ]
+    }
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 2) {
+                ForEach(actions) { action in
+                    Button(action.label) { action.run() }
+                        .buttonStyle(.borderless)
+                        .font(.system(size: 13, design: .monospaced))
+                        .frame(minWidth: 26, minHeight: 22)
+                        .help(action.help)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 3)
+        }
+        .background(.bar)
     }
 }
