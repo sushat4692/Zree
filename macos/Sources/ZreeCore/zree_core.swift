@@ -2514,7 +2514,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_zree_core_checksum_method_gitrepo_status() != 33761) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_zree_core_checksum_method_gitrepo_sync() != 28853) {
+    if (uniffi_zree_core_checksum_method_gitrepo_sync() != 48534) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_blocks() != 2554) {

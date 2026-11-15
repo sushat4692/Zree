@@ -52,7 +52,8 @@ open build/Zree.app
 ## Git sync
 
 - The vault **is** the repository (`.git` lives next to the notes).
-- Sync = commit all changes → pull → push. Nothing to commit is not an error.
+- Sync = commit all changes → pull → push. Each step is skipped when it would be a no-op:
+  no commit without changes, and **no push unless the branch is ahead of the remote**.
 - Pull fast-forwards when possible; otherwise it merges. On conflicts it stops without pushing and hands the file list to the UI.
 - Conflicts are resolved per file as `mine / theirs / both`, then finalised with a merge commit.
 - Auth: HTTPS + PAT (stored in the macOS Keychain). ssh-agent is not compiled in yet.

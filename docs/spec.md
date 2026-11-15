@@ -93,9 +93,12 @@ Clicking a link navigates to that note (the UI intercepts it as `zree://note?id=
 ## 6. Git
 
 - The vault itself is the repository (`.git` next to the notes)
-- **Sync = commit (everything) → pull → push**
-- Commit: a clean tree is a no-op, not an error
+- **Sync = commit (everything) → pull → push**, and each step is skipped when it would be a no-op
+- Commit: a clean tree produces no commit
+- Push: only when the branch is ahead of the remote, or when no remote branch exists yet
+  (an idle vault therefore generates no network write at all)
 - Pull:
+  - nothing on the remote yet → treated as up to date, not an error
   - only behind (behind > 0, ahead = 0) → fast-forward
   - diverged → real merge; on conflict **stop without pushing** and return the conflicted paths
 - Conflict resolution: `mine / theirs / both` (both = ours + newline + theirs). A merge commit finalises it

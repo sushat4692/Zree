@@ -39,6 +39,17 @@ impl Sandbox {
     }
 
     fn clone(&self, name: &str) -> (std::path::PathBuf, Git) {
+        // point the bare repo at a branch that actually exists, so the clone does
+        // not end up on an unborn branch (depends on init.defaultBranch)
+        if let Ok(bare) = git2::Repository::open(&self.remote) {
+            if let Ok(mut refs) = bare.references_glob("refs/heads/*") {
+                let target: Option<String> = refs
+                    .find_map(|r| r.ok().and_then(|r| r.name().ok().map(|s| s.to_string())));
+                if let Some(name) = target {
+                    let _ = bare.set_head(&name);
+                }
+            }
+        }
         let dir = self.path(name);
         Git::clone_into(&self.remote, &dir, &GitAuth::default()).unwrap();
         let git = Git::open(&dir, GitAuth::default()).unwrap();
@@ -90,7 +101,7 @@ fn divergent_edits_produce_conflicts_that_can_be_resolved() {
     a.push().unwrap();
 
     let (b_dir, b) = sandbox.clone("b");
-    let (c_dir, _c) = sandbox.clone("c");
+    let (_c_dir, _c) = sandbox.clone("c");
 
     // B pushes a change
     write(&b_dir.join("共有.md"), "一行目 (B)\n");
@@ -183,4 +194,47 @@ fn ffi_clone_is_what_the_app_calls() {
     let status = repo.status().unwrap();
     assert_eq!(status.changed, 0, "fresh clone should be clean");
     assert_eq!(status.remote_url, sandbox.remote);
+}
+
+impl Sandbox {
+    fn remote_commit_count(&self) -> usize {
+        let repo = git2::Repository::open(&self.remote).unwrap();
+        let mut walk = repo.revwalk().unwrap();
+        walk.push_glob("refs/heads/*").unwrap();
+        walk.count()
+    }
+}
+
+#[test]
+fn sync_only_pushes_when_there_is_something_to_push() {
+    let sandbox = Sandbox::new();
+    let (a_dir, a) = sandbox.vault("a");
+    write(&a_dir.join("n.md"), "x\n");
+
+    let first = a.sync("first").unwrap();
+    assert!(first.committed.is_some());
+    assert!(first.pushed, "a fresh commit must be pushed");
+    assert_eq!(sandbox.remote_commit_count(), 1);
+
+    // nothing changed anywhere: no commit, and crucially no push
+    let idle = a.sync("idle").unwrap();
+    assert!(idle.committed.is_none());
+    assert!(!idle.pushed, "must not push when there is nothing to push");
+    assert_eq!(sandbox.remote_commit_count(), 1);
+
+    // a local edit gets committed and pushed
+    write(&a_dir.join("n.md"), "y\n");
+    let changed = a.sync("changed").unwrap();
+    assert!(changed.committed.is_some());
+    assert!(changed.pushed);
+    assert_eq!(sandbox.remote_commit_count(), 2);
+
+    // a remote-only change is pulled and not pushed back
+    let (b_dir, b) = sandbox.clone("b");
+    write(&b_dir.join("n.md"), "from b\n");
+    b.sync("b edit").unwrap();
+    let pulled = a.sync("pull only").unwrap();
+    assert!(pulled.committed.is_none());
+    assert!(!pulled.pushed, "pulling does not require a push");
+    assert_eq!(sandbox.remote_commit_count(), 3);
 }

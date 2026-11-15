@@ -165,13 +165,7 @@ impl ZreeSession {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
-pub struct SyncReport {
-    pub committed: Option<String>,
-    pub pull: crate::git::PullOutcome,
-    pub pushed: bool,
-    pub conflicts: Vec<String>,
-}
+pub use crate::git::SyncReport;
 
 /// Point libgit2's TLS backend at a PEM bundle.
 ///
@@ -350,18 +344,6 @@ impl GitRepo {
 
     /// commit → pull → push. Conflicts stop the push and are returned.
     pub fn sync(&self, message: String) -> Result<SyncReport, NoteError> {
-        let guard = self.inner.lock().unwrap();
-        let committed = guard.commit_all(&message)?;
-        let pull = guard.pull()?;
-        let conflicts = match &pull {
-            crate::git::PullOutcome::Conflicts { paths } => paths.clone(),
-            _ => Vec::new(),
-        };
-        let mut pushed = false;
-        if conflicts.is_empty() {
-            guard.push()?;
-            pushed = true;
-        }
-        Ok(SyncReport { committed, pull, pushed, conflicts })
+        self.inner.lock().unwrap().sync(&message)
     }
 }

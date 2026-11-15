@@ -37,6 +37,14 @@ pub enum PullOutcome {
     Conflicts { paths: Vec<String> },
 }
 
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct SyncReport {
+    pub committed: Option<String>,
+    pub pull: PullOutcome,
+    pub pushed: bool,
+    pub conflicts: Vec<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
 pub enum ConflictChoice {
     Mine,
@@ -147,6 +155,12 @@ impl Git {
                 .unwrap_or_default(),
             Err(_) => String::new(),
         }
+    }
+
+    fn has_upstream(&self) -> bool {
+        self.repo
+            .find_reference(&format!("refs/remotes/origin/{}", self.current_branch()))
+            .is_ok()
     }
 
     fn ahead_behind(&self) -> Result<(u32, u32), NoteError> {
@@ -295,10 +309,11 @@ impl Git {
         self.fetch()?;
         let branch = self.current_branch();
         let remote_ref = format!("refs/remotes/origin/{branch}");
-        let upstream = self
-            .repo
-            .find_reference(&remote_ref)
-            .map_err(|_| NoteError::Io(format!("リモートブランチ {branch} が見つかりません")))?;
+        let upstream = match self.repo.find_reference(&remote_ref) {
+            Ok(r) => r,
+            // nothing has been pushed yet: nothing to pull
+            Err(_) => return Ok(PullOutcome::UpToDate),
+        };
         let target = upstream.peel_to_commit().map_err(git_err)?;
 
         let head_commit = self.repo.head().ok().and_then(|h| h.peel_to_commit().ok());
@@ -390,6 +405,36 @@ impl Git {
     }
 
     // MARK: - conflicts
+
+    /// commit → pull → push.
+    ///
+    /// Each step is skipped when it would be a no-op: no commit without changes,
+    /// and **no push when we are not ahead of the remote**. Conflicts stop before
+    /// pushing and are returned as data.
+    pub fn sync(&self, message: &str) -> Result<SyncReport, NoteError> {
+        let committed = self.commit_all(message)?;
+        let pull = self.pull()?;
+        let conflicts = match &pull {
+            PullOutcome::Conflicts { paths } => paths.clone(),
+            _ => Vec::new(),
+        };
+
+        let mut pushed = false;
+        if conflicts.is_empty() {
+            let (ahead, _) = self.ahead_behind().unwrap_or((0, 0));
+            if ahead > 0 || !self.has_upstream() {
+                self.push()?;
+                pushed = true;
+            }
+        }
+
+        Ok(SyncReport {
+            committed,
+            pull,
+            pushed,
+            conflicts,
+        })
+    }
 
     pub fn conflicts(&self) -> Result<Vec<String>, NoteError> {
         let index = self.repo.index().map_err(git_err)?;
