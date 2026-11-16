@@ -141,4 +141,9 @@ Parsing is done once per document, then only when it can change the result:
 - [ ] Android build of the latest work is not installed on the device (it was offline)
 - [x] Git first-added walk is cached in `.git/zree-created-times.tsv`, incremental per HEAD
 - [x] macOS 書式 menu shortcuts (⌘B, ⇧⌘7/8/9, ⇧⌘X, ⇧⌘H, ⇧⌘Q, ⌘[ / ⌘])
+## Remaining
+
+- [ ] Link navigation (only the preview offered it; the core still resolves links)
+- [ ] Android heading spacing is approximated with line height (Compose cannot set
+      paragraph spacing)
 - [ ] Future: backlinks, templates, automatic tagging
