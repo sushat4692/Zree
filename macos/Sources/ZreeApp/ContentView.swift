@@ -41,6 +41,7 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // room for the window buttons: the title bar is hidden
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
@@ -60,7 +61,8 @@ struct SidebarView: View {
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.top, 30)
+            .padding(.bottom, 8)
 
             if !app.tagCloud.isEmpty {
                 TagStrip()

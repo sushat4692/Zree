@@ -16,7 +16,9 @@ struct ZreeMain: App {
                     app.flushAndSyncBlocking()
                 }
         }
-        .windowToolbarStyle(.unified)
+        // no title bar text: the content runs to the top of the window, with the traffic
+        // lights floating over the sidebar
+        .windowStyle(.hiddenTitleBar)
         .commands {
             ZreeCommands(app: app)
         }
