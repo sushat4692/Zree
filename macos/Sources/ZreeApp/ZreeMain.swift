@@ -18,7 +18,9 @@ struct ZreeMain: App {
         }
         .windowToolbarStyle(.unified)
         .commands {
-            CommandGroup(after: .newItem) {
+            // `replacing` rather than `after`: the default New Window also claims ⌘N, so
+            // Zree would have two menu items on the same shortcut.
+            CommandGroup(replacing: .newItem) {
                 Button("新規ノート") { app.newNote() }
                     .keyboardShortcut("n", modifiers: .command)
                 Button("ツリーを開く…") { app.chooseVault() }
