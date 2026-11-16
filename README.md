@@ -61,6 +61,7 @@ background; macOS has no splash by convention.
 | Key | Action |
 |---|---|
 | ⌘N | New note (`Untitled yyMMdd-HHmm`, rename later) |
+| ⇧⌘N | New window |
 | ⌘S | Save (also autosaves 600 ms after typing stops) |
 | ⇧⌘O | Open a tree (folder) |
 | ⇧⌘C | Clone a vault from Git |

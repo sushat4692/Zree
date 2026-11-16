@@ -7,7 +7,7 @@ struct ZreeMain: App {
     @State private var app = AppState()
 
     var body: some Scene {
-        WindowGroup("Zree") {
+        WindowGroup("Zree", id: "main") {
             ContentView()
                 .environment(app)
                 .frame(minWidth: 860, minHeight: 560)
@@ -18,11 +18,26 @@ struct ZreeMain: App {
         }
         .windowToolbarStyle(.unified)
         .commands {
+            ZreeCommands(app: app)
+        }
+    }
+}
+
+/// Menu commands. `openWindow` is only available from a `Commands` type, which is why this
+/// is not inline in the `App`.
+struct ZreeCommands: Commands {
+    let app: AppState
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        Group {
             // `replacing` rather than `after`: the default New Window also claims ⌘N, so
             // Zree would have two menu items on the same shortcut.
             CommandGroup(replacing: .newItem) {
                 Button("新規ノート") { app.newNote() }
                     .keyboardShortcut("n", modifiers: .command)
+                Button("新規ウィンドウ") { openWindow(id: "main") }
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
                 Button("ツリーを開く…") { app.chooseVault() }
                     .keyboardShortcut("o", modifiers: [.command, .shift])
                 Button("Gitからクローン…") { app.showClone = true }
