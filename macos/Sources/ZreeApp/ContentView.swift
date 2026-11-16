@@ -6,19 +6,24 @@ struct ContentView: View {
     @Environment(AppState.self) private var app
 
     var body: some View {
-        NavigationSplitView {
+        // A plain HSplitView, not NavigationSplitView: the latter reserves the title bar
+        // area for its own toolbar, which left an empty strip at the top of the window.
+        HSplitView {
             SidebarView()
-                .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
-        } detail: {
-            if app.selectedID == nil {
-                if app.vaultPath == nil {
-                    FirstRunView()
+                .frame(minWidth: 240, idealWidth: 300, maxWidth: 420)
+
+            Group {
+                if app.selectedID == nil {
+                    if app.vaultPath == nil {
+                        FirstRunView()
+                    } else {
+                        EmptyState()
+                    }
                 } else {
-                    EmptyState()
+                    DetailView()
                 }
-            } else {
-                DetailView()
             }
+            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
         .overlay(alignment: .bottom) {
             if let error = app.errorMessage {
@@ -62,7 +67,8 @@ struct SidebarView: View {
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
 
             if !app.tagCloud.isEmpty {
                 TagStrip()
@@ -374,6 +380,28 @@ struct WindowChrome: NSViewRepresentable {
                 window.standardWindowButton(button)?.isHidden = true
             }
             window.isMovableByWindowBackground = true
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.styleMask.insert(.fullSizeContentView)
+            // `.titled` reserves ~28pt for the title bar even when invisible. Hiding the
+            // title bar's container view removes that space without breaking the window.
+            if let titlebar = window.standardWindowButton(.closeButton)?.superview?.superview {
+                titlebar.isHidden = true
+            }
+            // ZREE_SNAPSHOT=/path.png renders the window to a file, so layout changes can be
+            // checked without screen-recording permission.
+            if let path = ProcessInfo.processInfo.environment["ZREE_SNAPSHOT"] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    NSLog("ZREE-CHROME snapshot content=%@ window=%@",
+                          window.contentView.map { NSStringFromRect($0.frame) } ?? "nil",
+                          NSStringFromRect(window.frame))
+                    guard let content = window.contentView,
+                          let rep = content.bitmapImageRepForCachingDisplay(in: content.bounds) else { return }
+                    content.cacheDisplay(in: content.bounds, to: rep)
+                    try? rep.representation(using: .png, properties: [:])?
+                        .write(to: URL(fileURLWithPath: path))
+                }
+            }
         }
         return view
     }

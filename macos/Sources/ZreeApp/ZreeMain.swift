@@ -11,6 +11,8 @@ struct ZreeMain: App {
             ContentView()
                 .environment(app)
                 .frame(minWidth: 860, minHeight: 560)
+                // the window has no title bar: nothing may be reserved at the top
+                .ignoresSafeArea(.container, edges: .top)
                 .task { app.restore() }
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                     app.flushAndSyncBlocking()

@@ -76,6 +76,13 @@ the device is in daily use and every injected event lands in whatever app is in 
   home/wakeup hit whatever the owner is doing
 - prefer reading state Zree wrote (vault files, logcat) over screen scraping
 
+## Verifying the macOS window without a screen recording
+
+`ZREE_SNAPSHOT=/tmp/win.png build/Zree.app/Contents/MacOS/Zree` renders the window's content
+view to a PNG two seconds after launch, so layout changes can be inspected by reading the
+file. Note: `cacheDisplay` does not reproduce the sidebar's material, so colours/contrast in
+the snapshot are not trustworthy — geometry is.
+
 ## Commands
 
 ```bash
