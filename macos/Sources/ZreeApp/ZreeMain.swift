@@ -60,8 +60,6 @@ struct ZreeMain: App {
             }
 
             CommandGroup(after: .textEditing) {
-                Button("プレビュー切り替え") { app.preview.toggle() }
-                    .keyboardShortcut("p", modifiers: [.command, .shift])
                 Button("Finderで表示") { app.revealInFinder() }
                     .keyboardShortcut("f", modifiers: [.command, .shift])
             }

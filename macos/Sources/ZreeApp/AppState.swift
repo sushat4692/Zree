@@ -29,7 +29,6 @@ final class AppState {
     private(set) var selectedID: String?
     var titleDraft: String = ""
     var body: String = ""
-    var preview: Bool = false
     var status: String = ""
     var errorMessage: String?
 
@@ -67,8 +66,7 @@ final class AppState {
     var cloneMessage: String?
     var cloning = false
 
-    // Typography: one set for the editor and the preview, so text keeps its size
-    // and rhythm when switching between them.
+    // Typography for the editor (the only surface left since the preview pane went).
     var fontFamily: String?
     var fontSize: Double = 15
     var lineHeight: Double = 1.6
@@ -744,17 +742,6 @@ final class AppState {
         return style
     }
 
-    var previewFont: Font {
-        if let family = fontFamily {
-            return .custom(family, size: fontSize)
-        }
-        return .system(size: fontSize)
-    }
-
-    var previewLineSpacing: CGFloat {
-        max(0, fontSize * (lineHeight - 1))
-    }
-
     // MARK: - Editor assists
 
     func listAction(_ line: String) -> ListAction {
@@ -773,79 +760,16 @@ final class AppState {
         session?.suggestTags(prefix: prefix, limit: limit) ?? []
     }
 
-    // MARK: - Preview helpers
-
+    /// Block list for the editor's rendering.
     func blocks(of text: String) -> [Block] {
         session?.blocksOf(text: text) ?? []
     }
 
-    func attributed(_ text: String) -> AttributedString {
-        guard let session else { return AttributedString(text) }
-        var out = AttributedString()
-        for piece in session.inline(text: text) {
-            switch piece {
-            case .text(let s):
-                out.append(AttributedString(s))
-            case .bold(let s):
-                var a = AttributedString(s)
-                a.inlinePresentationIntent = .stronglyEmphasized
-                out.append(a)
-            case .italic(let s):
-                var a = AttributedString(s)
-                a.inlinePresentationIntent = .emphasized
-                out.append(a)
-            case .strike(let s):
-                var a = AttributedString(s)
-                a.strikethroughStyle = .single
-                out.append(a)
-            case .code(let s):
-                var a = AttributedString(s)
-                a.font = .system(.body, design: .monospaced)
-                out.append(a)
-            case .link(let label, let url):
-                var a = AttributedString(label)
-                a.link = noteLink(for: url) ?? URL(string: url)
-                out.append(a)
-            case .image(let src, let alt):
-                out.append(AttributedString(alt.isEmpty ? "[画像: \(src)]" : alt))
-            }
-        }
-        return out
-    }
-
-    /// In-app link to another note, using a `zree://note?id=` URL so the
-    /// preview can intercept it instead of handing it to the browser.
-    func noteLink(for href: String) -> URL? {
-        guard let session, let id = selectedID else { return nil }
-        guard let target = session.resolveLink(id: id, href: href) else { return nil }
-        var components = URLComponents()
-        components.scheme = "zree"
-        components.host = "note"
-        components.queryItems = [URLQueryItem(name: "id", value: target)]
-        return components.url
-    }
-
-    /// Returns true when the URL pointed at a note in this vault.
-    @discardableResult
-    func openNoteLink(_ url: URL) -> Bool {
-        guard url.scheme == "zree",
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let target = components.queryItems?.first(where: { $0.name == "id" })?.value
-        else { return false }
-        select(target)
-        return true
-    }
-
-    func imageURL(for src: String) -> URL? {
-        guard let session, let id = selectedID else { return nil }
-        guard let path = try? session.resolveAsset(id: id, src: src) else { return nil }
-        return URL(fileURLWithPath: path)
-    }
-
-    private func describe(_ error: Error) -> String {
-        if let localized = error as? LocalizedError, let d = localized.errorDescription {
-            return d
+    func describe(_ error: Error) -> String {
+        if let localized = error as? LocalizedError, let description = localized.errorDescription {
+            return description
         }
         return "\(error)"
     }
+
 }

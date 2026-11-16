@@ -58,10 +58,8 @@ Deletion always asks for confirmation first; the note then moves to `.trash/`.
 
 ## 3c. Display settings
 
-- macOS: one font family / size / line height for both the editor and the preview, so text
-  keeps its size and rhythm when switching panes; the editor uses the same 24/20 margins
-  as the preview
-- Android: editor font size, editor line height, preview scale
+- macOS: font family / size / line height for the editor
+- Android: editor font size, editor line height
 
 Both persist their own settings; there is no cross-device sync for them.
 
@@ -141,7 +139,7 @@ outdent removes one step (2 spaces / 1 tab / 1 space) and stops at the left marg
 are not list items are left alone.
 
 Indentation is counted as width: a tab counts as one level (2 spaces) both for continuation and
-for the preview, so tab-indented lists nest correctly.
+for the editor, so tab-indented lists nest correctly.
 | anything else | no assist |
 
 **Completion** (`completion_context` + `suggest_tags` / `suggest_notes`):

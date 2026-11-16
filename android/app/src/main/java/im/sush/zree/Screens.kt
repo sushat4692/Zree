@@ -429,9 +429,6 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
                     },
             )
             TextButton(onClick = { showDelete = true }) { Text("削除") }
-            TextButton(onClick = vm::togglePreview) {
-                Text(if (state.preview) "編集" else "プレビュー")
-            }
         }
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
@@ -452,16 +449,7 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
         }
         HorizontalDivider()
 
-        if (state.preview) {
-            PreviewList(
-                blocks = state.pblocks,
-                bitmaps = state.bitmaps,
-                scale = state.previewScale,
-                onLink = vm::openLink,
-            )
-        } else {
-            MarkdownField(vm, state)
-        }
+        MarkdownField(vm, state)
     }
 }
 
@@ -519,9 +507,6 @@ private fun AutoSyncDialog(
                 }
                 LabeledSlider("行間", state.editorLineHeight, 1.1f, 2.2f, String.format("%.2f", state.editorLineHeight)) {
                     vm.setEditorLineHeight(it)
-                }
-                LabeledSlider("プレビュー倍率", state.previewScale, 0.8f, 1.5f, String.format("%.2f", state.previewScale)) {
-                    vm.setPreviewScale(it)
                 }
 
                 HorizontalDivider()

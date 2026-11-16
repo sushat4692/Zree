@@ -233,15 +233,7 @@ struct DetailView: View {
             Divider()
             EditorToolbar()
             Divider()
-            // Always the same structure: the editor keeps its identity (and its undo
-            // history) when the preview is toggled; only the right pane comes and goes.
-            HSplitView {
-                editor
-                if app.preview {
-                    PreviewView()
-                        .frame(minWidth: 260, idealWidth: 380)
-                }
-            }
+            editor
         }
     }
 
@@ -299,14 +291,6 @@ struct Header: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-
-            Button {
-                app.preview.toggle()
-            } label: {
-                Image(systemName: app.preview ? "sidebar.right" : "rectangle.split.2x1")
-            }
-            .buttonStyle(.borderless)
-            .help("プレビュー (⇧⌘P)")
 
             Button {
                 confirmDelete = true

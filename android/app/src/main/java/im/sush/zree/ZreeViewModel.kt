@@ -3,8 +3,6 @@ package im.sush.zree
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.documentfile.provider.DocumentFile
@@ -17,7 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import uniffi.zree_core.Block
 import uniffi.zree_core.ConflictChoice
 import uniffi.zree_core.GitRepo
 import uniffi.zree_core.GitStatus
@@ -51,9 +48,6 @@ data class UiState(
     val selectedId: String? = null,
     val title: String = "",
     val draft: String = "",
-    val preview: Boolean = false,
-    val pblocks: List<PBlock> = emptyList(),
-    val bitmaps: Map<String, Bitmap> = emptyMap(),
     val git: GitStatus? = null,
     val busy: Boolean = false,
     val autoSync: Boolean = true,
@@ -65,7 +59,6 @@ data class UiState(
     val noteMtimeMs: Long = 0L,
     val editorFontSize: Float = 15f,
     val editorLineHeight: Float = 1.5f,
-    val previewScale: Float = 1f,
     val conflicts: List<String> = emptyList(),
     val merging: Boolean = false,
     val message: String? = null,
@@ -80,7 +73,6 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     private var repo: GitRepo? = null
     private var seenMtime = 0L
     private var saveJob: Job? = null
-    private var previewJob: Job? = null
     private var autoSyncJob: Job? = null
     private var consecutiveFailures = 0
     private var dirty = false
@@ -106,7 +98,6 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
                 .getOrDefault(SortOrder.UPDATED_DESC),
             editorFontSize = prefs.getFloat(KEY_EDITOR_SIZE, 15f),
             editorLineHeight = prefs.getFloat(KEY_EDITOR_LINE, 1.5f),
-            previewScale = prefs.getFloat(KEY_PREVIEW_SCALE, 1f),
         )
         prefs.getString(KEY_VAULT, null)?.let { path ->
             if (File(path).isDirectory) openVault(path)
@@ -246,12 +237,6 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(editorLineHeight = v)
     }
 
-    fun setPreviewScale(scale: Float) {
-        val v = scale.coerceIn(0.8f, 1.5f)
-        prefs.edit().putFloat(KEY_PREVIEW_SCALE, v).apply()
-        _state.value = _state.value.copy(previewScale = v)
-    }
-
     fun setSortOrder(order: SortOrder) {
         prefs.edit().putString(KEY_SORT, order.name).apply()
         _state.value = _state.value.copy(sortOrder = order)
@@ -314,66 +299,13 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             selectedId = id,
             title = row?.title ?: id.removeSuffix(".md"),
             draft = body,
-            pblocks = emptyList(),
-            bitmaps = emptyMap(),
         )
-        if (_state.value.preview) refreshPreview()
     }
 
     /** Synchronous: a prefix scan over a few hundred tags is microseconds. */
     fun suggestTags(prefix: String, limit: Int = 8): List<String> =
         runCatching { session?.suggestTags(prefix, limit.toUInt()) ?: emptyList() }
             .getOrDefault(emptyList())
-
-    fun togglePreview() {
-        val on = !_state.value.preview
-        _state.value = _state.value.copy(preview = on)
-        if (on) refreshPreview()
-    }
-
-    private fun refreshPreview() = io {
-        val s = session ?: return@io
-        val vault = _state.value.vaultPath
-        val bitmaps = HashMap<String, Bitmap>()
-
-        val blocks = s.blocksOf(_state.value.draft).map { b ->
-            when (b) {
-                is Block.Blank -> PBlock.Blank
-                is Block.Heading -> PBlock.Heading(b.level.toInt(), s.inline(b.text))
-                is Block.ListItem ->
-                    PBlock.Item(b.indent.toInt(), b.ordered, b.checked, s.inline(b.text))
-                is Block.Quote -> PBlock.Quote(s.inline(b.text))
-                is Block.Code -> PBlock.Code(b.lang, b.text)
-                is Block.Paragraph -> PBlock.Para(s.inline(b.text))
-                is Block.Rule -> PBlock.Rule
-                is Block.Image -> {
-                    val path = resolveAsset(vault, b.src)
-                    if (path != null && path !in bitmaps) {
-                        BitmapFactory.decodeFile(path)?.let { bitmaps[path] = it }
-                    }
-                    PBlock.Image(path, b.alt)
-                }
-            }
-        }
-        _state.value = _state.value.copy(pblocks = blocks, bitmaps = bitmaps)
-    }
-
-    private fun resolveAsset(vault: String?, src: String): String? {
-        if (vault == null || src.isBlank()) return null
-        val direct = File(vault, src)
-        if (direct.isFile) return direct.absolutePath
-        val byName = File(vault, File(src).name)
-        return if (byName.isFile) byName.absolutePath else null
-    }
-
-    /** Follow a Markdown link inside the preview. */
-    fun openLink(href: String) = io {
-        val s = session ?: return@io
-        val from = _state.value.selectedId ?: return@io
-        val target = s.resolveLink(from, href) ?: return@io
-        persistCurrent()
-        openNoteInternal(target)
-    }
 
     fun setDraft(text: String) {
         dirty = true
@@ -382,13 +314,6 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         saveJob = viewModelScope.launch {
             delay(700)
             save()
-        }
-        if (_state.value.preview) {
-            previewJob?.cancel()
-            previewJob = viewModelScope.launch {
-                delay(400)
-                refreshPreview()
-            }
         }
     }
 
@@ -434,8 +359,6 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
                 screen = Screen.List,
                 selectedId = null,
                 draft = "",
-                pblocks = emptyList(),
-                bitmaps = emptyMap(),
                 error = failure?.let { "保存できませんでした: ${it.message}" } ?: _state.value.error,
             )
         }
@@ -758,6 +681,5 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         private const val KEY_SORT = "sortOrder"
         private const val KEY_EDITOR_SIZE = "editorFontSize"
         private const val KEY_EDITOR_LINE = "editorLineHeight"
-        private const val KEY_PREVIEW_SCALE = "previewScale"
     }
 }

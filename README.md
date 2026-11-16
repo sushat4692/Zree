@@ -62,17 +62,17 @@ background; macOS has no splash by convention.
 |---|---|
 | ⌘N | New note (`Untitled yyMMdd-HHmm`, rename later) |
 | ⌘S | Save (also autosaves 600 ms after typing stops) |
-| ⇧⌘P | Toggle preview pane |
 | ⇧⌘O | Open a tree (folder) |
 | ⇧⌘C | Clone a vault from Git |
 | ⇧⌘U | Sync (commit → pull → push) |
-| ⌘, | Settings (fonts for editor and preview, auto-sync interval, remote URL, PAT) |
+| ⌘, | Settings (font family / size / line height, auto-sync interval, remote URL, PAT) |
 | ⇧⌘R | Reindex (e.g. after pulling) |
 | ⇧⌘F | Reveal in Finder |
 
 The list can be ordered by updated time or title (both platforms remember the choice).
-Typing `#` offers tag candidates; Return continues list items, checkboxes and quotes.
-The rules live in the core, so Android behaves identically.
+The editor renders Markdown in place (headings larger and bold, inline styling, `---` as a
+rule) and typing `#` offers tag candidates; Return continues list items, checkboxes and
+quotes. The rules live in the core, so Android behaves identically.
 
 ## Git sync
 
@@ -97,12 +97,12 @@ The rules live in the core, so Android behaves identically.
 
 - [x] Core: vault IO / search / tags / markdown
 - [x] uniffi bindings (Swift; Kotlin can be generated)
-- [x] macOS: list, search, tag filtering, editor, autosave, preview
+- [x] macOS: list, search, tag filtering, editor with in-place Markdown rendering, autosave
 - [x] Standard Markdown links that navigate between notes
 - [x] Git sync (commit/pull/push, fast-forward, merge) with a conflict UI
 - [x] Clone onboarding, Keychain-backed PAT, pull on launch
 - [x] Android: clone/setup, tree switching, list, search, tags, editor with autosave and IME,
-      preview with link navigation, auto-sync, conflict UI, SAF import/export
+      in-place Markdown rendering, auto-sync, conflict UI, SAF import/export
 
 ## Tests
 

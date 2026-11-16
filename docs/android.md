@@ -127,9 +127,7 @@ Still missing:
 - [ ] Japanese IME under heavy composition / long notes (a short romaji→kana round trip worked:
       typed `appended-line`, the IME produced `あっぺんでｄ−ぃね`, and autosave persisted it)
       — verified on the device with the real UI too
-- [x] Markdown preview pane rendered from the `Block` stream (headings, lists, checkboxes,
-      quotes, code, images, bold/italic/strike/inline code)
-- [x] link navigation from the preview
+- [x] Markdown rendered in place in the editor (the preview pane was removed)
 - [x] rename on focus loss (no explicit button) — also changed on macOS for parity
 - [x] back gesture returns from the editor to the list instead of closing the app
 - [x] auto-sync timer (default 5 min, 1/5/10/15 or off) plus a flush when the app is backgrounded

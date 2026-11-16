@@ -91,8 +91,8 @@ cargo run --release --example probe -- /path/to/vault
 
 - [x] Core (vault / search / tags / markdown) with tests
 - [x] uniffi bindings (Swift; Kotlin can be generated)
-- [x] macOS v0.1: search, tag filtering, editing, autosave, preview
-- [x] Markdown link navigation (`zree://note?id=` intercepted by the preview)
+- [x] macOS v0.1: search, tag filtering, editing, autosave, in-place rendering
+- [ ] Link navigation was only reachable from the preview; it went with the pane
 - [x] Git sync (libgit2) with conflict UI
 - [x] Clone onboarding, Keychain-stored PAT, pull on launch
 - [x] Auto-sync every 5 minutes by default (commit → pull → push), plus a final sync on quit
