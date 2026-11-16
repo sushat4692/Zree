@@ -4,6 +4,8 @@ import ZreeCore
 
 struct ContentView: View {
     @Environment(AppState.self) private var app
+    /// Height of the (invisible) title bar, measured at runtime, removed with negative padding.
+    @State private var topInset: CGFloat = 0
 
     var body: some View {
         // A plain HSplitView, not NavigationSplitView: the latter reserves the title bar
@@ -25,6 +27,7 @@ struct ContentView: View {
             }
             .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
+        .padding(.top, -topInset)
         .overlay(alignment: .bottom) {
             if let error = app.errorMessage {
                 ErrorBar(message: error)
@@ -37,7 +40,7 @@ struct ContentView: View {
             CloneSheet()
         }
         .tint(ZreePalette.accent)
-        .background(WindowChrome())
+        .background(WindowChrome(topInset: $topInset))
     }
 }
 
@@ -372,29 +375,31 @@ struct EditorToolbar: View {
 /// With `.hiddenTitleBar` there is no title bar left, so without this the buttons float
 /// over the sidebar and the window cannot be moved at all.
 struct WindowChrome: NSViewRepresentable {
+    @Binding var topInset: CGFloat
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
         DispatchQueue.main.async {
             guard let window = view.window else { return }
-            for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
-                window.standardWindowButton(button)?.isHidden = true
-            }
-            window.isMovableByWindowBackground = true
+
+            // no title bar text, no traffic lights
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
             window.styleMask.insert(.fullSizeContentView)
-            // `.titled` reserves ~28pt for the title bar even when invisible. Hiding the
-            // title bar's container view removes that space without breaking the window.
-            if let titlebar = window.standardWindowButton(.closeButton)?.superview?.superview {
-                titlebar.isHidden = true
+            window.isMovableByWindowBackground = true
+            for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
+                window.standardWindowButton(button)?.isHidden = true
             }
-            // ZREE_SNAPSHOT=/path.png renders the window to a file, so layout changes can be
-            // checked without screen-recording permission.
+
+            // SwiftUI keeps the title bar height as a safe-area inset; report it so the
+            // content can slide up by exactly that much. The window stays a normal titled
+            // window, so materials and the rounded corners render correctly.
+            DispatchQueue.main.async {
+                topInset = window.contentView?.safeAreaInsets.top ?? 0
+            }
+
             if let path = ProcessInfo.processInfo.environment["ZREE_SNAPSHOT"] {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    NSLog("ZREE-CHROME snapshot content=%@ window=%@",
-                          window.contentView.map { NSStringFromRect($0.frame) } ?? "nil",
-                          NSStringFromRect(window.frame))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                     guard let content = window.contentView,
                           let rep = content.bitmapImageRepForCachingDisplay(in: content.bounds) else { return }
                     content.cacheDisplay(in: content.bounds, to: rep)
