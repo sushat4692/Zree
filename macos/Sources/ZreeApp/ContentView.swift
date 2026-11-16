@@ -32,6 +32,7 @@ struct ContentView: View {
             CloneSheet()
         }
         .tint(ZreePalette.accent)
+        .background(WindowChrome())
     }
 }
 
@@ -61,8 +62,7 @@ struct SidebarView: View {
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.top, 30)
-            .padding(.bottom, 8)
+            .padding(.vertical, 8)
 
             if !app.tagCloud.isEmpty {
                 TagStrip()
@@ -358,4 +358,25 @@ struct EditorToolbar: View {
         }
         .background(.bar)
     }
+}
+
+
+/// Hides the traffic lights and makes the window draggable by its background.
+///
+/// With `.hiddenTitleBar` there is no title bar left, so without this the buttons float
+/// over the sidebar and the window cannot be moved at all.
+struct WindowChrome: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        DispatchQueue.main.async {
+            guard let window = view.window else { return }
+            for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
+                window.standardWindowButton(button)?.isHidden = true
+            }
+            window.isMovableByWindowBackground = true
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }

@@ -40,6 +40,8 @@ struct ZreeCommands: Commands {
                     .keyboardShortcut("n", modifiers: .command)
                 Button("新規ウィンドウ") { openWindow(id: "main") }
                     .keyboardShortcut("n", modifiers: [.command, .shift])
+                Button("ウィンドウを閉じる") { NSApp.keyWindow?.performClose(nil) }
+                    .keyboardShortcut("w", modifiers: .command)
                 Button("ツリーを開く…") { app.chooseVault() }
                     .keyboardShortcut("o", modifiers: [.command, .shift])
                 Button("Gitからクローン…") { app.showClone = true }
