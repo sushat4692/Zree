@@ -613,8 +613,10 @@ fun ConflictsScreen(vm: ZreeViewModel, state: UiState) {
  */
 @Composable
 private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
+    // Caret at the start: Compose scrolls the caret into view, so putting it at the end
+    // opened every note scrolled to the bottom.
     var value by remember(state.selectedId) {
-        mutableStateOf(TextFieldValue(state.draft, TextRange(state.draft.length)))
+        mutableStateOf(TextFieldValue(state.draft, TextRange(0)))
     }
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var pendingAssist by remember { mutableStateOf<EditText?>(null) }
@@ -675,7 +677,7 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
 
     LaunchedEffect(state.selectedId) {
         if (value.text != state.draft) {
-            value = TextFieldValue(state.draft, TextRange(state.draft.length))
+            value = TextFieldValue(state.draft, TextRange(0))
         }
     }
 
