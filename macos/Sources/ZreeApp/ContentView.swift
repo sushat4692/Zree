@@ -33,6 +33,11 @@ struct ContentView: View {
                 ErrorBar(message: error)
             }
         }
+        .overlay(alignment: .top) {
+            if !app.conflicts.isEmpty || (app.gitStatus?.merging ?? false) {
+                ConflictBanner()
+            }
+        }
         .sheet(isPresented: Bindable(app).showSettings) {
             GitSettingsSheet()
         }
@@ -236,10 +241,6 @@ struct DetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !app.conflicts.isEmpty || (app.gitStatus?.merging ?? false) {
-                ConflictBanner()
-                Divider()
-            }
             Header()
             Divider()
             EditorToolbar()

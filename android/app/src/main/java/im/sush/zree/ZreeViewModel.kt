@@ -316,6 +316,9 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             .getOrDefault(emptyList())
 
     fun setDraft(text: String) {
+        // onValueChange also fires for caret moves; without this guard every cursor
+        // movement marked the note dirty and the next auto-sync rewrote (and committed) it
+        if (text == _state.value.draft) return
         dirty = true
         _state.value = _state.value.copy(draft = text)
         saveJob?.cancel()
@@ -455,6 +458,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             val now = System.currentTimeMillis()
             prefs.edit().putLong(KEY_LAST_SYNC, now).apply()
             refresh()
+            reloadOpenNoteIfClean()
             backfillCreatedTimes()
             _state.value = _state.value.copy(
                 busy = false,
@@ -558,6 +562,18 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         refreshConflicts(r)
         refresh()
         _state.value = _state.value.copy(screen = Screen.List, message = "衝突を解決してpushしました")
+    }
+
+    /** Re-read the open note when the file on disk changed underneath a clean editor. */
+    private suspend fun reloadOpenNoteIfClean() {
+        val id = _state.value.selectedId ?: return
+        if (dirty) return
+        val s = session ?: return
+        val body = runCatching { s.read(id) }.getOrNull() ?: return
+        if (body == _state.value.draft) return
+        val row = _state.value.rows.firstOrNull { it.id == id }
+        seenMtime = row?.mtimeMs ?: 0L
+        _state.value = _state.value.copy(draft = body)
     }
 
     private suspend fun refreshConflicts(r: GitRepo) {
