@@ -211,15 +211,15 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Android's filesystem has no creation time, so ask Git when each note first
-     * appeared and hand that to the index (once per open).
+     * Both timestamps come from Git: Android has no birth time, and a checkout rewrites
+     * every mtime, so neither is stable on disk.
      */
     private suspend fun backfillCreatedTimes() {
         val repo = repo ?: return
         val session = session ?: return
-        val times = runCatching { repo.firstAddedTimes() }.getOrNull() ?: return
+        val times = runCatching { repo.fileTimes() }.getOrNull() ?: return
         if (times.isEmpty()) return
-        runCatching { session.applyCreatedTimes(times) }
+        runCatching { session.applyFileTimes(times) }
         withContext(Dispatchers.IO) { refresh() }
     }
 

@@ -625,7 +625,10 @@ public protocol GitRepoProtocol: AnyObject, Sendable {
     
     func fetch() throws 
     
-    func firstAddedTimes() throws  -> [CreatedAt]
+    /**
+     * Creation and last-change times taken from history (checkout rewrites mtimes).
+     */
+    func fileTimes() throws  -> [FileTimes]
     
     func log(limit: UInt32) throws  -> [CommitInfo]
     
@@ -776,10 +779,13 @@ open func fetch()throws   {try rustCallWithError(FfiConverterTypeNoteError_lift)
 }
 }
     
-open func firstAddedTimes()throws  -> [CreatedAt]  {
-    return try  FfiConverterSequenceTypeCreatedAt.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+    /**
+     * Creation and last-change times taken from history (checkout rewrites mtimes).
+     */
+open func fileTimes()throws  -> [FileTimes]  {
+    return try  FfiConverterSequenceTypeFileTimes.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
-    uniffi_zree_core_fn_method_gitrepo_first_added_times(
+    uniffi_zree_core_fn_method_gitrepo_file_times(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -925,10 +931,10 @@ public func FfiConverterTypeGitRepo_lower(_ value: GitRepo) -> UInt64 {
 public protocol ZreeSessionProtocol: AnyObject, Sendable {
     
     /**
-     * Fill creation times for notes the filesystem could not date (Android),
-     * typically from `GitRepo.firstAddedTimes()`.
+     * Replace the filesystem timestamps with the ones from history, so a clone and every
+     * device agree on "created" and "updated".
      */
-    func applyCreatedTimes(times: [CreatedAt])  -> UInt32
+    func applyFileTimes(times: [FileTimes])  -> UInt32
     
     /**
      * Markdown token stream for a note on disk.
@@ -1065,15 +1071,15 @@ public static func `open`(root: String)throws  -> ZreeSession  {
 
     
     /**
-     * Fill creation times for notes the filesystem could not date (Android),
-     * typically from `GitRepo.firstAddedTimes()`.
+     * Replace the filesystem timestamps with the ones from history, so a clone and every
+     * device agree on "created" and "updated".
      */
-open func applyCreatedTimes(times: [CreatedAt]) -> UInt32  {
+open func applyFileTimes(times: [FileTimes]) -> UInt32  {
     return try!  FfiConverterUInt32.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_zree_core_fn_method_zreesession_apply_created_times(
+    uniffi_zree_core_fn_method_zreesession_apply_file_times(
             self.uniffiCloneHandle(),
-        FfiConverterSequenceTypeCreatedAt.lower(times),uniffiCallStatus
+        FfiConverterSequenceTypeFileTimes.lower(times),uniffiCallStatus
     )
 })
 }
@@ -1528,6 +1534,64 @@ public func FfiConverterTypeCreatedAt_lift(_ buf: RustBuffer) throws -> CreatedA
 #endif
 public func FfiConverterTypeCreatedAt_lower(_ value: CreatedAt) -> RustBuffer {
     return FfiConverterTypeCreatedAt.lower(value)
+}
+
+
+public struct FileTimes: Equatable, Hashable {
+    public var path: String
+    public var createdMs: Int64
+    public var updatedMs: Int64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(path: String, createdMs: Int64, updatedMs: Int64) {
+        self.path = path
+        self.createdMs = createdMs
+        self.updatedMs = updatedMs
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension FileTimes: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFileTimes: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FileTimes {
+        return
+            try FileTimes(
+                path: FfiConverterString.read(from: &buf), 
+                createdMs: FfiConverterInt64.read(from: &buf), 
+                updatedMs: FfiConverterInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FileTimes, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.path, into: &buf)
+        FfiConverterInt64.write(value.createdMs, into: &buf)
+        FfiConverterInt64.write(value.updatedMs, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileTimes_lift(_ buf: RustBuffer) throws -> FileTimes {
+    return try FfiConverterTypeFileTimes.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileTimes_lower(_ value: FileTimes) -> RustBuffer {
+    return FfiConverterTypeFileTimes.lower(value)
 }
 
 
@@ -3178,23 +3242,23 @@ fileprivate struct FfiConverterSequenceTypeCommitInfo: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-fileprivate struct FfiConverterSequenceTypeCreatedAt: FfiConverterRustBuffer {
-    typealias SwiftType = [CreatedAt]
+fileprivate struct FfiConverterSequenceTypeFileTimes: FfiConverterRustBuffer {
+    typealias SwiftType = [FileTimes]
 
-    public static func write(_ value: [CreatedAt], into buf: inout [UInt8]) {
+    public static func write(_ value: [FileTimes], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
-            FfiConverterTypeCreatedAt.write(item, into: &buf)
+            FfiConverterTypeFileTimes.write(item, into: &buf)
         }
     }
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [CreatedAt] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [FileTimes] {
         let len: Int32 = try readInt(&buf)
-        var seq = [CreatedAt]()
+        var seq = [FileTimes]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeCreatedAt.read(from: &buf))
+            seq.append(try FfiConverterTypeFileTimes.read(from: &buf))
         }
         return seq
     }
@@ -3549,7 +3613,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_zree_core_checksum_method_gitrepo_fetch() != 57050) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_zree_core_checksum_method_gitrepo_first_added_times() != 28357) {
+    if (uniffi_zree_core_checksum_method_gitrepo_file_times() != 39014) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_gitrepo_log() != 7945) {
@@ -3579,7 +3643,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_zree_core_checksum_method_gitrepo_sync() != 48534) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_zree_core_checksum_method_zreesession_apply_created_times() != 3069) {
+    if (uniffi_zree_core_checksum_method_zreesession_apply_file_times() != 724) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_blocks() != 2554) {

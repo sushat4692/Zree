@@ -698,10 +698,10 @@ final class AppState {
     private func backfillCreatedTimes() {
         guard let repo = git else { return }
         Task.detached { [weak self] in
-            let times = try? repo.firstAddedTimes()
+            let times = try? repo.fileTimes()
             await MainActor.run {
                 guard let self, let times, !times.isEmpty, let session = self.session else { return }
-                _ = session.applyCreatedTimes(times: times)
+                _ = session.applyFileTimes(times: times)
                 self.reloadRows()
             }
         }

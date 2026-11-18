@@ -288,9 +288,9 @@ RustBuffer uniffi_zree_core_fn_method_gitrepo_conflicts(uint64_t ptr, RustCallSt
 void uniffi_zree_core_fn_method_gitrepo_fetch(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_FIRST_ADDED_TIMES
-#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_FIRST_ADDED_TIMES
-RustBuffer uniffi_zree_core_fn_method_gitrepo_first_added_times(uint64_t ptr, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_FILE_TIMES
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_FILE_TIMES
+RustBuffer uniffi_zree_core_fn_method_gitrepo_file_times(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_GITREPO_LOG
@@ -353,9 +353,9 @@ void uniffi_zree_core_fn_free_zreesession(uint64_t handle, RustCallStatus *_Nonn
 uint64_t uniffi_zree_core_fn_constructor_zreesession_open(RustBuffer root, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_APPLY_CREATED_TIMES
-#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_APPLY_CREATED_TIMES
-uint32_t uniffi_zree_core_fn_method_zreesession_apply_created_times(uint64_t ptr, RustBuffer times, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_APPLY_FILE_TIMES
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_APPLY_FILE_TIMES
+uint32_t uniffi_zree_core_fn_method_zreesession_apply_file_times(uint64_t ptr, RustBuffer times, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_BLOCKS
@@ -847,9 +847,9 @@ uint16_t uniffi_zree_core_checksum_method_gitrepo_fetch(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_FIRST_ADDED_TIMES
-#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_FIRST_ADDED_TIMES
-uint16_t uniffi_zree_core_checksum_method_gitrepo_first_added_times(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_FILE_TIMES
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_GITREPO_FILE_TIMES
+uint16_t uniffi_zree_core_checksum_method_gitrepo_file_times(void
     
 );
 #endif
@@ -907,9 +907,9 @@ uint16_t uniffi_zree_core_checksum_method_gitrepo_sync(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_APPLY_CREATED_TIMES
-#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_APPLY_CREATED_TIMES
-uint16_t uniffi_zree_core_checksum_method_zreesession_apply_created_times(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_APPLY_FILE_TIMES
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_APPLY_FILE_TIMES
+uint16_t uniffi_zree_core_checksum_method_zreesession_apply_file_times(void
     
 );
 #endif

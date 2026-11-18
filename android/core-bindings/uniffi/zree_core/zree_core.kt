@@ -703,7 +703,7 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_zree_core_checksum_method_gitrepo_fetch(
     ): Int
-    external fun uniffi_zree_core_checksum_method_gitrepo_first_added_times(
+    external fun uniffi_zree_core_checksum_method_gitrepo_file_times(
     ): Int
     external fun uniffi_zree_core_checksum_method_gitrepo_log(
     ): Int
@@ -723,7 +723,7 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_zree_core_checksum_method_gitrepo_sync(
     ): Int
-    external fun uniffi_zree_core_checksum_method_zreesession_apply_created_times(
+    external fun uniffi_zree_core_checksum_method_zreesession_apply_file_times(
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_blocks(
     ): Int
@@ -809,7 +809,7 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_gitrepo_fetch(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
-    external fun uniffi_zree_core_fn_method_gitrepo_first_added_times(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_zree_core_fn_method_gitrepo_file_times(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_gitrepo_log(`ptr`: Long,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -835,7 +835,7 @@ internal object UniffiLib {
     ): Unit
     external fun uniffi_zree_core_fn_constructor_zreesession_open(`root`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun uniffi_zree_core_fn_method_zreesession_apply_created_times(`ptr`: Long,`times`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_zree_core_fn_method_zreesession_apply_file_times(`ptr`: Long,`times`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Int
     external fun uniffi_zree_core_fn_method_zreesession_blocks(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1056,7 +1056,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_method_gitrepo_fetch() and 0xFFFF) != 57050) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_zree_core_checksum_method_gitrepo_first_added_times() and 0xFFFF) != 28357) {
+    if ((lib.uniffi_zree_core_checksum_method_gitrepo_file_times() and 0xFFFF) != 39014) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_gitrepo_log() and 0xFFFF) != 7945) {
@@ -1086,7 +1086,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_method_gitrepo_sync() and 0xFFFF) != 48534) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_zree_core_checksum_method_zreesession_apply_created_times() and 0xFFFF) != 3069) {
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_apply_file_times() and 0xFFFF) != 724) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_blocks() and 0xFFFF) != 2554) {
@@ -1620,7 +1620,10 @@ public interface GitRepoInterface {
     
     fun `fetch`()
     
-    fun `firstAddedTimes`(): List<CreatedAt>
+    /**
+     * Creation and last-change times taken from history (checkout rewrites mtimes).
+     */
+    fun `fileTimes`(): List<FileTimes>
     
     fun `log`(`limit`: kotlin.UInt): List<CommitInfo>
     
@@ -1804,11 +1807,14 @@ open class GitRepo: Disposable, AutoCloseable, GitRepoInterface
     
 
     
-    @Throws(NoteException::class)override fun `firstAddedTimes`(): List<CreatedAt> {
-            return FfiConverterSequenceTypeCreatedAt.lift(
+    /**
+     * Creation and last-change times taken from history (checkout rewrites mtimes).
+     */
+    @Throws(NoteException::class)override fun `fileTimes`(): List<FileTimes> {
+            return FfiConverterSequenceTypeFileTimes.lift(
     callWithHandle {
     uniffiRustCallWithError(NoteException) { _status ->
-    UniffiLib.uniffi_zree_core_fn_method_gitrepo_first_added_times(
+    UniffiLib.uniffi_zree_core_fn_method_gitrepo_file_times(
         it,
         _status)
 }
@@ -2132,10 +2138,10 @@ public object FfiConverterTypeGitRepo: FfiConverter<GitRepo, Long> {
 public interface ZreeSessionInterface {
     
     /**
-     * Fill creation times for notes the filesystem could not date (Android),
-     * typically from `GitRepo.firstAddedTimes()`.
+     * Replace the filesystem timestamps with the ones from history, so a clone and every
+     * device agree on "created" and "updated".
      */
-    fun `applyCreatedTimes`(`times`: List<CreatedAt>): kotlin.UInt
+    fun `applyFileTimes`(`times`: List<FileTimes>): kotlin.UInt
     
     /**
      * Markdown token stream for a note on disk.
@@ -2311,16 +2317,16 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
 
     
     /**
-     * Fill creation times for notes the filesystem could not date (Android),
-     * typically from `GitRepo.firstAddedTimes()`.
-     */override fun `applyCreatedTimes`(`times`: List<CreatedAt>): kotlin.UInt {
+     * Replace the filesystem timestamps with the ones from history, so a clone and every
+     * device agree on "created" and "updated".
+     */override fun `applyFileTimes`(`times`: List<FileTimes>): kotlin.UInt {
             return FfiConverterUInt.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_zree_core_fn_method_zreesession_apply_created_times(
+    UniffiLib.uniffi_zree_core_fn_method_zreesession_apply_file_times(
         it,
         
-        FfiConverterSequenceTypeCreatedAt.lower(`times`),_status)
+        FfiConverterSequenceTypeFileTimes.lower(`times`),_status)
 }
     }
     )
@@ -2816,6 +2822,49 @@ public object FfiConverterTypeCreatedAt: FfiConverterRustBuffer<CreatedAt> {
     override fun write(value: CreatedAt, buf: ByteBuffer) {
             FfiConverterString.write(value.`id`, buf)
             FfiConverterLong.write(value.`ms`, buf)
+    }
+}
+
+
+
+data class FileTimes (
+    var `path`: kotlin.String
+    , 
+    var `createdMs`: kotlin.Long
+    , 
+    var `updatedMs`: kotlin.Long
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFileTimes: FfiConverterRustBuffer<FileTimes> {
+    override fun read(buf: ByteBuffer): FileTimes {
+        return FileTimes(
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FileTimes) = (
+            FfiConverterString.allocationSize(value.`path`) +
+            FfiConverterLong.allocationSize(value.`createdMs`) +
+            FfiConverterLong.allocationSize(value.`updatedMs`)
+    )
+
+    override fun write(value: FileTimes, buf: ByteBuffer) {
+            FfiConverterString.write(value.`path`, buf)
+            FfiConverterLong.write(value.`createdMs`, buf)
+            FfiConverterLong.write(value.`updatedMs`, buf)
     }
 }
 
@@ -4370,24 +4419,24 @@ public object FfiConverterSequenceTypeCommitInfo: FfiConverterRustBuffer<List<Co
 /**
  * @suppress
  */
-public object FfiConverterSequenceTypeCreatedAt: FfiConverterRustBuffer<List<CreatedAt>> {
-    override fun read(buf: ByteBuffer): List<CreatedAt> {
+public object FfiConverterSequenceTypeFileTimes: FfiConverterRustBuffer<List<FileTimes>> {
+    override fun read(buf: ByteBuffer): List<FileTimes> {
         val len = buf.getInt()
-        return List<CreatedAt>(len) {
-            FfiConverterTypeCreatedAt.read(buf)
+        return List<FileTimes>(len) {
+            FfiConverterTypeFileTimes.read(buf)
         }
     }
 
-    override fun allocationSize(value: List<CreatedAt>): ULong {
+    override fun allocationSize(value: List<FileTimes>): ULong {
         val sizeForLength = 4UL
-        val sizeForItems = value.map { FfiConverterTypeCreatedAt.allocationSize(it) }.sum()
+        val sizeForItems = value.map { FfiConverterTypeFileTimes.allocationSize(it) }.sum()
         return sizeForLength + sizeForItems
     }
 
-    override fun write(value: List<CreatedAt>, buf: ByteBuffer) {
+    override fun write(value: List<FileTimes>, buf: ByteBuffer) {
         buf.putInt(value.size)
         value.iterator().forEach {
-            FfiConverterTypeCreatedAt.write(it, buf)
+            FfiConverterTypeFileTimes.write(it, buf)
         }
     }
 }

@@ -68,17 +68,18 @@ impl Index {
         })
     }
 
-    /// Take creation times from Git.
+    /// Take both timestamps from Git history.
     ///
-    /// Git wins even when the filesystem reported a birth time, so both devices sort
-    /// the same way (Android has no birth time at all, macOS does). Notes that Git has
-    /// never seen keep whatever the filesystem said.
-    pub fn apply_created_times(&mut self, times: &[(String, i64)]) -> usize {
+    /// Checkout rewrites every file's mtime, and Android filesystems have no birth time at
+    /// all, so history is the only value that survives a clone and matches across devices.
+    /// Notes Git has never seen keep whatever the filesystem said.
+    pub fn apply_file_times(&mut self, times: &[(String, i64, i64)]) -> usize {
         let mut updated = 0;
-        for (id, ms) in times {
+        for (id, created, modified) in times {
             if let Some(entry) = self.entries.iter_mut().find(|e| &e.meta.id == id) {
-                if entry.meta.created_ms != *ms {
-                    entry.meta.created_ms = *ms;
+                if entry.meta.created_ms != *created || entry.meta.mtime_ms != *modified {
+                    entry.meta.created_ms = *created;
+                    entry.meta.mtime_ms = *modified;
                     updated += 1;
                 }
             }

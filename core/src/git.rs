@@ -438,16 +438,17 @@ impl Git {
 
     /// Path of the local cache for `first_added_times` (inside `.git`, so it is
     /// never committed and never shows up in the tree).
-    fn created_times_cache(&self) -> std::path::PathBuf {
-        self.repo.path().join("zree-created-times.tsv")
+    fn times_cache(&self) -> std::path::PathBuf {
+        self.repo.path().join("zree-times.tsv")
     }
 
-    /// When each tracked `.md` file first appeared in history. Filesystems on
-    /// Android do not store a creation time, so Git is the portable answer.
+    /// Per-file timestamps taken from history: when it first appeared and when it last
+    /// changed.
     ///
-    /// The result is cached in `.git/zree-created-times.tsv`, keyed by HEAD, and the
-    /// walk only covers commits added since the cached HEAD.
-    pub fn first_added_times(&self) -> Result<Vec<(String, i64)>, NoteError> {
+    /// The filesystem cannot be trusted for either across a clone — checkout gives every
+    /// file the checkout time — so Git is the portable answer. Cached in
+    /// `.git/zree-times.tsv` keyed by HEAD; later calls only walk the new commits.
+    pub fn file_times(&self) -> Result<Vec<FileTimes>, NoteError> {
         let head = self
             .repo
             .head()
@@ -456,7 +457,7 @@ impl Git {
             .map(|o| o.to_string())
             .unwrap_or_default();
 
-        let cache_path = self.created_times_cache();
+        let cache_path = self.times_cache();
         let cached = std::fs::read_to_string(&cache_path)
             .ok()
             .and_then(|raw| parse_created_cache(&raw));
@@ -467,7 +468,7 @@ impl Git {
             }
         }
 
-        let mut seen: std::collections::HashMap<String, i64> =
+        let mut seen: std::collections::HashMap<String, FileTimes> =
             cached.as_ref().map(|(_, e)| e.clone()).unwrap_or_default();
         let base = cached.as_ref().map(|(h, _)| h.clone()).filter(|h| !h.is_empty());
 
@@ -497,7 +498,16 @@ impl Git {
             let ms = commit.time().seconds() * 1000;
 
             for delta in diff.deltas() {
-                if delta.status() != git2::Delta::Added {
+                let status = delta.status();
+                // modifications matter as much as additions: "updated" is the last commit
+                // that touched the file
+                let is_new = matches!(status, git2::Delta::Added | git2::Delta::Copied);
+                let is_change = is_new
+                    || matches!(
+                        status,
+                        git2::Delta::Modified | git2::Delta::Renamed | git2::Delta::Typechange
+                    );
+                if !is_change {
                     continue;
                 }
                 let Some(path) = delta.new_file().path().and_then(|p| p.to_str()) else {
@@ -506,7 +516,12 @@ impl Git {
                 if !path.to_lowercase().ends_with(".md") {
                     continue;
                 }
-                seen.entry(path.to_string()).or_insert(ms);
+                let entry = seen.entry(path.to_string()).or_insert(FileTimes {
+                    path: path.to_string(),
+                    created_ms: ms,
+                    updated_ms: ms,
+                });
+                entry.updated_ms = entry.updated_ms.max(ms);
             }
         }
 
@@ -600,37 +615,50 @@ impl Git {
     }
 }
 
-type CreatedMap = std::collections::HashMap<String, i64>;
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct FileTimes {
+    pub path: String,
+    pub created_ms: i64,
+    pub updated_ms: i64,
+}
 
-fn sort_times(map: CreatedMap) -> Vec<(String, i64)> {
-    let mut out: Vec<(String, i64)> = map.into_iter().collect();
-    out.sort_by(|a, b| a.0.cmp(&b.0));
+type TimesMap = std::collections::HashMap<String, FileTimes>;
+
+fn sort_times(map: TimesMap) -> Vec<FileTimes> {
+    let mut out: Vec<FileTimes> = map.into_iter().map(|(_, v)| v).collect();
+    out.sort_by(|a, b| a.path.cmp(&b.path));
     out
 }
 
-fn parse_created_cache(raw: &str) -> Option<(String, CreatedMap)> {
+fn parse_created_cache(raw: &str) -> Option<(String, TimesMap)> {
     let mut lines = raw.lines();
     let head = lines.next()?.trim().to_string();
-    let mut map = CreatedMap::new();
+    let mut map = TimesMap::new();
     for line in lines {
-        let mut parts = line.splitn(2, '\t');
+        let mut parts = line.split('\t');
         let path = parts.next()?;
-        let ms: i64 = parts.next()?.trim().parse().ok()?;
-        map.insert(path.to_string(), ms);
+        let created: i64 = parts.next()?.trim().parse().ok()?;
+        let updated: i64 = parts.next().and_then(|u| u.trim().parse().ok()).unwrap_or(created);
+        map.insert(
+            path.to_string(),
+            FileTimes { path: path.to_string(), created_ms: created, updated_ms: updated },
+        );
     }
     Some((head, map))
 }
 
-fn write_created_cache(path: &std::path::Path, head: &str, map: &CreatedMap) -> std::io::Result<()> {
-    let mut out = String::with_capacity(map.len() * 48);
+fn write_created_cache(path: &std::path::Path, head: &str, map: &TimesMap) -> std::io::Result<()> {
+    let mut out = String::with_capacity(map.len() * 64);
     out.push_str(head);
     out.push('\n');
-    let mut entries: Vec<(&String, &i64)> = map.iter().collect();
-    entries.sort();
-    for (path, ms) in entries {
-        out.push_str(path);
+    let mut entries: Vec<&FileTimes> = map.values().collect();
+    entries.sort_by(|a, b| a.path.cmp(&b.path));
+    for entry in entries {
+        out.push_str(&entry.path);
         out.push('\t');
-        out.push_str(&ms.to_string());
+        out.push_str(&entry.created_ms.to_string());
+        out.push('\t');
+        out.push_str(&entry.updated_ms.to_string());
         out.push('\n');
     }
     std::fs::write(path, out)

@@ -516,22 +516,25 @@ fn thematic_breaks_are_rules_not_paragraphs() {
 }
 
 #[test]
-fn git_creation_times_win_over_the_filesystem() {
+fn git_times_replace_the_filesystem_timestamps() {
     use zree_core::search::SortOrder;
 
     let (_dir, vault) = fixture();
     let mut index = Index::build(&vault).unwrap();
     let id = "1on1導入講座 240404.md";
 
-    let updated = index.apply_created_times(&[(id.to_string(), 1)]);
+    let updated = index.apply_file_times(&[(id.to_string(), 1, 2)]);
     assert_eq!(updated, 1, "the note exists and its time changed");
 
     let rows = index.list_rows(SortOrder::CreatedAsc);
     assert_eq!(rows.first().unwrap().id, id);
     assert_eq!(rows.first().unwrap().created_ms, 1);
 
+    let row = index.list_rows(SortOrder::CreatedAsc).into_iter().find(|r| r.id == id).unwrap();
+    assert_eq!(row.mtime_ms, 2, "the update time comes from history too");
+
     // applying the same times again is a no-op
-    assert_eq!(index.apply_created_times(&[(id.to_string(), 1)]), 0);
+    assert_eq!(index.apply_file_times(&[(id.to_string(), 1, 2)]), 0);
 }
 
 #[test]

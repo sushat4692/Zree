@@ -50,9 +50,12 @@ Inline tags only; no frontmatter.
 `SortOrder`: updated, created (newest/oldest first) or title (A→Z / Z→A). It only applies when
 the list is unfiltered; a search keeps relevance order. Both apps persist the choice.
 
-Creation time: from the filesystem where the platform has it (APFS), otherwise from the first
-Git commit that added the file (Android's ext4/f2fs has no birth time). The Git lookup is cached
-in `.git/zree-created-times.tsv` keyed by HEAD, so later opens only walk the new commits.
+**Both** timestamps come from Git history, not the filesystem: `created` is the first commit
+that added a file, `updated` is the last commit that touched it. A clone or checkout rewrites
+every mtime (that is what made every note look "updated" at the same moment), and Android has
+no birth time at all, so history is the only value that survives a clone and agrees across
+devices. The walk is cached in `.git/zree-times.tsv` keyed by HEAD; later opens only cover the
+new commits. Notes Git has never seen keep their filesystem timestamps.
 
 Deletion always asks for confirmation first; the note then moves to `.trash/`.
 

@@ -240,7 +240,7 @@ fn sync_only_pushes_when_there_is_something_to_push() {
 }
 
 #[test]
-fn first_added_times_are_cached_in_dot_git() {
+fn file_times_come_from_history_and_are_cached() {
     let sandbox = Sandbox::new();
     let (a_dir, a) = sandbox.vault("a");
     write(&a_dir.join("早い.md"), "1\n");
@@ -249,24 +249,26 @@ fn first_added_times_are_cached_in_dot_git() {
     write(&a_dir.join("遅い.md"), "2\n");
     a.commit_all("second").unwrap();
 
-    let first = a.first_added_times().unwrap();
-    let early = first.iter().find(|(p, _)| p == "早い.md").unwrap().1;
-    let late = first.iter().find(|(p, _)| p == "遅い.md").unwrap().1;
-    assert!(early < late, "earlier commit should have the smaller time");
-    assert!(a_dir.join(".git/zree-created-times.tsv").is_file());
+    let first = a.file_times().unwrap();
+    let early = first.iter().find(|t| t.path == "早い.md").unwrap().clone();
+    let late = first.iter().find(|t| t.path == "遅い.md").unwrap().clone();
+    assert!(early.created_ms < late.created_ms, "later file was created later");
+    assert!(early.updated_ms >= early.created_ms);
+    assert!(a_dir.join(".git/zree-times.tsv").is_file());
 
     // second call answers from the cache and agrees
-    let second = a.first_added_times().unwrap();
-    assert_eq!(first, second);
+    assert_eq!(first, a.file_times().unwrap());
 
-    // a new commit only walks the delta and keeps earlier results
+    // a new commit only walks the delta, and the earlier file keeps its timestamps while
+    // the edited one moves its "updated" time forward
+    std::thread::sleep(std::time::Duration::from_millis(1100));
+    write(&a_dir.join("早い.md"), "1 edited\n");
     write(&a_dir.join("三つ目.md"), "3\n");
     a.commit_all("third").unwrap();
-    let third = a.first_added_times().unwrap();
+
+    let third = a.file_times().unwrap();
     assert_eq!(third.len(), 3);
-    assert_eq!(
-        third.iter().find(|(p, _)| p == "早い.md").unwrap().1,
-        early,
-        "cached entries survive an incremental update"
-    );
+    let early_after = third.iter().find(|t| t.path == "早い.md").unwrap();
+    assert_eq!(early_after.created_ms, early.created_ms, "creation is stable");
+    assert!(early_after.updated_ms > early.updated_ms, "edit moves updated forward");
 }

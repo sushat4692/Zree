@@ -96,12 +96,13 @@ impl ZreeSession {
         self.current_index().list_rows(order)
     }
 
-    /// Fill creation times for notes the filesystem could not date (Android),
-    /// typically from `GitRepo.firstAddedTimes()`.
-    pub fn apply_created_times(&self, times: Vec<crate::ffi::CreatedAt>) -> u32 {
-        let pairs: Vec<(String, i64)> = times.into_iter().map(|t| (t.id, t.ms)).collect();
+    /// Replace the filesystem timestamps with the ones from history, so a clone and every
+    /// device agree on "created" and "updated".
+    pub fn apply_file_times(&self, times: Vec<FileTimes>) -> u32 {
+        let pairs: Vec<(String, i64, i64)> =
+            times.into_iter().map(|t| (t.path, t.created_ms, t.updated_ms)).collect();
         let mut index = self.index.lock().unwrap();
-        let updated = index.apply_created_times(&pairs);
+        let updated = index.apply_file_times(&pairs);
         *self.dirty.lock().unwrap() = false;
         updated as u32
     }
@@ -338,6 +339,8 @@ pub struct CreatedAt {
     pub ms: i64,
 }
 
+pub use crate::git::FileTimes;
+
 #[derive(uniffi::Object)]
 pub struct GitRepo {
     inner: Mutex<crate::git::Git>,
@@ -413,9 +416,9 @@ impl GitRepo {
         self.inner.lock().unwrap().conflicts()
     }
 
-    pub fn first_added_times(&self) -> Result<Vec<CreatedAt>, NoteError> {
-        let times = self.inner.lock().unwrap().first_added_times()?;
-        Ok(times.into_iter().map(|(id, ms)| CreatedAt { id, ms }).collect())
+    /// Creation and last-change times taken from history (checkout rewrites mtimes).
+    pub fn file_times(&self) -> Result<Vec<FileTimes>, NoteError> {
+        self.inner.lock().unwrap().file_times()
     }
 
     pub fn resolve(&self, path: String, choice: crate::git::ConflictChoice) -> Result<(), NoteError> {
