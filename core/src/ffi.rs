@@ -14,6 +14,9 @@ pub struct ZreeSession {
     vault: Vault,
     index: Mutex<Index>,
     dirty: Mutex<bool>,
+    /// Timestamps from Git, kept so every rebuild of the index keeps them: a sync writes
+    /// the working tree, and a rebuilt index would otherwise fall back to those mtimes.
+    file_times: Mutex<std::collections::HashMap<String, (i64, i64)>>,
 }
 
 #[uniffi::export]
@@ -27,6 +30,7 @@ impl ZreeSession {
             vault,
             index: Mutex::new(index),
             dirty: Mutex::new(false),
+            file_times: Mutex::new(std::collections::HashMap::new()),
         }))
     }
 
@@ -101,6 +105,14 @@ impl ZreeSession {
     pub fn apply_file_times(&self, times: Vec<FileTimes>) -> u32 {
         let pairs: Vec<(String, i64, i64)> =
             times.into_iter().map(|t| (t.path, t.created_ms, t.updated_ms)).collect();
+
+        {
+            let mut stored = self.file_times.lock().unwrap();
+            for (path, created, updated) in &pairs {
+                stored.insert(path.clone(), (*created, *updated));
+            }
+        }
+
         let mut index = self.index.lock().unwrap();
         let updated = index.apply_file_times(&pairs);
         *self.dirty.lock().unwrap() = false;
@@ -182,7 +194,15 @@ impl ZreeSession {
         let mut guard = self.index.lock().unwrap();
         let dirty = *self.dirty.lock().unwrap();
         if dirty {
-            if let Ok(rebuilt) = Index::build(&self.vault) {
+            if let Ok(mut rebuilt) = Index::build(&self.vault) {
+                let stored = self.file_times.lock().unwrap();
+                if !stored.is_empty() {
+                    let pairs: Vec<(String, i64, i64)> = stored
+                        .iter()
+                        .map(|(path, (created, updated))| (path.clone(), *created, *updated))
+                        .collect();
+                    rebuilt.apply_file_times(&pairs);
+                }
                 *guard = rebuilt;
                 *self.dirty.lock().unwrap() = false;
             }

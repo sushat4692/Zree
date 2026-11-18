@@ -568,3 +568,26 @@ fn a_single_line_can_be_classified() {
     assert!(matches!(markdown::parse_line(""), Block::Blank));
     assert!(matches!(markdown::parse_line("ただの文"), Block::Paragraph { .. }));
 }
+
+#[test]
+fn git_times_survive_a_reindex() {
+    let (_dir, vault) = fixture();
+    let session = zree_core::ffi::ZreeSession::open(vault.root_string()).unwrap();
+
+    let times = vec![
+        zree_core::ffi::FileTimes {
+            path: "1on1導入講座 240404.md".to_string(),
+            created_ms: 1_000,
+            updated_ms: 2_000,
+        },
+    ];
+    session.apply_file_times(times);
+
+    // writing anything makes the index dirty; the rebuild would read mtimes from disk
+    session.create(Some("新しいメモ".into()), "本文\n".into()).unwrap();
+
+    let rows = session.list_rows(zree_core::search::SortOrder::CreatedAsc);
+    let row = rows.iter().find(|r| r.id == "1on1導入講座 240404.md").unwrap();
+    assert_eq!(row.created_ms, 1_000, "git times must survive the rebuild");
+    assert_eq!(row.mtime_ms, 2_000);
+}

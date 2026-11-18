@@ -455,6 +455,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             val now = System.currentTimeMillis()
             prefs.edit().putLong(KEY_LAST_SYNC, now).apply()
             refresh()
+            backfillCreatedTimes()
             _state.value = _state.value.copy(
                 busy = false,
                 lastSyncAt = now,

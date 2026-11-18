@@ -586,6 +586,8 @@ final class AppState {
             lastSyncAt = Date()
             refreshAll()
             refreshGitStatus()
+            // the pull rewrote mtimes; ask history again so "updated" stays meaningful
+            backfillCreatedTimes()
             reloadSelectedIfClean()
         case .failure(let error):
             // a failing remote (missing PAT, offline) should not spam on every tick
