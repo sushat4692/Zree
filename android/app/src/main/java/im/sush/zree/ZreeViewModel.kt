@@ -72,6 +72,8 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     private var session: ZreeSession? = null
     private var repo: GitRepo? = null
     private var seenMtime = 0L
+    /** The text as loaded; the core compares it when the mtime moved. */
+    private var loadedBody = ""
     private var saveJob: Job? = null
     private var autoSyncJob: Job? = null
     private var consecutiveFailures = 0
@@ -289,12 +291,13 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun openNoteInternal(id: String) {
         val s = session ?: return
-        val body = runCatching { s.read(id) }.getOrElse {
+        val loaded = runCatching { s.read(id) }.getOrElse {
             Log.e(TAG, "open failed: $id", it)
             _state.value = _state.value.copy(error = "開けませんでした: ${it.message}")
             return
         }
-        Log.i(TAG, "open $id (${body.length} chars)")
+        loadedBody = loaded
+        Log.i(TAG, "open $id (${loaded.length} chars)")
         val row = _state.value.rows.firstOrNull { it.id == id }
         seenMtime = row?.mtimeMs ?: 0L
         dirty = false
@@ -306,7 +309,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             screen = Screen.Editor,
             selectedId = id,
             title = row?.title ?: id.removeSuffix(".md"),
-            draft = body,
+            draft = loaded,
         )
     }
 
@@ -341,8 +344,9 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         val id = _state.value.selectedId ?: return
         if (!dirty) return
         val body = _state.value.draft
-        val meta = s.write(id, body, seenMtime)
+        val meta = s.write(id, body, seenMtime, loadedBody)
         seenMtime = meta.mtimeMs
+        loadedBody = body
         dirty = false
 
         // the editor header and the list row show these; they used to keep the value they

@@ -33,6 +33,8 @@ final class AppState {
     var errorMessage: String?
 
     private var seenMtime: Int64 = 0
+    /// The text as it was read from disk; the core compares it when the mtime moved.
+    private var loadedBody: String = ""
     private var isDirty = false
     private var isLoading = false
     private var saveTask: Task<Void, Never>?
@@ -259,7 +261,8 @@ final class AppState {
         isLoading = true
         defer { isLoading = false }
         do {
-            body = try session.read(id: id)
+            loadedBody = try session.read(id: id)
+            body = loadedBody
             if let row = rows.first(where: { $0.id == id }) {
                 titleDraft = row.title
                 seenMtime = row.mtimeMs
@@ -295,8 +298,14 @@ final class AppState {
         saveTask?.cancel()
         guard isDirty, let session, let id = selectedID else { return }
         do {
-            let meta = try session.write(id: id, body: body, seenMtimeMs: seenMtime)
+            let meta = try session.write(
+                id: id,
+                body: body,
+                seenMtimeMs: seenMtime,
+                baseBody: loadedBody
+            )
             seenMtime = meta.mtimeMs
+            loadedBody = body
             isDirty = false
             errorMessage = nil
             if let idx = rows.firstIndex(where: { $0.id == id }) {
@@ -687,6 +696,21 @@ final class AppState {
             try git.push()
             refreshAll()
             refreshGitStatus()
+        } catch {
+            errorMessage = describe(error)
+        }
+    }
+
+    /// Discard the editor's text and take what is on disk (used after a real conflict).
+    func reloadFromDisk() {
+        guard let session, let id = selectedID else { return }
+        do {
+            loadedBody = try session.read(id: id)
+            body = loadedBody
+            if let row = rows.first(where: { $0.id == id }) {
+                seenMtime = row.mtimeMs
+            }
+            errorMessage = nil
         } catch {
             errorMessage = describe(error)
         }

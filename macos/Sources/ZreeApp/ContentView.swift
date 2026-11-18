@@ -225,6 +225,10 @@ struct ErrorBar: View {
             Image(systemName: "exclamationmark.triangle.fill")
             Text(message).lineLimit(2)
             Spacer()
+            if message.contains("外部で更新") {
+                Button("再読み込み") { app.reloadFromDisk() }
+                    .buttonStyle(.borderless)
+            }
             Button("閉じる") { app.errorMessage = nil }
                 .buttonStyle(.borderless)
         }

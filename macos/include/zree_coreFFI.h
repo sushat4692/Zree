@@ -450,7 +450,7 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_trash(uint64_t ptr, RustBuffer
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_WRITE
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_WRITE
-RustBuffer uniffi_zree_core_fn_method_zreesession_write(uint64_t ptr, RustBuffer id, RustBuffer body, int64_t seen_mtime_ms, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_zree_core_fn_method_zreesession_write(uint64_t ptr, RustBuffer id, RustBuffer body, int64_t seen_mtime_ms, RustBuffer base_body, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_FUNC_COMPLETION_CONTEXT

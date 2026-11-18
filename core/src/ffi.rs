@@ -46,12 +46,18 @@ impl ZreeSession {
         self.vault.read(&id)
     }
 
-    /// Overwrite a note. Rejected when the file changed on disk since `seen_mtime_ms`.
+    /// Overwrite a note.
+    ///
+    /// A mtime that differs from `seen_mtime_ms` is not a conflict by itself: a pull or a
+    /// checkout rewrites files and changes their mtime even when the content is identical.
+    /// `base_body` is the text that was loaded; if the file on disk still holds exactly
+    /// that, writing over it loses nothing.
     pub fn write(
         &self,
         id: String,
         body: String,
         seen_mtime_ms: i64,
+        base_body: Option<String>,
     ) -> Result<NoteMeta, NoteError> {
         let path = self.vault.path_of(&id)?;
         if path.is_file() && seen_mtime_ms > 0 {
@@ -62,9 +68,15 @@ impl ZreeSession {
                 .map(|d| d.as_millis() as i64)
                 .unwrap_or(0);
             if current != seen_mtime_ms {
-                return Err(NoteError::Conflict(format!(
-                    "外部で更新されています: {id} (disk={current} mine={seen_mtime_ms})"
-                )));
+                let unchanged_on_disk = match &base_body {
+                    Some(base) => self.vault.read(&id).map(|disk| &disk == base).unwrap_or(false),
+                    None => false,
+                };
+                if !unchanged_on_disk {
+                    return Err(NoteError::Conflict(format!(
+                        "外部で更新されています: {id} (disk={current} mine={seen_mtime_ms})"
+                    )));
+                }
             }
         }
         let meta = self.vault.write(&id, &body)?;

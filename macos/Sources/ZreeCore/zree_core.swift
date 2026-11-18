@@ -1000,9 +1000,14 @@ public protocol ZreeSessionProtocol: AnyObject, Sendable {
     func trash(id: String) throws  -> String
     
     /**
-     * Overwrite a note. Rejected when the file changed on disk since `seen_mtime_ms`.
+     * Overwrite a note.
+     *
+     * A mtime that differs from `seen_mtime_ms` is not a conflict by itself: a pull or a
+     * checkout rewrites files and changes their mtime even when the content is identical.
+     * `base_body` is the text that was loaded; if the file on disk still holds exactly
+     * that, writing over it loses nothing.
      */
-    func write(id: String, body: String, seenMtimeMs: Int64) throws  -> NoteMeta
+    func write(id: String, body: String, seenMtimeMs: Int64, baseBody: String?) throws  -> NoteMeta
     
 }
 open class ZreeSession: ZreeSessionProtocol, @unchecked Sendable {
@@ -1295,16 +1300,22 @@ open func trash(id: String)throws  -> String  {
 }
     
     /**
-     * Overwrite a note. Rejected when the file changed on disk since `seen_mtime_ms`.
+     * Overwrite a note.
+     *
+     * A mtime that differs from `seen_mtime_ms` is not a conflict by itself: a pull or a
+     * checkout rewrites files and changes their mtime even when the content is identical.
+     * `base_body` is the text that was loaded; if the file on disk still holds exactly
+     * that, writing over it loses nothing.
      */
-open func write(id: String, body: String, seenMtimeMs: Int64)throws  -> NoteMeta  {
+open func write(id: String, body: String, seenMtimeMs: Int64, baseBody: String?)throws  -> NoteMeta  {
     return try  FfiConverterTypeNoteMeta_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
     uniffi_zree_core_fn_method_zreesession_write(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),
         FfiConverterString.lower(body),
-        FfiConverterInt64.lower(seenMtimeMs),uniffiCallStatus
+        FfiConverterInt64.lower(seenMtimeMs),
+        FfiConverterOptionString.lower(baseBody),uniffiCallStatus
     )
 })
 }
@@ -3700,7 +3711,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_zree_core_checksum_method_zreesession_trash() != 28332) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_zree_core_checksum_method_zreesession_write() != 7119) {
+    if (uniffi_zree_core_checksum_method_zreesession_write() != 9943) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_constructor_gitrepo_clone() != 24733) {

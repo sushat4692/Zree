@@ -591,3 +591,26 @@ fn git_times_survive_a_reindex() {
     assert_eq!(row.created_ms, 1_000, "git times must survive the rebuild");
     assert_eq!(row.mtime_ms, 2_000);
 }
+
+#[test]
+fn a_mtime_change_alone_is_not_a_conflict() {
+    let (_dir, vault) = fixture();
+    let session = zree_core::ffi::ZreeSession::open(vault.root_string()).unwrap();
+    let id = "1on1導入講座 240404.md";
+    let loaded = session.read(id.into()).unwrap();
+
+    // simulate a pull/checkout: same bytes, different mtime
+    let path = vault.path_of(id).unwrap();
+    std::fs::write(&path, &loaded).unwrap();
+    let stale_mtime = 1; // never matches
+
+    let meta = session
+        .write(id.into(), "書き換え\n".into(), stale_mtime, Some(loaded.clone()))
+        .expect("same content on disk must not conflict");
+    assert!(meta.bytes > 0);
+
+    // a real change underneath is still a conflict
+    std::fs::write(&path, "他の端末の内容\n").unwrap();
+    let err = session.write(id.into(), "自分\n".into(), stale_mtime, Some(loaded));
+    assert!(matches!(err, Err(zree_core::NoteError::Conflict(_))));
+}

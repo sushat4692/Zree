@@ -873,7 +873,7 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_trash(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_zree_core_fn_method_zreesession_write(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`seenMtimeMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_zree_core_fn_method_zreesession_write(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`seenMtimeMs`: Long,`baseBody`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_func_completion_context(`beforeCursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1143,7 +1143,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_method_zreesession_trash() and 0xFFFF) != 28332) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_zree_core_checksum_method_zreesession_write() and 0xFFFF) != 7119) {
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_write() and 0xFFFF) != 9943) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_constructor_gitrepo_clone() and 0xFFFF) != 24733) {
@@ -2207,9 +2207,14 @@ public interface ZreeSessionInterface {
     fun `trash`(`id`: kotlin.String): kotlin.String
     
     /**
-     * Overwrite a note. Rejected when the file changed on disk since `seen_mtime_ms`.
+     * Overwrite a note.
+     *
+     * A mtime that differs from `seen_mtime_ms` is not a conflict by itself: a pull or a
+     * checkout rewrites files and changes their mtime even when the content is identical.
+     * `base_body` is the text that was loaded; if the file on disk still holds exactly
+     * that, writing over it loses nothing.
      */
-    fun `write`(`id`: kotlin.String, `body`: kotlin.String, `seenMtimeMs`: kotlin.Long): NoteMeta
+    fun `write`(`id`: kotlin.String, `body`: kotlin.String, `seenMtimeMs`: kotlin.Long, `baseBody`: kotlin.String?): NoteMeta
     
     companion object
 }
@@ -2626,9 +2631,14 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
 
     
     /**
-     * Overwrite a note. Rejected when the file changed on disk since `seen_mtime_ms`.
+     * Overwrite a note.
+     *
+     * A mtime that differs from `seen_mtime_ms` is not a conflict by itself: a pull or a
+     * checkout rewrites files and changes their mtime even when the content is identical.
+     * `base_body` is the text that was loaded; if the file on disk still holds exactly
+     * that, writing over it loses nothing.
      */
-    @Throws(NoteException::class)override fun `write`(`id`: kotlin.String, `body`: kotlin.String, `seenMtimeMs`: kotlin.Long): NoteMeta {
+    @Throws(NoteException::class)override fun `write`(`id`: kotlin.String, `body`: kotlin.String, `seenMtimeMs`: kotlin.Long, `baseBody`: kotlin.String?): NoteMeta {
             return FfiConverterTypeNoteMeta.lift(
     callWithHandle {
     uniffiRustCallWithError(NoteException) { _status ->
@@ -2637,7 +2647,8 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
         
         FfiConverterString.lower(`id`),
         FfiConverterString.lower(`body`),
-        FfiConverterLong.lower(`seenMtimeMs`),_status)
+        FfiConverterLong.lower(`seenMtimeMs`),
+        FfiConverterOptionalString.lower(`baseBody`),_status)
 }
     }
     )
