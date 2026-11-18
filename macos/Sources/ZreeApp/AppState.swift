@@ -572,6 +572,10 @@ final class AppState {
     private func runSync(auto: Bool) async {
         guard let repo = git else { return }
         saveNow()
+        let before = try? repo.status()
+        NSLog("ZREE-SYNC start auto=%d branch=%@ ahead=%u behind=%u changed=%u conflicts=%d",
+              auto ? 1 : 0, before?.branch ?? "-", before?.ahead ?? 0, before?.behind ?? 0,
+              before?.changed ?? 0, before?.conflicts.count ?? 0)
         gitBusy = true
         let message = auto ? "zree: autosync \(Self.stamp())" : "zree: sync from macOS"
         let result: Result<SyncReport, Error> = await Task.detached {
@@ -581,6 +585,9 @@ final class AppState {
 
         switch result {
         case .success(let report):
+            NSLog("ZREE-SYNC done committed=%@ pushed=%d conflicts=%@",
+                  report.committed ?? "-", report.pushed ? 1 : 0,
+                  report.conflicts.joined(separator: ","))
             autoSyncFailures = 0
             conflicts = report.conflicts
             lastSyncAt = Date()
