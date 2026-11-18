@@ -252,8 +252,16 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             s.search(query, _state.value.activeTags.toList(), 0u)
         }
         val rows = hits.map { Row(it.id, it.title, it.snippet, it.tags, it.mtimeMs, it.createdMs) }
+        val selected = _state.value.selectedId
+        val selectedRow = rows.firstOrNull { it.id == selected }
         val all = s.search("", emptyList(), 0u).size
-        _state.value = _state.value.copy(rows = rows, allCount = all, tags = s.tags())
+        _state.value = _state.value.copy(
+            rows = rows,
+            allCount = all,
+            tags = s.tags(),
+            noteMtimeMs = selectedRow?.mtimeMs ?: _state.value.noteMtimeMs,
+            noteCreatedMs = selectedRow?.createdMs ?: _state.value.noteCreatedMs,
+        )
     }
 
     fun setQuery(q: String) {
@@ -333,6 +341,24 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
         val meta = s.write(id, body, seenMtime)
         seenMtime = meta.mtimeMs
         dirty = false
+
+        // the editor header and the list row show these; they used to keep the value they
+        // had when the note was opened
+        val updatedRows = _state.value.rows.toMutableList()
+        val index = updatedRows.indexOfFirst { it.id == id }
+        if (index >= 0) {
+            updatedRows[index] = updatedRows[index].copy(mtimeMs = meta.mtimeMs)
+            if (_state.value.query.isBlank() &&
+                _state.value.activeTags.isEmpty() &&
+                _state.value.sortOrder == SortOrder.UPDATED_DESC
+            ) {
+                updatedRows.sortByDescending { it.mtimeMs }
+            }
+        }
+        _state.value = _state.value.copy(
+            noteMtimeMs = meta.mtimeMs,
+            rows = updatedRows,
+        )
     }
 
     fun rename(title: String) = io {
