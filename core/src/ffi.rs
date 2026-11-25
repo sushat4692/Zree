@@ -132,6 +132,40 @@ impl ZreeSession {
     }
 
     /// Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+    /// Tags to propose for a note, best first. Pure structure; no network.
+    pub fn suggest_tags_for(&self, id: String, limit: u32) -> Result<Vec<TagSuggestion>, NoteError> {
+        let index = self.current_index();
+        if !index.entries.iter().any(|e| e.meta.id == id) {
+            return Err(NoteError::NotFound(id));
+        }
+        Ok(crate::suggest::suggest_for(&index, &id, limit as usize)
+            .into_iter()
+            .map(|s| TagSuggestion {
+                tag: s.tag,
+                score: s.score as f64,
+                tier: s.tier,
+                reasons: s.reasons.iter().map(|r| r.as_str().to_string()).collect(),
+            })
+            .collect())
+    }
+
+    /// Append tags to the note's tag line. Returns the text now on disk.
+    pub fn apply_tags(&self, id: String, tags: Vec<String>) -> Result<String, NoteError> {
+        let current = self.vault.read(&id)?;
+        let updated = crate::suggest::insert_tags(&current, &tags);
+        if updated == current {
+            return Ok(current);
+        }
+        let was_dirty = *self.dirty.lock().unwrap();
+        let meta = self.vault.write(&id, &updated)?;
+        if was_dirty {
+            self.invalidate();
+        } else {
+            self.index.lock().unwrap().refresh_note(meta, updated.clone());
+        }
+        Ok(updated)
+    }
+
     pub fn suggest_tags(&self, prefix: String, limit: u32) -> Vec<String> {
         self.current_index().suggest_tags(&prefix, limit as usize)
     }
@@ -370,6 +404,18 @@ mod android_ca {
 #[uniffi::export]
 pub fn is_git_repo(root: String) -> bool {
     crate::git::Git::is_repo(&root)
+}
+
+/// One proposed tag and where the proposal came from.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct TagSuggestion {
+    pub tag: String,
+    /// 0.0 is "barely worth showing"; 3.0 is a rule that is right almost every time.
+    pub score: f64,
+    /// 1 = show it, 2 = behind "other candidates".
+    pub tier: u8,
+    /// `customer`, `title-exact`, `sibling`, `cooccur`, … (for the caption and for measuring)
+    pub reasons: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]

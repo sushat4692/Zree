@@ -12,6 +12,7 @@ pub mod ffi;
 pub mod git;
 pub mod markdown;
 pub mod search;
+pub mod suggest;
 pub mod tags;
 pub mod vault;
 
@@ -19,6 +20,7 @@ pub use complete::{completion_context, list_action, CompletionContext, Completio
 pub use error::NoteError;
 pub use markdown::{parse_blocks, parse_inline, Block, Inline};
 pub use search::{Hit, Index, SortOrder, TagCount};
+pub use suggest::{Reason, Suggestion, Vocabulary};
 pub use vault::{NoteMeta, Vault};
 
 /// Convenience facade: a vault plus its in-memory search index.

@@ -43,6 +43,8 @@ pub struct Entry {
 pub struct Index {
     pub entries: Vec<Entry>,
     pub built_at_ms: i64,
+    /// tag counts, spellings and neighbours — what the tag suggester reads
+    pub vocab: crate::suggest::Vocabulary,
 }
 
 /// NFKC + lowercase. Fullwidth/halfwidth and case differences collapse.
@@ -62,9 +64,11 @@ impl Index {
                 meta,
             });
         }
+        let vocab = crate::suggest::Vocabulary::build(&entries);
         Ok(Index {
             entries,
             built_at_ms: crate::vault::now_ms(),
+            vocab,
         })
     }
 
@@ -97,6 +101,22 @@ impl Index {
 
     /// All terms must match (AND). An empty query returns every note
     /// (newest first) so the app can present a browsable list.
+    /// Replace one note's entry (and the vocabulary derived from all of them) after a write.
+    /// Much cheaper than rebuilding: the remaining files are untouched.
+    pub fn refresh_note(&mut self, meta: crate::vault::NoteMeta, body: String) {
+        let entry = Entry {
+            title_norm: normalize(&meta.title),
+            body_norm: normalize(&body),
+            body,
+            meta,
+        };
+        match self.entries.iter_mut().find(|e| e.meta.id == entry.meta.id) {
+            Some(slot) => *slot = entry,
+            None => self.entries.push(entry),
+        }
+        self.vocab = crate::suggest::Vocabulary::build(&self.entries);
+    }
+
     pub fn search(&self, query: &str, tags: &[String], limit: usize) -> Vec<Hit> {
         let q = normalize(query.trim());
         let terms: Vec<&str> = q.split_whitespace().filter(|t| !t.is_empty()).collect();

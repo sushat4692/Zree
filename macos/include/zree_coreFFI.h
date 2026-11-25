@@ -358,6 +358,11 @@ uint64_t uniffi_zree_core_fn_constructor_zreesession_open(RustBuffer root, RustC
 uint32_t uniffi_zree_core_fn_method_zreesession_apply_file_times(uint64_t ptr, RustBuffer times, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_APPLY_TAGS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_APPLY_TAGS
+RustBuffer uniffi_zree_core_fn_method_zreesession_apply_tags(uint64_t ptr, RustBuffer id, RustBuffer tags, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_BLOCKS
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_BLOCKS
 RustBuffer uniffi_zree_core_fn_method_zreesession_blocks(uint64_t ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
@@ -436,6 +441,11 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_suggest_notes(uint64_t ptr, Ru
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_SUGGEST_TAGS
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_SUGGEST_TAGS
 RustBuffer uniffi_zree_core_fn_method_zreesession_suggest_tags(uint64_t ptr, RustBuffer prefix, uint32_t limit, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_SUGGEST_TAGS_FOR
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_SUGGEST_TAGS_FOR
+RustBuffer uniffi_zree_core_fn_method_zreesession_suggest_tags_for(uint64_t ptr, RustBuffer id, uint32_t limit, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_TAGS
@@ -913,6 +923,12 @@ uint16_t uniffi_zree_core_checksum_method_zreesession_apply_file_times(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_APPLY_TAGS
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_APPLY_TAGS
+uint16_t uniffi_zree_core_checksum_method_zreesession_apply_tags(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_BLOCKS
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_BLOCKS
 uint16_t uniffi_zree_core_checksum_method_zreesession_blocks(void
@@ -1006,6 +1022,12 @@ uint16_t uniffi_zree_core_checksum_method_zreesession_suggest_notes(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_TAGS
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_TAGS
 uint16_t uniffi_zree_core_checksum_method_zreesession_suggest_tags(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_TAGS_FOR
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_TAGS_FOR
+uint16_t uniffi_zree_core_checksum_method_zreesession_suggest_tags_for(void
     
 );
 #endif

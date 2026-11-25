@@ -70,6 +70,33 @@ Deletion always asks for confirmation first; the note then moves to `.trash/`.
 
 Both persist their own settings; there is no cross-device sync for them.
 
+## 3.5 Tag suggestions (rules only)
+
+Tags are suggested from the structure of the vault — no network, no model, same answer on
+both platforms. `core/src/suggest.rs` owns the rules; the platforms only draw chips.
+
+| signal | weight | tier |
+|---|---|---|
+| an existing tag is a whole word of the title | 3.0 | 1 |
+| a sibling note (same customer name) carries the tag | 2.5 × ratio | 1 |
+| the title names a customer (`〜様`) | 3.0 | 1 |
+| the tag co-occurs with one already on the note | 2.5 × ratio | 1 |
+| the tag sits inside a longer title word | 2.0 | 2 |
+| the tag is mentioned in the body | 0.75 × count (max 1.5) | 2 |
+| a second customer in the title | 2.0 | 2 |
+| same-day siblings (only when no customer link) | 2.0 × ratio | 2 |
+
+- threshold `TAU = 2.5`: a weak signal alone never reaches it, so it needs agreement
+- tiers: 1 is shown immediately, 2 stays behind "other candidates"
+- ordering: score, then how often the tag is used, then the tag — identical on both platforms
+- a suggestion is never applied automatically, and an existing tag is never rewritten
+
+Measured on the author's vault (375 notes, 151 already tagged, tags hidden before asking):
+tier 1 only — precision 96% / recall 44%; tier 1+2 — precision 92%. The harness is
+`cargo run --release --example tag_quality -- /path/to/vault`.
+
+Never suggested: tags already on the note, anything inside code, dates and bare numbers.
+
 ## 4. Search
 
 Japanese is written without spaces, so nothing is tokenised.

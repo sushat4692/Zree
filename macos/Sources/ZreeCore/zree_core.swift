@@ -545,6 +545,22 @@ fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
+    typealias FfiType = Double
+    typealias SwiftType = Double
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Double {
+        return try lift(readDouble(&buf))
+    }
+
+    public static func write(_ value: Double, into buf: inout [UInt8]) {
+        writeDouble(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
@@ -937,6 +953,11 @@ public protocol ZreeSessionProtocol: AnyObject, Sendable {
     func applyFileTimes(times: [FileTimes])  -> UInt32
     
     /**
+     * Append tags to the note's tag line. Returns the text now on disk.
+     */
+    func applyTags(id: String, tags: [String]) throws  -> String
+    
+    /**
      * Markdown token stream for a note on disk.
      */
     func blocks(id: String) throws  -> [Block]
@@ -990,10 +1011,13 @@ public protocol ZreeSessionProtocol: AnyObject, Sendable {
      */
     func suggestNotes(prefix: String, limit: UInt32)  -> [NoteSuggestion]
     
+    func suggestTags(prefix: String, limit: UInt32)  -> [String]
+    
     /**
      * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+     * Tags to propose for a note, best first. Pure structure; no network.
      */
-    func suggestTags(prefix: String, limit: UInt32)  -> [String]
+    func suggestTagsFor(id: String, limit: UInt32) throws  -> [TagSuggestion]
     
     func tags()  -> [TagCount]
     
@@ -1085,6 +1109,20 @@ open func applyFileTimes(times: [FileTimes]) -> UInt32  {
     uniffi_zree_core_fn_method_zreesession_apply_file_times(
             self.uniffiCloneHandle(),
         FfiConverterSequenceTypeFileTimes.lower(times),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Append tags to the note's tag line. Returns the text now on disk.
+     */
+open func applyTags(id: String, tags: [String])throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_zreesession_apply_tags(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(id),
+        FfiConverterSequenceString.lower(tags),uniffiCallStatus
     )
 })
 }
@@ -1266,15 +1304,27 @@ open func suggestNotes(prefix: String, limit: UInt32) -> [NoteSuggestion]  {
 })
 }
     
-    /**
-     * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
-     */
 open func suggestTags(prefix: String, limit: UInt32) -> [String]  {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
         uniffiCallStatus in
     uniffi_zree_core_fn_method_zreesession_suggest_tags(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(prefix),
+        FfiConverterUInt32.lower(limit),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+     * Tags to propose for a note, best first. Pure structure; no network.
+     */
+open func suggestTagsFor(id: String, limit: UInt32)throws  -> [TagSuggestion]  {
+    return try  FfiConverterSequenceTypeTagSuggestion.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_zreesession_suggest_tags_for(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(id),
         FfiConverterUInt32.lower(limit),uniffiCallStatus
     )
 })
@@ -2087,6 +2137,89 @@ public func FfiConverterTypeTagCount_lift(_ buf: RustBuffer) throws -> TagCount 
 #endif
 public func FfiConverterTypeTagCount_lower(_ value: TagCount) -> RustBuffer {
     return FfiConverterTypeTagCount.lower(value)
+}
+
+
+/**
+ * One proposed tag and where the proposal came from.
+ */
+public struct TagSuggestion: Equatable, Hashable {
+    public var tag: String
+    /**
+     * 0.0 is "barely worth showing"; 3.0 is a rule that is right almost every time.
+     */
+    public var score: Double
+    /**
+     * 1 = show it, 2 = behind "other candidates".
+     */
+    public var tier: UInt8
+    /**
+     * `customer`, `title-exact`, `sibling`, `cooccur`, … (for the caption and for measuring)
+     */
+    public var reasons: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(tag: String, 
+        /**
+         * 0.0 is "barely worth showing"; 3.0 is a rule that is right almost every time.
+         */score: Double, 
+        /**
+         * 1 = show it, 2 = behind "other candidates".
+         */tier: UInt8, 
+        /**
+         * `customer`, `title-exact`, `sibling`, `cooccur`, … (for the caption and for measuring)
+         */reasons: [String]) {
+        self.tag = tag
+        self.score = score
+        self.tier = tier
+        self.reasons = reasons
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension TagSuggestion: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTagSuggestion: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestion {
+        return
+            try TagSuggestion(
+                tag: FfiConverterString.read(from: &buf), 
+                score: FfiConverterDouble.read(from: &buf), 
+                tier: FfiConverterUInt8.read(from: &buf), 
+                reasons: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TagSuggestion, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.tag, into: &buf)
+        FfiConverterDouble.write(value.score, into: &buf)
+        FfiConverterUInt8.write(value.tier, into: &buf)
+        FfiConverterSequenceString.write(value.reasons, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTagSuggestion_lift(_ buf: RustBuffer) throws -> TagSuggestion {
+    return try FfiConverterTypeTagSuggestion.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTagSuggestion_lower(_ value: TagSuggestion) -> RustBuffer {
+    return FfiConverterTypeTagSuggestion.lower(value)
 }
 
 
@@ -3403,6 +3536,31 @@ fileprivate struct FfiConverterSequenceTypeTagCount: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeTagSuggestion: FfiConverterRustBuffer {
+    typealias SwiftType = [TagSuggestion]
+
+    public static func write(_ value: [TagSuggestion], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeTagSuggestion.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [TagSuggestion] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [TagSuggestion]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeTagSuggestion.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeBlock: FfiConverterRustBuffer {
     typealias SwiftType = [Block]
 
@@ -3657,6 +3815,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_zree_core_checksum_method_zreesession_apply_file_times() != 724) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_zree_core_checksum_method_zreesession_apply_tags() != 36320) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_zree_core_checksum_method_zreesession_blocks() != 2554) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3702,7 +3863,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_zree_core_checksum_method_zreesession_suggest_notes() != 29125) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_zree_core_checksum_method_zreesession_suggest_tags() != 38199) {
+    if (uniffi_zree_core_checksum_method_zreesession_suggest_tags() != 41480) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_zreesession_suggest_tags_for() != 49174) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_tags() != 56009) {

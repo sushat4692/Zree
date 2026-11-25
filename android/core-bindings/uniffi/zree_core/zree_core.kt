@@ -725,6 +725,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_apply_file_times(
     ): Int
+    external fun uniffi_zree_core_checksum_method_zreesession_apply_tags(
+    ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_blocks(
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_blocks_of(
@@ -756,6 +758,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_zree_core_checksum_method_zreesession_suggest_notes(
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_suggest_tags(
+    ): Int
+    external fun uniffi_zree_core_checksum_method_zreesession_suggest_tags_for(
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_tags(
     ): Int
@@ -837,6 +841,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_zree_core_fn_method_zreesession_apply_file_times(`ptr`: Long,`times`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Int
+    external fun uniffi_zree_core_fn_method_zreesession_apply_tags(`ptr`: Long,`id`: RustBuffer.ByValue,`tags`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_blocks(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_blocks_of(`ptr`: Long,`text`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -868,6 +874,8 @@ internal object UniffiLib {
     external fun uniffi_zree_core_fn_method_zreesession_suggest_notes(`ptr`: Long,`prefix`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_suggest_tags(`ptr`: Long,`prefix`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_zree_core_fn_method_zreesession_suggest_tags_for(`ptr`: Long,`id`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_tags(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1089,6 +1097,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_method_zreesession_apply_file_times() and 0xFFFF) != 724) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_apply_tags() and 0xFFFF) != 36320) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_blocks() and 0xFFFF) != 2554) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1134,7 +1145,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_method_zreesession_suggest_notes() and 0xFFFF) != 29125) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_zree_core_checksum_method_zreesession_suggest_tags() and 0xFFFF) != 38199) {
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_suggest_tags() and 0xFFFF) != 41480) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_suggest_tags_for() and 0xFFFF) != 49174) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_tags() and 0xFFFF) != 56009) {
@@ -1431,6 +1445,29 @@ public object FfiConverterLong: FfiConverter<Long, Long> {
 
     override fun write(value: Long, buf: ByteBuffer) {
         buf.putLong(value)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterDouble: FfiConverter<Double, Double> {
+    override fun lift(value: Double): Double {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Double {
+        return buf.getDouble()
+    }
+
+    override fun lower(value: Double): Double {
+        return value
+    }
+
+    override fun allocationSize(value: Double) = 8UL
+
+    override fun write(value: Double, buf: ByteBuffer) {
+        buf.putDouble(value)
     }
 }
 
@@ -2144,6 +2181,11 @@ public interface ZreeSessionInterface {
     fun `applyFileTimes`(`times`: List<FileTimes>): kotlin.UInt
     
     /**
+     * Append tags to the note's tag line. Returns the text now on disk.
+     */
+    fun `applyTags`(`id`: kotlin.String, `tags`: List<kotlin.String>): kotlin.String
+    
+    /**
      * Markdown token stream for a note on disk.
      */
     fun `blocks`(`id`: kotlin.String): List<Block>
@@ -2197,10 +2239,13 @@ public interface ZreeSessionInterface {
      */
     fun `suggestNotes`(`prefix`: kotlin.String, `limit`: kotlin.UInt): List<NoteSuggestion>
     
+    fun `suggestTags`(`prefix`: kotlin.String, `limit`: kotlin.UInt): List<kotlin.String>
+    
     /**
      * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+     * Tags to propose for a note, best first. Pure structure; no network.
      */
-    fun `suggestTags`(`prefix`: kotlin.String, `limit`: kotlin.UInt): List<kotlin.String>
+    fun `suggestTagsFor`(`id`: kotlin.String, `limit`: kotlin.UInt): List<TagSuggestion>
     
     fun `tags`(): List<TagCount>
     
@@ -2332,6 +2377,25 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
         it,
         
         FfiConverterSequenceTypeFileTimes.lower(`times`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Append tags to the note's tag line. Returns the text now on disk.
+     */
+    @Throws(NoteException::class)override fun `applyTags`(`id`: kotlin.String, `tags`: List<kotlin.String>): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(NoteException) { _status ->
+    UniffiLib.uniffi_zree_core_fn_method_zreesession_apply_tags(
+        it,
+        
+        FfiConverterString.lower(`id`),
+        FfiConverterSequenceString.lower(`tags`),_status)
 }
     }
     )
@@ -2583,10 +2647,7 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
     }
     
 
-    
-    /**
-     * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
-     */override fun `suggestTags`(`prefix`: kotlin.String, `limit`: kotlin.UInt): List<kotlin.String> {
+    override fun `suggestTags`(`prefix`: kotlin.String, `limit`: kotlin.UInt): List<kotlin.String> {
             return FfiConverterSequenceString.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
@@ -2594,6 +2655,26 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
         it,
         
         FfiConverterString.lower(`prefix`),
+        FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Tag candidates for the given prefix (no `#`), e.g. "お客" -> "お客様打合せ".
+     * Tags to propose for a note, best first. Pure structure; no network.
+     */
+    @Throws(NoteException::class)override fun `suggestTagsFor`(`id`: kotlin.String, `limit`: kotlin.UInt): List<TagSuggestion> {
+            return FfiConverterSequenceTypeTagSuggestion.lift(
+    callWithHandle {
+    uniffiRustCallWithError(NoteException) { _status ->
+    UniffiLib.uniffi_zree_core_fn_method_zreesession_suggest_tags_for(
+        it,
+        
+        FfiConverterString.lower(`id`),
         FfiConverterUInt.lower(`limit`),_status)
 }
     }
@@ -3255,6 +3336,66 @@ public object FfiConverterTypeTagCount: FfiConverterRustBuffer<TagCount> {
     override fun write(value: TagCount, buf: ByteBuffer) {
             FfiConverterString.write(value.`tag`, buf)
             FfiConverterUInt.write(value.`count`, buf)
+    }
+}
+
+
+
+/**
+ * One proposed tag and where the proposal came from.
+ */
+data class TagSuggestion (
+    var `tag`: kotlin.String
+    , 
+    /**
+     * 0.0 is "barely worth showing"; 3.0 is a rule that is right almost every time.
+     */
+    var `score`: kotlin.Double
+    , 
+    /**
+     * 1 = show it, 2 = behind "other candidates".
+     */
+    var `tier`: kotlin.UByte
+    , 
+    /**
+     * `customer`, `title-exact`, `sibling`, `cooccur`, … (for the caption and for measuring)
+     */
+    var `reasons`: List<kotlin.String>
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTagSuggestion: FfiConverterRustBuffer<TagSuggestion> {
+    override fun read(buf: ByteBuffer): TagSuggestion {
+        return TagSuggestion(
+            FfiConverterString.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterUByte.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TagSuggestion) = (
+            FfiConverterString.allocationSize(value.`tag`) +
+            FfiConverterDouble.allocationSize(value.`score`) +
+            FfiConverterUByte.allocationSize(value.`tier`) +
+            FfiConverterSequenceString.allocationSize(value.`reasons`)
+    )
+
+    override fun write(value: TagSuggestion, buf: ByteBuffer) {
+            FfiConverterString.write(value.`tag`, buf)
+            FfiConverterDouble.write(value.`score`, buf)
+            FfiConverterUByte.write(value.`tier`, buf)
+            FfiConverterSequenceString.write(value.`reasons`, buf)
     }
 }
 
@@ -4588,6 +4729,34 @@ public object FfiConverterSequenceTypeTagCount: FfiConverterRustBuffer<List<TagC
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeTagCount.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeTagSuggestion: FfiConverterRustBuffer<List<TagSuggestion>> {
+    override fun read(buf: ByteBuffer): List<TagSuggestion> {
+        val len = buf.getInt()
+        return List<TagSuggestion>(len) {
+            FfiConverterTypeTagSuggestion.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<TagSuggestion>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeTagSuggestion.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<TagSuggestion>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeTagSuggestion.write(it, buf)
         }
     }
 }
