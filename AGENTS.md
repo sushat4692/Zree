@@ -95,15 +95,18 @@ and `sync-core.sh` runs `strip -x` on the static library (39 MB → 22 MB). What
 
 Per platform, because the two apps ship separately:
 
+Three packages, released independently:
+
 | file | what it is |
 |---|---|
+| `core/Cargo.toml` | core version; also stamped into every build |
 | `macos/VERSION` | macOS version, copied into the bundle by `bundle.sh` |
 | `android/VERSION` | Android version; `versionCode` is derived (`major*10000+minor*100+patch`) |
 
-The Rust core has no version of its own (`core/Cargo.toml` says `0.0.0`): an app release pins
-the core by commit, and the tag records which core a build contains. Because the core is
-compiled into both apps, **a change under `core/` needs a change file for both macOS and
-Android** — `scripts/check-core-coupling.sh` fails the release otherwise.
+The core is compiled into both apps, so a bug has to be traceable to the core release that
+carried it: `bundle.sh` writes `ZreeCoreVersion` into `Info.plist` and Gradle writes
+`BuildConfig.CORE_VERSION`, and the settings screen shows `Zree <app> · core <core>`. Releasing
+the core does **not** require releasing an app — the app records whatever core it built with.
 
 [knope](https://knope.tech) drives it:
 
@@ -113,8 +116,8 @@ knope release --dry-run        # show the bump, changelog and tag
 knope release                  # bump VERSION, write CHANGELOG, commit, annotated tag
 git push --follow-tags         # only annotated tags travel with this flag
 
-Releases are tagged per platform (`macos/v0.2.0`, `android/v0.2.0`); 0.2.0 is the starting
-point that predates the tooling.
+Releases are tagged per package (`core/v0.2.0`, `macos/v0.2.0`, `android/v0.2.0`); 0.2.0 is the
+starting point that predates the tooling.
 ```
 
 The change type is `patch`, `minor` or `major` — until a version reaches 1.0.0, knope follows
