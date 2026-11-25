@@ -613,3 +613,23 @@ fn a_mtime_change_alone_is_not_a_conflict() {
     let err = session.write(id.into(), "自分\n".into(), stale_mtime, Some(loaded));
     assert!(matches!(err, Err(zree_core::NoteError::Conflict(_))));
 }
+
+#[test]
+fn reindex_picks_up_files_added_outside_the_app() {
+    let (_dir, vault) = fixture();
+    let session = zree_core::ffi::ZreeSession::open(vault.root_string()).unwrap();
+    let before = session.list_rows(zree_core::search::SortOrder::TitleAsc).len();
+
+    // a pull drops a new file on disk; the app has not touched anything
+    std::fs::write(vault.root().join("あとから来た.md"), "@新規\n本文\n").unwrap();
+    assert_eq!(
+        session.list_rows(zree_core::search::SortOrder::TitleAsc).len(),
+        before,
+        "the cached index is stale until it is rebuilt"
+    );
+
+    session.reindex().unwrap();
+    let after = session.list_rows(zree_core::search::SortOrder::TitleAsc);
+    assert_eq!(after.len(), before + 1);
+    assert!(after.iter().any(|r| r.title == "あとから来た"));
+}

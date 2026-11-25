@@ -190,14 +190,29 @@ impl ZreeSession {
 
     /// Force a reindex (after a git pull, or when files changed outside the app).
     pub fn reindex(&self) -> Result<(), NoteError> {
-        let rebuilt = Index::build(&self.vault)?;
+        let rebuilt = self.build_index()?;
         *self.index.lock().unwrap() = rebuilt;
         *self.dirty.lock().unwrap() = false;
         Ok(())
     }
+
 }
 
 impl ZreeSession {
+    /// Build the index and put the timestamps from Git back on it.
+    fn build_index(&self) -> Result<Index, NoteError> {
+        let mut index = Index::build(&self.vault)?;
+        let stored = self.file_times.lock().unwrap();
+        if !stored.is_empty() {
+            let pairs: Vec<(String, i64, i64)> = stored
+                .iter()
+                .map(|(path, (created, updated))| (path.clone(), *created, *updated))
+                .collect();
+            index.apply_file_times(&pairs);
+        }
+        Ok(index)
+    }
+
     fn invalidate(&self) {
         *self.dirty.lock().unwrap() = true;
     }
@@ -206,15 +221,7 @@ impl ZreeSession {
         let mut guard = self.index.lock().unwrap();
         let dirty = *self.dirty.lock().unwrap();
         if dirty {
-            if let Ok(mut rebuilt) = Index::build(&self.vault) {
-                let stored = self.file_times.lock().unwrap();
-                if !stored.is_empty() {
-                    let pairs: Vec<(String, i64, i64)> = stored
-                        .iter()
-                        .map(|(path, (created, updated))| (path.clone(), *created, *updated))
-                        .collect();
-                    rebuilt.apply_file_times(&pairs);
-                }
+            if let Ok(rebuilt) = self.build_index() {
                 *guard = rebuilt;
                 *self.dirty.lock().unwrap() = false;
             }

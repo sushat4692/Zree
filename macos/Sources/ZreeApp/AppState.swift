@@ -600,6 +600,8 @@ final class AppState {
             autoSyncFailures = 0
             conflicts = report.conflicts
             lastSyncAt = Date()
+            // the pull wrote new files: the cached index does not know about them
+            try? session?.reindex()
             refreshAll()
             refreshGitStatus()
             // the pull rewrote mtimes; ask history again so "updated" stays meaningful

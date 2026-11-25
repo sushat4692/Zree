@@ -461,6 +461,8 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             consecutiveFailures = 0
             val now = System.currentTimeMillis()
             prefs.edit().putLong(KEY_LAST_SYNC, now).apply()
+            // the pull wrote new files: the cached index does not know about them
+            runCatching { session?.reindex() }
             refresh()
             reloadOpenNoteIfClean()
             backfillCreatedTimes()
