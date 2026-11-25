@@ -159,4 +159,6 @@ Parsing is done once per document, then only when it can change the result:
 - [ ] Link navigation (only the preview offered it; the core still resolves links)
 - [ ] Android heading spacing is approximated with line height (Compose cannot set
       paragraph spacing)
-- [ ] Future: backlinks, templates, automatic tagging
+- [ ] Future: backlinks, templates
+- Note: a separate "untagged notes" review screen was considered and dropped — the chips in
+  the editor are the whole feature; nothing is applied without a tap
