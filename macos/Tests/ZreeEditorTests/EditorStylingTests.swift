@@ -296,6 +296,22 @@ final class EditorStylingTests: XCTestCase {
         XCTAssertEqual(paragraph?.lineHeightMultiple ?? 0, 0, accuracy: 0.01, "no multiple: it offsets the glyphs from the caret")
     }
 
+    func test_completion_range_covers_the_whole_at_tag() {
+        let text = "本文 @お客"
+        let textView = ZreeTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 200))
+        textView.string = text
+        textView.setSelectedRange(NSRange(location: (text as NSString).length, length: 0))
+
+        let range = textView.rangeForUserCompletion
+        let covered = (text as NSString).substring(with: range)
+        XCTAssertEqual(covered, "@お客", "the partial word must include the @")
+
+        // a bare @ is a zero-length prefix but still the whole token
+        textView.string = "本文 @"
+        textView.setSelectedRange(NSRange(location: 4, length: 0))
+        XCTAssertEqual((textView.string as NSString).substring(with: textView.rangeForUserCompletion), "@")
+    }
+
     func test_list_markers_are_muted_but_text_is_not() {
         let text = "- 項目"
         let textView = makeTextView(text)

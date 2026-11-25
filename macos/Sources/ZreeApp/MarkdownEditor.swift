@@ -31,7 +31,7 @@ struct MarkdownEditor: NSViewRepresentable {
         container.widthTracksTextView = true
         layoutManager.addTextContainer(container)
 
-        let textView = NSTextView(frame: .zero, textContainer: container)
+        let textView = ZreeTextView(frame: .zero, textContainer: container)
         textView.minSize = NSSize(width: 0, height: 0)
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         textView.isVerticallyResizable = true
@@ -135,12 +135,16 @@ struct MarkdownEditor: NSViewRepresentable {
             parent.text = textView.string
             handleEdit(textView)
 
-            // offer tag candidates right after the user types '#'
-            let ns = textView.string as NSString
-            let caret = textView.selectedRange().location
-            if caret > 0, caret <= ns.length {
-                let previous = ns.substring(with: NSRange(location: caret - 1, length: 1))
-                if previous == "@" {
+            // Offer tag candidates while the caret sits in an @tag. Driven by the core's
+            // context rather than by the last keystroke: NSTextView's word range excludes
+            // `@`, and the panel also has to stay in sync while the prefix grows.
+            if !textView.hasMarkedText() {
+                let ns = textView.string as NSString
+                let caret = textView.selectedRange().location
+                if caret > 0, caret <= ns.length,
+                   let app,
+                   let ctx = app.completionContext(ns.substring(to: caret)),
+                   ctx.kind == .tag {
                     textView.complete(nil)
                 }
             }

@@ -14,6 +14,32 @@ extension NSAttributedString.Key {
     static let zreeRule = NSAttributedString.Key("ZreeRule")
 }
 
+/// Text view that treats `@tag` as one word for completion.
+///
+/// NSTextView's default word range excludes `@`, so the candidate list was built from the
+/// text after it and never recognised a tag. Returning the whole `@tag` also means the
+/// chosen candidate replaces it entirely (candidates are returned with their `@`).
+public final class ZreeTextView: NSTextView {
+    public override var rangeForUserCompletion: NSRange {
+        let ns = string as NSString
+        let caret = min(selectedRange().location, ns.length)
+        guard caret > 0 else { return super.rangeForUserCompletion }
+
+        var index = caret
+        while index > 0 {
+            let ch = ns.substring(with: NSRange(location: index - 1, length: 1))
+            if ch == "@" {
+                return NSRange(location: index - 1, length: caret - (index - 1))
+            }
+            if ch.rangeOfCharacter(from: .whitespacesAndNewlines) != nil {
+                break
+            }
+            index -= 1
+        }
+        return super.rangeForUserCompletion
+    }
+}
+
 /// Draws a real horizontal line for `---` lines, without touching the characters.
 public final class ZreeLayoutManager: NSLayoutManager {
     public override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint) {

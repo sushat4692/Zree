@@ -70,6 +70,7 @@ extension MarkdownEditor.Coordinator {
         guard end <= ns.length else { return [] }
         let before = ns.substring(to: end)
         guard let ctx = app.completionContext(before), ctx.kind == .tag else { return [] }
-        return app.suggestTags(ctx.prefix, limit: 8)
+        // the range covers `@prefix`, so candidates replace it completely
+        return app.suggestTags(ctx.prefix, limit: 8).map { "@" + $0 }
     }
 }
