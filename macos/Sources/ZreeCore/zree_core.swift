@@ -1020,6 +1020,12 @@ public protocol ZreeSessionProtocol: AnyObject, Sendable {
      */
     func suggestTagsFor(id: String, limit: UInt32) throws  -> [TagSuggestion]
     
+    /**
+     * Where the tag would go inside the note, so the editor can insert it itself and keep
+     * its undo stack. `None` when the tag is already written.
+     */
+    func tagInsertion(id: String, tag: String) throws  -> TagInsertion?
+    
     func tags()  -> [TagCount]
     
     func trash(id: String) throws  -> String
@@ -1328,6 +1334,21 @@ open func suggestTagsFor(id: String, limit: UInt32)throws  -> [TagSuggestion]  {
             self.uniffiCloneHandle(),
         FfiConverterString.lower(id),
         FfiConverterUInt32.lower(limit),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Where the tag would go inside the note, so the editor can insert it itself and keep
+     * its undo stack. `None` when the tag is already written.
+     */
+open func tagInsertion(id: String, tag: String)throws  -> TagInsertion?  {
+    return try  FfiConverterOptionTypeTagInsertion.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+        uniffiCallStatus in
+    uniffi_zree_core_fn_method_zreesession_tag_insertion(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(id),
+        FfiConverterString.lower(tag),uniffiCallStatus
     )
 })
 }
@@ -2206,6 +2227,69 @@ public func FfiConverterTypeTagCount_lift(_ buf: RustBuffer) throws -> TagCount 
 #endif
 public func FfiConverterTypeTagCount_lower(_ value: TagCount) -> RustBuffer {
     return FfiConverterTypeTagCount.lower(value)
+}
+
+
+/**
+ * A text edit that adds one tag, positioned for a text view.
+ */
+public struct TagInsertion: Equatable, Hashable {
+    /**
+     * Offset in UTF-16 units (what NSTextView and Kotlin's `TextFieldValue` count).
+     */
+    public var location: UInt32
+    public var text: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Offset in UTF-16 units (what NSTextView and Kotlin's `TextFieldValue` count).
+         */location: UInt32, text: String) {
+        self.location = location
+        self.text = text
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension TagInsertion: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTagInsertion: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagInsertion {
+        return
+            try TagInsertion(
+                location: FfiConverterUInt32.read(from: &buf), 
+                text: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TagInsertion, into buf: inout [UInt8]) {
+        FfiConverterUInt32.write(value.location, into: &buf)
+        FfiConverterString.write(value.text, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTagInsertion_lift(_ buf: RustBuffer) throws -> TagInsertion {
+    return try FfiConverterTypeTagInsertion.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTagInsertion_lower(_ value: TagInsertion) -> RustBuffer {
+    return FfiConverterTypeTagInsertion.lower(value)
 }
 
 
@@ -3405,6 +3489,30 @@ fileprivate struct FfiConverterOptionTypeCompletionContext: FfiConverterRustBuff
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeTagInsertion: FfiConverterRustBuffer {
+    typealias SwiftType = TagInsertion?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeTagInsertion.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeTagInsertion.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -3936,6 +4044,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_suggest_tags_for() != 49174) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_zree_core_checksum_method_zreesession_tag_insertion() != 5044) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_tags() != 56009) {

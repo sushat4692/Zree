@@ -88,6 +88,20 @@ struct MarkdownEditor: NSViewRepresentable {
             || context.coordinator.lastLineHeight != lineHeight
         applyTypography(to: textView)
 
+        // A suggested tag is inserted by the text view itself, not by replacing the
+        // document: `insertText` registers with the undo manager, so ⌘Z removes the tag.
+        if let insertion = app.pendingInsertion, !textView.hasMarkedText() {
+            app.pendingInsertion = nil
+            let text = insertion.text
+            let length = (textView.string as NSString).length
+            let at = min(Int(insertion.location), length)
+            textView.insertText(text, replacementRange: NSRange(location: at, length: 0))
+            textView.setSelectedRange(NSRange(location: at + (text as NSString).length, length: 0))
+            context.coordinator.restyleWholeDocument(textView)
+            return
+        }
+
+
         if textView.string != text {
             // Replacing the text behind the undo manager's back leaves it holding
             // ranges from the previous note; pressing ⌘Z then crashed in

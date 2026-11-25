@@ -80,7 +80,8 @@ the device is in daily use and every injected event lands in whatever app is in 
 
 `ZREE_SNAPSHOT=/tmp/win.png build/Zree.app/Contents/MacOS/Zree` renders the window's content
 view to a PNG two seconds after launch, so layout changes can be inspected by reading the
-file. Note: `cacheDisplay` does not reproduce the sidebar's material, so colours/contrast in
+file. Add `ZREE_NOTE=<id>` to open a specific note and `ZREE_APPLY_TAG=<tag>` to press its
+first suggestion chip before the snapshot. Note: `cacheDisplay` does not reproduce the sidebar's material, so colours/contrast in
 the snapshot are not trustworthy — geometry is.
 
 ## Disk
@@ -153,8 +154,8 @@ Parsing is done once per document, then only when it can change the result:
 - [x] macOS 書式 menu shortcuts (⌘B, ⇧⌘7/8/9, ⇧⌘X, ⇧⌘H, ⇧⌘Q, ⌘[ / ⌘])
 ## Remaining
 
-- [ ] macOS: applying a chip rewrites the note text, which clears ⌘Z; make it an undoable
-      NSTextView insertion (`tag_insertion` would need a UTF-16 offset from the core)
+- [x] macOS: a suggested tag goes in through `insertText` (`tag_insertion` gives a UTF-16
+      offset), so ⌘Z takes it back and the caret stays put
 - [ ] Link navigation (only the preview offered it; the core still resolves links)
 - [ ] Android heading spacing is approximated with line height (Compose cannot set
       paragraph spacing)

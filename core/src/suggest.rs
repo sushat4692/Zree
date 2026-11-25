@@ -274,43 +274,68 @@ pub fn suggest(
     out
 }
 
+/// Where a tag would go, and what would be written there.
+///
+/// The offset is counted in UTF-16 units because that is what NSTextView's ranges use; both
+/// apps can insert the text themselves instead of replacing the whole document, which keeps
+/// undo, IME state and the scroll position intact.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Insertion {
+    pub utf16_at: u32,
+    pub text: String,
+}
+
 /// Add tags to a note, keeping the author's layout: the tag line stays first, and the two
 /// trailing spaces that make a hard line break survive.
 pub fn insert_tags(body: &str, tags: &[String]) -> String {
-    let present: HashSet<String> = unique_keys(&crate::tags::extract(body)).into_iter().collect();
-    let mut add: Vec<String> = Vec::new();
+    let mut text = body.to_string();
     for tag in tags {
-        let clean = tag.trim().trim_start_matches('@');
-        if clean.is_empty() {
-            continue;
+        if let Some(insertion) = insertion(&text, tag) {
+            let at = utf16_at(&text, insertion.utf16_at);
+            text.insert_str(at, &insertion.text);
         }
-        let key = normalize(clean);
-        if present.contains(&key) || add.iter().any(|t| normalize(t) == key) {
-            continue;
-        }
-        add.push(clean.to_string());
     }
-    if add.is_empty() {
-        return body.to_string();
-    }
+    text
+}
 
-    let joined = add.iter().map(|t| format!("@{t}")).collect::<Vec<_>>().join(" ");
-    let (first, rest) = match body.split_once('\n') {
+/// Insertion for one tag, or `None` when it is already written on the note.
+pub fn insertion(body: &str, tag: &str) -> Option<Insertion> {
+    let clean = tag.trim().trim_start_matches('@');
+    if clean.is_empty() {
+        return None;
+    }
+    let key = normalize(clean);
+    if crate::tags::extract(body).iter().any(|t| normalize(t) == key) {
+        return None;
+    }
+    let spelled = format!("@{clean}");
+
+    let (first, _) = match body.split_once('\n') {
         Some((first, rest)) => (first, rest),
         None => (body, ""),
     };
-    let newline = if first.ends_with('\r') { "\r\n" } else { "\n" };
 
     if tags::is_tag_line(first) {
         let content = first.trim_end_matches([' ', '\t', '\r']);
-        let trailing = &first[content.len()..];
         let separator = if content.trim().is_empty() { "" } else { " " };
-        format!("{content}{separator}{joined}{trailing}{newline}{rest}")
-    } else if first.is_empty() && rest.is_empty() {
-        format!("{joined}{newline}")
+        let at = content.len();
+        Some(Insertion { utf16_at: body[..at].encode_utf16().count() as u32, text: format!("{separator}{spelled}") })
     } else {
-        format!("{joined}{newline}{first}{newline}{rest}")
+        let newline = if first.ends_with('\r') { "\r\n" } else { "\n" };
+        Some(Insertion { utf16_at: 0, text: format!("{spelled}{newline}") })
     }
+}
+
+/// Byte offset for a UTF-16 offset, so a caller that hands the text back can splice it.
+fn utf16_at(body: &str, utf16: u32) -> usize {
+    let mut units = 0u32;
+    for (byte, ch) in body.char_indices() {
+        if units >= utf16 {
+            return byte;
+        }
+        units += ch.len_utf16() as u32;
+    }
+    body.len()
 }
 
 // ---------------------------------------------------------------- helpers
@@ -555,6 +580,26 @@ mod tests {
     #[test]
     fn insertion_copes_with_an_empty_note() {
         assert_eq!(insert_tags("", &["新規".into()]), "@新規\n");
+    }
+
+    #[test]
+    fn insertion_offsets_are_utf16_so_a_text_view_can_splice_them() {
+        // "@挨拶  " -> the tag goes before the two trailing spaces
+        let found = insertion("@挨拶  \n本文\n", "新規").unwrap();
+        assert_eq!(found.utf16_at, 3);
+        assert_eq!(found.text, " @新規");
+
+        // an emoji counts as two units in NSTextView's ranges
+        let found = insertion("@🎉  \n本文\n", "新規").unwrap();
+        assert_eq!(found.utf16_at, 3);
+        assert_eq!(found.text, " @新規");
+
+        // no tag line yet: the whole line goes in at the top
+        let found = insertion("🎉メモ\n本文\n", "新規").unwrap();
+        assert_eq!(found.utf16_at, 0);
+        assert_eq!(found.text, "@新規\n");
+
+        assert!(insertion("@挨拶\n本文\n", "挨拶").is_none());
     }
 
     #[test]

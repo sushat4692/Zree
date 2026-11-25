@@ -448,6 +448,11 @@ RustBuffer uniffi_zree_core_fn_method_zreesession_suggest_tags(uint64_t ptr, Rus
 RustBuffer uniffi_zree_core_fn_method_zreesession_suggest_tags_for(uint64_t ptr, RustBuffer id, uint32_t limit, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_TAG_INSERTION
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_TAG_INSERTION
+RustBuffer uniffi_zree_core_fn_method_zreesession_tag_insertion(uint64_t ptr, RustBuffer id, RustBuffer tag, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_TAGS
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_FN_METHOD_ZREESESSION_TAGS
 RustBuffer uniffi_zree_core_fn_method_zreesession_tags(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -1028,6 +1033,12 @@ uint16_t uniffi_zree_core_checksum_method_zreesession_suggest_tags(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_TAGS_FOR
 #define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_SUGGEST_TAGS_FOR
 uint16_t uniffi_zree_core_checksum_method_zreesession_suggest_tags_for(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_TAG_INSERTION
+#define UNIFFI_FFIDEF_UNIFFI_ZREE_CORE_CHECKSUM_METHOD_ZREESESSION_TAG_INSERTION
+uint16_t uniffi_zree_core_checksum_method_zreesession_tag_insertion(void
     
 );
 #endif

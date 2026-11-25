@@ -312,6 +312,46 @@ final class EditorStylingTests: XCTestCase {
         XCTAssertEqual((textView.string as NSString).substring(with: textView.rangeForUserCompletion), "@")
     }
 
+    /// The tag bar writes through `insertText`, not by replacing the document, so the tag can
+    /// be taken back with ⌘Z like any other typing.
+    private final class UndoHost: NSObject, NSTextViewDelegate {
+        let manager: UndoManager
+        override init() {
+            manager = UndoManager()
+            super.init()
+        }
+        func undoManager(for view: NSTextView) -> UndoManager? { manager }
+    }
+
+    func test_a_suggested_tag_can_be_undone() throws {
+        // the core reads the note from disk, so the fixture must be the real text
+        try "@挨拶  \n本文\n".write(
+            to: vaultDir.appendingPathComponent("dummy.md"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let textView = ZreeTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 300))
+        textView.isRichText = true
+        textView.allowsUndo = true
+        let host = UndoHost()
+        textView.delegate = host
+        textView.string = "@挨拶  \n本文\n"
+        textView.setSelectedRange(NSRange(location: 0, length: 0))
+
+        let insertion = try session.tagInsertion(id: "dummy.md", tag: "新規")
+        // "@挨拶" is three UTF-16 units, so the tag lands before the two trailing spaces
+        XCTAssertEqual(insertion?.location, 3)
+        XCTAssertEqual(insertion?.text, " @新規")
+
+        let at = Int(insertion!.location)
+        textView.insertText(insertion!.text, replacementRange: NSRange(location: at, length: 0))
+        XCTAssertEqual(textView.string, "@挨拶 @新規  \n本文\n")
+
+        XCTAssertTrue(host.manager.canUndo, "the insertion must be undoable")
+        host.manager.undo()
+        XCTAssertEqual(textView.string, "@挨拶  \n本文\n")
+    }
+
     func test_list_markers_are_muted_but_text_is_not() {
         let text = "- 項目"
         let textView = makeTextView(text)

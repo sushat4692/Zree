@@ -48,6 +48,8 @@ final class AppState {
     /// The note whose suggestion bar was closed, so a dismissed bar does not come back
     /// every time the note is saved.
     private var suggestionsDismissedFor: String?
+    /// A tag edit the editor still has to perform (see `applyTag`).
+    var pendingInsertion: TagInsertion?
     var gitBusy = false
     var showSettings = false
     var remoteDraft = ""
@@ -193,6 +195,12 @@ final class AppState {
             if let wanted = ProcessInfo.processInfo.environment["ZREE_NOTE"],
                rows.contains(where: { $0.id == wanted }) {
                 select(wanted)
+                // headless check of the suggestion bar: tap the chip for us
+                if let tag = ProcessInfo.processInfo.environment["ZREE_APPLY_TAG"] {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                        self?.applyTag(tag)
+                    }
+                }
                 return
             }
             let last = defaults.string(forKey: Keys.lastNote)
@@ -308,20 +316,18 @@ final class AppState {
         tagSuggestions = []
     }
 
-    /// Write one suggested tag. The core edits the tag line, so the spacing the author uses
-    /// (two trailing spaces, tags on the first line) survives.
+    /// Add one suggested tag.
+    ///
+    /// The core decides *where* it goes (the author's tag line, before the trailing spaces)
+    /// but the text view performs the edit, so ⌘Z undoes it and the caret, IME state and
+    /// scroll position survive. The usual autosave then writes the file.
     func applyTag(_ tag: String) {
         guard let session, let id = selectedID else { return }
         saveNow()
         do {
-            let result = try session.applyTags(id: id, tags: [tag])
-            body = result.body
-            loadedBody = result.body
-            seenMtime = result.mtimeMs
-            isDirty = false
-            reloadRows()
-            reloadTags()
-            refreshTagSuggestions()
+            guard let insertion = try session.tagInsertion(id: id, tag: tag) else { return }
+            pendingInsertion = insertion
+            tagSuggestions.removeAll { $0.tag == tag }
         } catch {
             errorMessage = String(describing: error)
         }

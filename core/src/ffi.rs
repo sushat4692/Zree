@@ -149,6 +149,16 @@ impl ZreeSession {
             .collect())
     }
 
+    /// Where the tag would go inside the note, so the editor can insert it itself and keep
+    /// its undo stack. `None` when the tag is already written.
+    pub fn tag_insertion(&self, id: String, tag: String) -> Result<Option<TagInsertion>, NoteError> {
+        let body = self.vault.read(&id)?;
+        Ok(crate::suggest::insertion(&body, &tag).map(|i| TagInsertion {
+            location: i.utf16_at,
+            text: i.text,
+        }))
+    }
+
     /// Append tags to the note's tag line. Returns the text now on disk together with the
     /// file's new mtime, which the caller must keep as its base for the next save.
     pub fn apply_tags(&self, id: String, tags: Vec<String>) -> Result<TagApplyResult, NoteError> {
@@ -414,6 +424,14 @@ mod android_ca {
 #[uniffi::export]
 pub fn is_git_repo(root: String) -> bool {
     crate::git::Git::is_repo(&root)
+}
+
+/// A text edit that adds one tag, positioned for a text view.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct TagInsertion {
+    /// Offset in UTF-16 units (what NSTextView and Kotlin's `TextFieldValue` count).
+    pub location: u32,
+    pub text: String,
 }
 
 /// The note after tags were written to its tag line.

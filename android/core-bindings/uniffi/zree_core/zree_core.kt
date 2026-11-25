@@ -761,6 +761,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_suggest_tags_for(
     ): Int
+    external fun uniffi_zree_core_checksum_method_zreesession_tag_insertion(
+    ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_tags(
     ): Int
     external fun uniffi_zree_core_checksum_method_zreesession_trash(
@@ -876,6 +878,8 @@ internal object UniffiLib {
     external fun uniffi_zree_core_fn_method_zreesession_suggest_tags(`ptr`: Long,`prefix`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_suggest_tags_for(`ptr`: Long,`id`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_zree_core_fn_method_zreesession_tag_insertion(`ptr`: Long,`id`: RustBuffer.ByValue,`tag`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_zree_core_fn_method_zreesession_tags(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1149,6 +1153,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_suggest_tags_for() and 0xFFFF) != 49174) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_tag_insertion() and 0xFFFF) != 5044) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_tags() and 0xFFFF) != 56009) {
@@ -2248,6 +2255,12 @@ public interface ZreeSessionInterface {
      */
     fun `suggestTagsFor`(`id`: kotlin.String, `limit`: kotlin.UInt): List<TagSuggestion>
     
+    /**
+     * Where the tag would go inside the note, so the editor can insert it itself and keep
+     * its undo stack. `None` when the tag is already written.
+     */
+    fun `tagInsertion`(`id`: kotlin.String, `tag`: kotlin.String): TagInsertion?
+    
     fun `tags`(): List<TagCount>
     
     fun `trash`(`id`: kotlin.String): kotlin.String
@@ -2678,6 +2691,26 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
         
         FfiConverterString.lower(`id`),
         FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Where the tag would go inside the note, so the editor can insert it itself and keep
+     * its undo stack. `None` when the tag is already written.
+     */
+    @Throws(NoteException::class)override fun `tagInsertion`(`id`: kotlin.String, `tag`: kotlin.String): TagInsertion? {
+            return FfiConverterOptionalTypeTagInsertion.lift(
+    callWithHandle {
+    uniffiRustCallWithError(NoteException) { _status ->
+    UniffiLib.uniffi_zree_core_fn_method_zreesession_tag_insertion(
+        it,
+        
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`tag`),_status)
 }
     }
     )
@@ -3387,6 +3420,50 @@ public object FfiConverterTypeTagCount: FfiConverterRustBuffer<TagCount> {
     override fun write(value: TagCount, buf: ByteBuffer) {
             FfiConverterString.write(value.`tag`, buf)
             FfiConverterUInt.write(value.`count`, buf)
+    }
+}
+
+
+
+/**
+ * A text edit that adds one tag, positioned for a text view.
+ */
+data class TagInsertion (
+    /**
+     * Offset in UTF-16 units (what NSTextView and Kotlin's `TextFieldValue` count).
+     */
+    var `location`: kotlin.UInt
+    , 
+    var `text`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTagInsertion: FfiConverterRustBuffer<TagInsertion> {
+    override fun read(buf: ByteBuffer): TagInsertion {
+        return TagInsertion(
+            FfiConverterUInt.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TagInsertion) = (
+            FfiConverterUInt.allocationSize(value.`location`) +
+            FfiConverterString.allocationSize(value.`text`)
+    )
+
+    override fun write(value: TagInsertion, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`location`, buf)
+            FfiConverterString.write(value.`text`, buf)
     }
 }
 
@@ -4556,6 +4633,38 @@ public object FfiConverterOptionalTypeCompletionContext: FfiConverterRustBuffer<
         } else {
             buf.put(1)
             FfiConverterTypeCompletionContext.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeTagInsertion: FfiConverterRustBuffer<TagInsertion?> {
+    override fun read(buf: ByteBuffer): TagInsertion? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeTagInsertion.read(buf)
+    }
+
+    override fun allocationSize(value: TagInsertion?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeTagInsertion.allocationSize(value)
+        }
+    }
+
+    override fun write(value: TagInsertion?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeTagInsertion.write(value, buf)
         }
     }
 }
