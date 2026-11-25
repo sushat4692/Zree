@@ -13,6 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +41,10 @@ class MainActivity : ComponentActivity() {
 fun ZreeRoot(vm: ZreeViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    // The list leaves composition while a note is open; keeping the scroll state here is
+    // what makes going back land where you left off instead of at the top.
+    val listState = rememberLazyListState()
+    LaunchedEffect(state.query, state.sortOrder) { listState.scrollToItem(0) }
 
     LaunchedEffect(state.message, state.error) {
         val text = state.error ?: state.message
@@ -55,7 +60,7 @@ fun ZreeRoot(vm: ZreeViewModel) {
                 Box(Modifier.padding(padding)) {
                     when (state.screen) {
                         Screen.Setup -> SetupScreen(vm, state)
-                        Screen.List -> ListScreen(vm, state)
+                        Screen.List -> ListScreen(vm, state, listState)
                         Screen.Editor -> EditorScreen(vm, state)
                         Screen.Conflicts -> ConflictsScreen(vm, state)
                     }

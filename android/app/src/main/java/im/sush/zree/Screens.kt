@@ -192,7 +192,11 @@ fun SetupScreen(vm: ZreeViewModel, state: UiState) {
 // ---------------------------------------------------------------- list
 
 @Composable
-fun ListScreen(vm: ZreeViewModel, state: UiState) {
+fun ListScreen(
+    vm: ZreeViewModel,
+    state: UiState,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+) {
     var showSettings by remember { mutableStateOf(false) }
 
     val importLauncher = rememberLauncherForActivityResult(
@@ -312,7 +316,7 @@ fun ListScreen(vm: ZreeViewModel, state: UiState) {
             TextButton(onClick = vm::newNote) { Text("新規") }
         }
 
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
             items(state.rows, key = { it.id }) { row ->
                 Column(
                     Modifier
