@@ -83,6 +83,13 @@ view to a PNG two seconds after launch, so layout changes can be inspected by re
 file. Note: `cacheDisplay` does not reproduce the sidebar's material, so colours/contrast in
 the snapshot are not trustworthy — geometry is.
 
+## Disk
+
+`./scripts/disk.sh [report|clean|clean-all]` reports the sizes and removes what can be
+rebuilt. The Cargo profiles keep `debug = 0`, `incremental = false` and `strip = "debuginfo"`,
+and `sync-core.sh` runs `strip -x` on the static library (39 MB → 22 MB). Whatever you do,
+`target/` is never committed.
+
 ## Commands
 
 ```bash

@@ -1,3 +1,18 @@
 [workspace]
 members = ["core"]
 resolver = "2"
+
+# Keep the build directory small: the size came from DWARF debug info in the C deps
+# (libgit2, OpenSSL) and from incremental artefacts.
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false
+
+[profile.release]
+debug = false
+strip = "debuginfo"
+

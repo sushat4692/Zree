@@ -24,6 +24,10 @@ cp "$BIND/${CRATE}FFI.h" macos/include/
 cp "$BIND/${CRATE}FFI.modulemap" macos/include/module.modulemap
 cp "$BIND/${CRATE}.swift" macos/Sources/ZreeCore/
 
+# local symbols are not needed to link, and they double the size of the static library
+echo "==> strip"
+strip -x "target/release/lib${CRATE}.a"
+
 echo "==> xcframework"
 rm -rf "macos/Frameworks/${CRATE}FFI.xcframework"
 xcodebuild -create-xcframework \
