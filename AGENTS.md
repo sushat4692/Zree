@@ -108,11 +108,15 @@ Android** — `scripts/check-core-coupling.sh` fails the release otherwise.
 [knope](https://knope.tech) drives it:
 
 ```bash
-knope document-change          # add .changeset/<name>.md (front matter: "macos: fix")
+knope document-change          # add .changeset/<name>.md (front matter: "macos: patch")
 knope release --dry-run        # show the bump, changelog and tag
 knope release                  # bump VERSION, write CHANGELOG, commit, tag macos/vX.Y.Z
 git push --follow-tags
 ```
+
+The change type is `patch`, `minor` or `major` — until a version reaches 1.0.0, knope follows
+semver for 0.x, so a `minor` (feature) bumps the patch digit and a `major` (breaking) bumps the
+minor one. `1.0.0` would restore the usual meaning.
 
 ## Commands
 
