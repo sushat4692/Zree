@@ -110,8 +110,11 @@ Android** — `scripts/check-core-coupling.sh` fails the release otherwise.
 ```bash
 knope document-change          # add .changeset/<name>.md (front matter: "macos: patch")
 knope release --dry-run        # show the bump, changelog and tag
-knope release                  # bump VERSION, write CHANGELOG, commit, tag macos/vX.Y.Z
-git push --follow-tags
+knope release                  # bump VERSION, write CHANGELOG, commit, annotated tag
+git push --follow-tags         # only annotated tags travel with this flag
+
+Releases are tagged per platform (`macos/v0.2.0`, `android/v0.2.0`); 0.2.0 is the starting
+point that predates the tooling.
 ```
 
 The change type is `patch`, `minor` or `major` — until a version reaches 1.0.0, knope follows
