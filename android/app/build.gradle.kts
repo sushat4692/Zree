@@ -12,8 +12,13 @@ android {
         applicationId = "im.sush.zree"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // android/VERSION is the only place the version is written; the code must increase
+        // for every installable build, so it is derived instead of being tracked by hand.
+        val zreeVersion = rootProject.file("VERSION").runCatching { readText().trim() }
+            .getOrDefault("0.0.0")
+        val (vMajor, vMinor, vPatch) = zreeVersion.split(".").map { it.toIntOrNull() ?: 0 } + listOf(0, 0)
+        versionCode = vMajor * 10000 + vMinor * 100 + vPatch
+        versionName = zreeVersion
         // arm64 only for now; add x86_64 if we ever run an emulator
         ndk { abiFilters += listOf("arm64-v8a") }
     }

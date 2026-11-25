@@ -91,6 +91,29 @@ rebuilt. The Cargo profiles keep `debug = 0`, `incremental = false` and `strip =
 and `sync-core.sh` runs `strip -x` on the static library (39 MB → 22 MB). Whatever you do,
 `target/` is never committed.
 
+## Versions
+
+Per platform, because the two apps ship separately:
+
+| file | what it is |
+|---|---|
+| `macos/VERSION` | macOS version, copied into the bundle by `bundle.sh` |
+| `android/VERSION` | Android version; `versionCode` is derived (`major*10000+minor*100+patch`) |
+
+The Rust core has no version of its own (`core/Cargo.toml` says `0.0.0`): an app release pins
+the core by commit, and the tag records which core a build contains. Because the core is
+compiled into both apps, **a change under `core/` needs a change file for both macOS and
+Android** — `scripts/check-core-coupling.sh` fails the release otherwise.
+
+[knope](https://knope.tech) drives it:
+
+```bash
+knope document-change          # add .changeset/<name>.md (front matter: "macos: fix")
+knope release --dry-run        # show the bump, changelog and tag
+knope release                  # bump VERSION, write CHANGELOG, commit, tag macos/vX.Y.Z
+git push --follow-tags
+```
+
 ## Commands
 
 ```bash

@@ -1,6 +1,7 @@
 [package]
 name = "zree-core"
-version = "0.1.0"
+# not released on its own: an app release pins the core by commit (see AGENTS.md)
+version = "0.0.0"
 edition = "2021"
 publish = false
 

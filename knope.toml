@@ -1,0 +1,36 @@
+# Versions are per platform: macOS and Android ship separately, so they are released
+# separately (`knope release` reads the change files and asks which packages to bump).
+#
+# The Rust core is not versioned on its own — an app release pins the core by commit, and a
+# tag like `macos/v0.2.0` records exactly which core that build contains. Because the core is
+# embedded in both apps, a change under `core/` needs a change file for *both* packages; the
+# release workflow refuses to run otherwise.
+
+[packages.macos]
+versioned_files = [{ path = "macos/VERSION", regex = "(?P<version>\\d+\\.\\d+\\.\\d+)" }]
+changelog = "macos/CHANGELOG.md"
+
+[packages.android]
+versioned_files = [{ path = "android/VERSION", regex = "(?P<version>\\d+\\.\\d+\\.\\d+)" }]
+changelog = "android/CHANGELOG.md"
+
+[[workflows]]
+name = "release"
+help_text = "Bump the packages named by the pending change files, write CHANGELOGs, tag"
+
+[[workflows.steps]]
+type = "Command"
+command = "scripts/check-core-coupling.sh"
+
+[[workflows.steps]]
+type = "PrepareRelease"
+
+[[workflows.steps]]
+type = "Release"
+
+[[workflows]]
+name = "document-change"
+help_text = "Create a change file for the next release"
+
+[[workflows.steps]]
+type = "CreateChangeFile"
