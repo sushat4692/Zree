@@ -1,10 +1,13 @@
-# Versions are per platform: macOS and Android ship separately, so they are released
-# separately (`knope release` reads the change files and asks which packages to bump).
+# Three packages, released separately: the core has its own version so a bug can be traced to
+# the change that introduced it, and each app carries its own number because they ship apart.
 #
-# The Rust core is not versioned on its own — an app release pins the core by commit, and a
-# tag like `macos/v0.2.0` records exactly which core that build contains. Because the core is
-# embedded in both apps, a change under `core/` needs a change file for *both* packages; the
-# release workflow refuses to run otherwise.
+# Every build records the core it bundled (Info.plist `ZreeCoreVersion`, Android
+# `BuildConfig.CORE_VERSION`), so "which core was in the build that misbehaved?" is answered
+# by the artifact itself — no bookkeeping in the app changelogs.
+
+[packages.core]
+versioned_files = ["core/Cargo.toml"]
+changelog = "core/CHANGELOG.md"
 
 [packages.macos]
 versioned_files = [{ path = "macos/VERSION", regex = "(?P<version>\\d+\\.\\d+\\.\\d+)" }]
@@ -17,10 +20,6 @@ changelog = "android/CHANGELOG.md"
 [[workflows]]
 name = "release"
 help_text = "Bump the packages named by the pending change files, write CHANGELOGs, tag"
-
-[[workflows.steps]]
-type = "Command"
-command = "scripts/check-core-coupling.sh"
 
 [[workflows.steps]]
 type = "PrepareRelease"

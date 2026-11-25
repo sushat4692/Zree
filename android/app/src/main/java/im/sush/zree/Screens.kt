@@ -597,7 +597,7 @@ private fun AutoSyncDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    "Zree ${BuildConfig.VERSION_NAME}",
+                    "Zree ${BuildConfig.VERSION_NAME} · core ${BuildConfig.CORE_VERSION}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

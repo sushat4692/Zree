@@ -19,6 +19,11 @@ android {
         val (vMajor, vMinor, vPatch) = zreeVersion.split(".").map { it.toIntOrNull() ?: 0 } + listOf(0, 0)
         versionCode = vMajor * 10000 + vMinor * 100 + vPatch
         versionName = zreeVersion
+        // which core the APK bundles, so a bug report names the code that produced it
+        val coreVersion = Regex("(?m)^version = \"(.+)\"")
+            .find(rootProject.file("../core/Cargo.toml").readText())
+            ?.groupValues?.get(1) ?: "unknown"
+        buildConfigField("String", "CORE_VERSION", "\"$coreVersion\"")
         // arm64 only for now; add x86_64 if we ever run an emulator
         ndk { abiFilters += listOf("arm64-v8a") }
     }

@@ -22,6 +22,11 @@ BUILD="$((10#$(echo "$VERSION" | cut -d. -f1) * 10000 + 10#$(echo "$VERSION" | c
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$APP/Contents/Info.plist"
 
+# Which core this build contains — answered by the bundle, not by a changelog entry.
+CORE_VERSION="$(sed -nE 's/^version = "(.*)"/\1/p' core/Cargo.toml | head -1)"
+/usr/libexec/PlistBuddy -c "Delete :ZreeCoreVersion" "$APP/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :ZreeCoreVersion string $CORE_VERSION" "$APP/Contents/Info.plist"
+
 echo "==> icon (actool)"
 if [ -d macos/Resources/Zree.icon ]; then
   ICON="$PWD/macos/Resources/Zree.icon"

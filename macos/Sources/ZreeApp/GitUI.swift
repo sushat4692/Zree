@@ -120,6 +120,13 @@ struct ConflictBanner: View {
 struct GitSettingsSheet: View {
     @Environment(AppState.self) private var app
 
+    private var versionLine: String {
+        let info = Bundle.main.infoDictionary
+        let app = info?["CFBundleShortVersionString"] as? String ?? "—"
+        let core = info?["ZreeCoreVersion"] as? String ?? "—"
+        return "Zree \(app) · core \(core)"
+    }
+
     var body: some View {
         @Bindable var app = app
         ScrollView {
@@ -199,7 +206,7 @@ struct GitSettingsSheet: View {
             }
 
             HStack {
-                Text("Zree \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")")
+                Text(versionLine)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if app.gitStatus == nil {
