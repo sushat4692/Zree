@@ -199,6 +199,9 @@ struct GitSettingsSheet: View {
             }
 
             HStack {
+                Text("Zree \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 if app.gitStatus == nil {
                     Button("Gitリポジトリを初期化") { app.initGit() }
                 }
