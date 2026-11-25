@@ -14,6 +14,39 @@ fn main() {
     let vault = Vault::open(&root).expect("vault");
     let index = Index::build(&vault).expect("index");
 
+    // `tag_quality <vault> --notes` lists what each untagged note would be offered
+    if std::env::args().nth(2).as_deref() == Some("--notes") {
+        let mut rows: Vec<(usize, usize, String, Vec<String>)> = index
+            .entries
+            .iter()
+            .filter(|e| e.meta.tags.is_empty())
+            .map(|e| {
+                let list = suggest::suggest(&index, &e.meta.id, &e.meta.title, &e.body, &[], 6);
+                let tier1 = list.iter().filter(|s| s.tier == 1).count();
+                let tier2 = list.iter().filter(|s| s.tier == 2).count();
+                (tier2, tier1, e.meta.title.clone(), list.into_iter().map(|s| s.tag).collect())
+            })
+            .collect();
+        rows.sort_by(|a, b| b.0.cmp(&a.0).then(b.1.cmp(&a.1)).then(a.2.cmp(&b.2)));
+        for (tier2, tier1, title, tags) in rows.iter().take(12) {
+            println!("t1={tier1} t2={tier2}  {title}  ->  {}", tags.join(", "));
+        }
+        return;
+    }
+
+    // `tag_quality <vault> <note title>` explains one note instead of scoring the vault
+    if let Some(wanted) = std::env::args().nth(2) {
+        if let Some(entry) = index.entries.iter().find(|e| e.meta.title == wanted) {
+            println!("note {} tags {:?}", entry.meta.title, entry.meta.tags);
+            for s in suggest::suggest(&index, &entry.meta.id, &entry.meta.title, &entry.body, &[], 8) {
+                println!("  {:<24} {:.2} tier{} {:?}", s.tag, s.score, s.tier, s.reasons);
+            }
+        } else {
+            println!("no note titled {wanted}");
+        }
+        return;
+    }
+
     let tagged: Vec<&zree_core::search::Entry> =
         index.entries.iter().filter(|e| !e.meta.tags.is_empty()).collect();
     let untagged = index.entries.len() - tagged.len();

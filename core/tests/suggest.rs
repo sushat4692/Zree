@@ -81,7 +81,7 @@ fn applying_tags_edits_the_tag_line_and_updates_the_index() {
     let (dir, session) = vault();
     let id = "Formosa様 新規案件.md";
 
-    let updated = session.apply_tags(id.to_string(), vec!["Formosa様".to_string()]).unwrap();
+    let updated = session.apply_tags(id.to_string(), vec!["Formosa様".to_string()]).unwrap().body;
     assert_eq!(updated, "@Formosa様\n初回の打合せ。\n");
     assert_eq!(
         fs::read_to_string(dir.path().join(id)).unwrap(),
@@ -89,7 +89,7 @@ fn applying_tags_edits_the_tag_line_and_updates_the_index() {
     );
 
     // applying twice must not duplicate anything
-    let again = session.apply_tags(id.to_string(), vec!["Formosa様".to_string()]).unwrap();
+    let again = session.apply_tags(id.to_string(), vec!["Formosa様".to_string()]).unwrap().body;
     assert_eq!(again, updated);
 
     // the index knows about the new tag straight away, and the tag is no longer suggested
@@ -100,7 +100,8 @@ fn applying_tags_edits_the_tag_line_and_updates_the_index() {
     // a second tag goes after the first, before the trailing spaces
     let two = session
         .apply_tags(id.to_string(), vec!["お客様打合せ".to_string()])
-        .unwrap();
+        .unwrap()
+        .body;
     assert_eq!(two, "@Formosa様 @お客様打合せ\n初回の打合せ。\n");
 }
 
@@ -108,7 +109,7 @@ fn applying_tags_edits_the_tag_line_and_updates_the_index() {
 fn applying_a_tag_to_a_heading_note_puts_the_tag_line_on_top() {
     let (dir, session) = vault();
     let id = "Figma 261015.md";
-    let updated = session.apply_tags(id.to_string(), vec!["デザイン".to_string()]).unwrap();
+    let updated = session.apply_tags(id.to_string(), vec!["デザイン".to_string()]).unwrap().body;
     assert_eq!(updated, "@Figma @デザイン\n- コンポーネント整理\n");
     assert!(dir.path().join(id).is_file());
 }

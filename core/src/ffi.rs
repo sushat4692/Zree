@@ -149,21 +149,31 @@ impl ZreeSession {
             .collect())
     }
 
-    /// Append tags to the note's tag line. Returns the text now on disk.
-    pub fn apply_tags(&self, id: String, tags: Vec<String>) -> Result<String, NoteError> {
+    /// Append tags to the note's tag line. Returns the text now on disk together with the
+    /// file's new mtime, which the caller must keep as its base for the next save.
+    pub fn apply_tags(&self, id: String, tags: Vec<String>) -> Result<TagApplyResult, NoteError> {
         let current = self.vault.read(&id)?;
         let updated = crate::suggest::insert_tags(&current, &tags);
+        let mut applied: Vec<String> = crate::tags::extract(&updated);
         if updated == current {
-            return Ok(current);
+            let mtime = std::fs::metadata(self.vault.path_of(&id)?)
+                .and_then(|m| m.modified())
+                .ok()
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_millis() as i64)
+                .unwrap_or(0);
+            return Ok(TagApplyResult { body: current, mtime_ms: mtime, tags: applied });
         }
         let was_dirty = *self.dirty.lock().unwrap();
         let meta = self.vault.write(&id, &updated)?;
+        applied = meta.tags.clone();
+        let mtime = meta.mtime_ms;
         if was_dirty {
             self.invalidate();
         } else {
             self.index.lock().unwrap().refresh_note(meta, updated.clone());
         }
-        Ok(updated)
+        Ok(TagApplyResult { body: updated, mtime_ms: mtime, tags: applied })
     }
 
     pub fn suggest_tags(&self, prefix: String, limit: u32) -> Vec<String> {
@@ -404,6 +414,15 @@ mod android_ca {
 #[uniffi::export]
 pub fn is_git_repo(root: String) -> bool {
     crate::git::Git::is_repo(&root)
+}
+
+/// The note after tags were written to its tag line.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct TagApplyResult {
+    pub body: String,
+    /// New mtime on disk — the caller's next save must use it as `seen_mtime_ms`.
+    pub mtime_ms: i64,
+    pub tags: Vec<String>,
 }
 
 /// One proposed tag and where the proposal came from.

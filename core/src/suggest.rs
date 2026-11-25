@@ -90,13 +90,13 @@ pub struct Vocabulary {
     /// normalised tag -> number of notes carrying it
     pub counts: HashMap<String, u32>,
     /// normalised tag -> the spelling most notes use
-    display: HashMap<String, String>,
+    pub display: HashMap<String, String>,
     /// normalised tag -> tags that share a note with it, most frequent first
-    cooccur: HashMap<String, Vec<(String, u32)>>,
+    pub cooccur: HashMap<String, Vec<(String, u32)>>,
     /// normalised customer name -> entry indexes
-    by_customer: HashMap<String, Vec<usize>>,
+    pub by_customer: HashMap<String, Vec<usize>>,
     /// date token -> entry indexes
-    by_date: HashMap<String, Vec<usize>>,
+    pub by_date: HashMap<String, Vec<usize>>,
 }
 
 impl Vocabulary {
@@ -182,15 +182,18 @@ pub fn suggest(
     let vocab = &index.vocab;
     let taken: HashSet<String> = unique_keys(existing).into_iter().collect();
 
-    let mut acc: HashMap<String, (f32, Vec<Reason>)> = HashMap::new();
+    // key -> (score, reasons, spelling to show)
+    let mut acc: HashMap<String, (f32, Vec<Reason>, String)> = HashMap::new();
     let mut add = |tag: &str, score: f32, reason: Reason| {
         // a new tag keeps the spelling the title used; an existing one borrows the vault's
         let key = normalize(tag);
         if key.is_empty() || taken.contains(&key) {
             return;
         }
-        let key_for_map = key.clone();
-        let slot = acc.entry(key_for_map).or_insert((0.0, Vec::new()));
+        // an existing tag is shown the way the vault spells it; a new one (a customer name
+        // straight from the title) keeps the author's capitalisation
+        let shown = vocab.display_of(&key).map(|s| s.to_string()).unwrap_or_else(|| tag.to_string());
+        let slot = acc.entry(key).or_insert_with(|| (0.0, Vec::new(), shown));
         slot.0 += score;
         if !slot.1.contains(&reason) {
             slot.1.push(reason);
@@ -247,9 +250,9 @@ pub fn suggest(
 
     let mut out: Vec<Suggestion> = acc
         .into_iter()
-        .filter(|(_, (score, _))| *score >= TAU)
-        .map(|(key, (score, reasons))| Suggestion {
-            tag: vocab.display_of(&key).unwrap_or(&key).to_string(),
+        .filter(|(_, (score, _, _))| *score >= TAU)
+        .map(|(_, (score, reasons, shown))| Suggestion {
+            tag: shown,
             score,
             tier: reasons.iter().map(|r| r.tier()).min().unwrap_or(2),
             reasons,
@@ -338,7 +341,6 @@ fn count_mentions(haystack: &str, needle: &str) -> usize {
         return haystack.matches(needle).count();
     }
     let bytes = haystack.as_bytes();
-    let needle_bytes = needle.as_bytes();
     let mut count = 0;
     let mut at = 0;
     while let Some(found) = haystack[at..].find(needle) {
@@ -560,6 +562,15 @@ mod tests {
         assert_eq!(customers("Absolute Design様"), vec!["Absolute Design様"]);
         assert_eq!(customers("20260203 光電工様"), vec!["光電工様"]);
         assert_eq!(customers("CUBLIC様 クリマテック様"), vec!["CUBLIC様", "クリマテック様"]);
+    }
+
+    #[test]
+    fn a_new_tag_keeps_the_capitalisation_of_the_title() {
+        // the customer rule invents the tag, so there is no vault spelling to borrow
+        let text = "Formosa様 230721";
+        let tokens = title_tokens(text);
+        assert_eq!(customers(text), vec!["Formosa様"]);
+        assert!(tokens.iter().any(|t| t == "Formosa様"));
     }
 
     #[test]

@@ -43,6 +43,11 @@ final class AppState {
     private(set) var git: GitRepo?
     private(set) var gitStatus: GitStatus?
     var conflicts: [String] = []
+    /// Tags the core proposes for the open note; tier 1 first.
+    var tagSuggestions: [TagSuggestion] = []
+    /// The note whose suggestion bar was closed, so a dismissed bar does not come back
+    /// every time the note is saved.
+    private var suggestionsDismissedFor: String?
     var gitBusy = false
     var showSettings = false
     var remoteDraft = ""
@@ -184,6 +189,12 @@ final class AppState {
             setupGit()
             refreshAll()
             backfillCreatedTimes()
+            // headless verification: ZREE_NOTE=<id> opens that note instead of the last one
+            if let wanted = ProcessInfo.processInfo.environment["ZREE_NOTE"],
+               rows.contains(where: { $0.id == wanted }) {
+                select(wanted)
+                return
+            }
             let last = defaults.string(forKey: Keys.lastNote)
             if let last, rows.contains(where: { $0.id == last }) {
                 select(last)
@@ -263,6 +274,7 @@ final class AppState {
         do {
             loadedBody = try session.read(id: id)
             body = loadedBody
+            refreshTagSuggestions()
             if let row = rows.first(where: { $0.id == id }) {
                 titleDraft = row.title
                 seenMtime = row.mtimeMs
@@ -278,6 +290,42 @@ final class AppState {
     }
 
     // MARK: - Saving
+
+    func refreshTagSuggestions() {
+        guard let session, let id = selectedID else {
+            tagSuggestions = []
+            return
+        }
+        guard suggestionsDismissedFor != id else {
+            tagSuggestions = []
+            return
+        }
+        tagSuggestions = (try? session.suggestTagsFor(id: id, limit: 6)) ?? []
+    }
+
+    func dismissTagSuggestions() {
+        suggestionsDismissedFor = selectedID
+        tagSuggestions = []
+    }
+
+    /// Write one suggested tag. The core edits the tag line, so the spacing the author uses
+    /// (two trailing spaces, tags on the first line) survives.
+    func applyTag(_ tag: String) {
+        guard let session, let id = selectedID else { return }
+        saveNow()
+        do {
+            let result = try session.applyTags(id: id, tags: [tag])
+            body = result.body
+            loadedBody = result.body
+            seenMtime = result.mtimeMs
+            isDirty = false
+            reloadRows()
+            reloadTags()
+            refreshTagSuggestions()
+        } catch {
+            errorMessage = String(describing: error)
+        }
+    }
 
     func bodyDidChange() {
         guard !isLoading else { return }
@@ -709,6 +757,7 @@ final class AppState {
         do {
             loadedBody = try session.read(id: id)
             body = loadedBody
+            refreshTagSuggestions()
             if let row = rows.first(where: { $0.id == id }) {
                 seenMtime = row.mtimeMs
             }

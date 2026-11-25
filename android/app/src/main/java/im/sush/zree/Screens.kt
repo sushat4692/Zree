@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +35,7 @@ import uniffi.zree_core.SortOrder
 import uniffi.zree_core.completionContext
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -385,6 +387,74 @@ private fun TagStrip(tags: List<TagCount>, active: Set<String>, onToggle: (Strin
 
 // ---------------------------------------------------------------- editor
 
+private val TAG_REASONS = mapOf(
+    "customer" to "タイトルの顧客名",
+    "customer2" to "2社目",
+    "title-exact" to "タイトルに一致",
+    "title-sub" to "タイトルに含まれる",
+    "sibling" to "同じ顧客の過去ノート",
+    "cooccurrence" to "よく一緒に付くタグ",
+    "cooccur" to "よく一緒に付くタグ",
+    "body-mention" to "本文に登場",
+    "sibling-date" to "同じ日のノート",
+)
+
+/// A couple of chips plus everything else behind a menu — the same shape as macOS.
+@Composable
+private fun TagSuggestionRow(vm: ZreeViewModel, state: UiState) {
+    var expanded by remember { mutableStateOf(false) }
+    val sure = state.tagSuggestions.filter { it.tier == 1.toUByte() }
+    val visible = (if (sure.isEmpty()) state.tagSuggestions else sure).take(2)
+    val others = state.tagSuggestions.filter { candidate -> visible.none { it.tag == candidate.tag } }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text("タグ候補", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        visible.forEach { suggestion ->
+            AssistChip(
+                onClick = { vm.applyTag(suggestion.tag) },
+                label = { Text("+ @${suggestion.tag}", style = MaterialTheme.typography.labelMedium) },
+            )
+        }
+        if (others.isNotEmpty()) {
+            Box {
+                TextButton(onClick = { expanded = true }, contentPadding = PaddingValues(horizontal = 6.dp)) {
+                    Text("ほか ${others.size} ▾", style = MaterialTheme.typography.labelMedium)
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    others.forEach { suggestion ->
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text("@${suggestion.tag}", style = MaterialTheme.typography.bodyMedium)
+                                    val caption = TAG_REASONS[suggestion.reasons.firstOrNull() ?: ""]
+                                    if (caption != null) {
+                                        Text(
+                                            caption,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = { expanded = false; vm.applyTag(suggestion.tag) },
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        TextButton(onClick = vm::dismissTagSuggestions, contentPadding = PaddingValues(horizontal = 6.dp)) {
+            Text("×", style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
 @Composable
 fun EditorScreen(vm: ZreeViewModel, state: UiState) {
     var title by remember(state.selectedId) { mutableStateOf(state.title) }
@@ -451,6 +521,7 @@ fun EditorScreen(vm: ZreeViewModel, state: UiState) {
                 )
             }
         }
+        if (state.tagSuggestions.isNotEmpty()) TagSuggestionRow(vm, state)
         HorizontalDivider()
 
         MarkdownField(vm, state)
@@ -621,6 +692,13 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
     // opened every note scrolled to the bottom.
     var value by remember(state.selectedId) {
         mutableStateOf(TextFieldValue(state.draft, TextRange(0)))
+    }
+    // Typing updates the draft through apply(), so the two agree; a difference means the
+    // core rewrote the note (a suggested tag was applied) and the editor must show it.
+    LaunchedEffect(state.draft) {
+        if (state.draft != value.text) {
+            value = TextFieldValue(state.draft, TextRange(0))
+        }
     }
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var pendingAssist by remember { mutableStateOf<EditText?>(null) }

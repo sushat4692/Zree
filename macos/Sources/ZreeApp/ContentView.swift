@@ -248,6 +248,10 @@ struct DetailView: View {
             Header()
             Divider()
             EditorToolbar()
+            if !app.tagSuggestions.isEmpty {
+                Divider()
+                TagSuggestionsBar()
+            }
             Divider()
             editor
         }
@@ -332,6 +336,87 @@ struct Header: View {
 }
 
 /// Same actions as the Android accessory bar.
+/// Chips for the tags the core proposes, with the rest one click away.
+struct TagSuggestionsBar: View {
+    @Environment(AppState.self) private var app
+
+    private static let captions: [String: String] = [
+        "customer": "タイトルの顧客名",
+        "customer2": "2社目",
+        "title-exact": "タイトルに一致",
+        "title-sub": "タイトルに含まれる",
+        "sibling": "同じ顧客の過去ノート",
+        "cooccur": "よく一緒に付くタグ",
+        "body-mention": "本文に登場",
+        "sibling-date": "同じ日のノート",
+    ]
+
+    /// Tier 1 is what the rules are sure about; everything else lives in the menu.
+    private var visible: [TagSuggestion] {
+        let sure = app.tagSuggestions.filter { $0.tier == 1 }
+        return Array((sure.isEmpty ? app.tagSuggestions : sure).prefix(2))
+    }
+
+    private var others: [TagSuggestion] {
+        let shown = Set(visible.map(\.tag))
+        return app.tagSuggestions.filter { !shown.contains($0.tag) }
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("タグ候補")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
+            ForEach(visible, id: \.tag) { suggestion in
+                Button {
+                    app.applyTag(suggestion.tag)
+                } label: {
+                    Text("+ @\(suggestion.tag)")
+                        .font(.system(size: 11, weight: .medium))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.accentColor.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(TagSuggestionsBar.captions[suggestion.reasons.first ?? ""] ?? "")
+            }
+
+            if !others.isEmpty {
+                Menu {
+                    ForEach(others, id: \.tag) { suggestion in
+                        Button {
+                            app.applyTag(suggestion.tag)
+                        } label: {
+                            let caption = TagSuggestionsBar.captions[suggestion.reasons.first ?? ""] ?? ""
+                            Text(caption.isEmpty ? "@\(suggestion.tag)" : "@\(suggestion.tag)　\(caption)")
+                        }
+                    }
+                } label: {
+                    Text("ほか \(others.count) ▾")
+                        .font(.system(size: 11))
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+            }
+
+            Spacer()
+
+            Button {
+                app.dismissTagSuggestions()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("この候補を閉じる")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+    }
+}
+
 struct EditorToolbar: View {
     @Environment(AppState.self) private var app
 

@@ -1097,7 +1097,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_zree_core_checksum_method_zreesession_apply_file_times() and 0xFFFF) != 724) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_zree_core_checksum_method_zreesession_apply_tags() and 0xFFFF) != 36320) {
+    if ((lib.uniffi_zree_core_checksum_method_zreesession_apply_tags() and 0xFFFF) != 27097) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_zree_core_checksum_method_zreesession_blocks() and 0xFFFF) != 2554) {
@@ -2181,9 +2181,10 @@ public interface ZreeSessionInterface {
     fun `applyFileTimes`(`times`: List<FileTimes>): kotlin.UInt
     
     /**
-     * Append tags to the note's tag line. Returns the text now on disk.
+     * Append tags to the note's tag line. Returns the text now on disk together with the
+     * file's new mtime, which the caller must keep as its base for the next save.
      */
-    fun `applyTags`(`id`: kotlin.String, `tags`: List<kotlin.String>): kotlin.String
+    fun `applyTags`(`id`: kotlin.String, `tags`: List<kotlin.String>): TagApplyResult
     
     /**
      * Markdown token stream for a note on disk.
@@ -2385,10 +2386,11 @@ open class ZreeSession: Disposable, AutoCloseable, ZreeSessionInterface
 
     
     /**
-     * Append tags to the note's tag line. Returns the text now on disk.
+     * Append tags to the note's tag line. Returns the text now on disk together with the
+     * file's new mtime, which the caller must keep as its base for the next save.
      */
-    @Throws(NoteException::class)override fun `applyTags`(`id`: kotlin.String, `tags`: List<kotlin.String>): kotlin.String {
-            return FfiConverterString.lift(
+    @Throws(NoteException::class)override fun `applyTags`(`id`: kotlin.String, `tags`: List<kotlin.String>): TagApplyResult {
+            return FfiConverterTypeTagApplyResult.lift(
     callWithHandle {
     uniffiRustCallWithError(NoteException) { _status ->
     UniffiLib.uniffi_zree_core_fn_method_zreesession_apply_tags(
@@ -3298,6 +3300,55 @@ public object FfiConverterTypeSyncReport: FfiConverterRustBuffer<SyncReport> {
             FfiConverterTypePullOutcome.write(value.`pull`, buf)
             FfiConverterBoolean.write(value.`pushed`, buf)
             FfiConverterSequenceString.write(value.`conflicts`, buf)
+    }
+}
+
+
+
+/**
+ * The note after tags were written to its tag line.
+ */
+data class TagApplyResult (
+    var `body`: kotlin.String
+    , 
+    /**
+     * New mtime on disk — the caller's next save must use it as `seen_mtime_ms`.
+     */
+    var `mtimeMs`: kotlin.Long
+    , 
+    var `tags`: List<kotlin.String>
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTagApplyResult: FfiConverterRustBuffer<TagApplyResult> {
+    override fun read(buf: ByteBuffer): TagApplyResult {
+        return TagApplyResult(
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TagApplyResult) = (
+            FfiConverterString.allocationSize(value.`body`) +
+            FfiConverterLong.allocationSize(value.`mtimeMs`) +
+            FfiConverterSequenceString.allocationSize(value.`tags`)
+    )
+
+    override fun write(value: TagApplyResult, buf: ByteBuffer) {
+            FfiConverterString.write(value.`body`, buf)
+            FfiConverterLong.write(value.`mtimeMs`, buf)
+            FfiConverterSequenceString.write(value.`tags`, buf)
     }
 }
 

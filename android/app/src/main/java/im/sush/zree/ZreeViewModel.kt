@@ -20,6 +20,7 @@ import uniffi.zree_core.GitRepo
 import uniffi.zree_core.GitStatus
 import uniffi.zree_core.NoteMeta
 import uniffi.zree_core.SortOrder
+import uniffi.zree_core.TagSuggestion
 import uniffi.zree_core.TagCount
 import uniffi.zree_core.ZreeSession
 import uniffi.zree_core.isGitRepo
@@ -57,6 +58,7 @@ data class UiState(
     val sortOrder: SortOrder = SortOrder.UPDATED_DESC,
     val noteCreatedMs: Long = 0L,
     val noteMtimeMs: Long = 0L,
+    val tagSuggestions: List<TagSuggestion> = emptyList(),
     val editorFontSize: Float = 15f,
     val editorLineHeight: Float = 1.5f,
     val conflicts: List<String> = emptyList(),
@@ -72,6 +74,8 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     private var session: ZreeSession? = null
     private var repo: GitRepo? = null
     private var seenMtime = 0L
+    /** The note whose suggestion bar the user closed. */
+    private var suggestionsHiddenFor: String? = null
     /** The text as loaded; the core compares it when the mtime moved. */
     private var loadedBody = ""
     private var saveJob: Job? = null
@@ -305,12 +309,53 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
             noteCreatedMs = row?.createdMs ?: 0L,
             noteMtimeMs = row?.mtimeMs ?: 0L,
         )
+        suggestionsHiddenFor = null
         _state.value = _state.value.copy(
             screen = Screen.Editor,
             selectedId = id,
             title = row?.title ?: id.removeSuffix(".md"),
             draft = loaded,
         )
+        refreshTagSuggestions()
+    }
+
+    /** Tags the core proposes for the open note (tier 1 first). */
+    private fun refreshTagSuggestions() {
+        val s = session ?: return
+        val id = _state.value.selectedId
+        if (id == null || suggestionsHiddenFor == id) {
+            _state.value = _state.value.copy(tagSuggestions = emptyList())
+            return
+        }
+        val list = runCatching { s.suggestTagsFor(id, 6u) }.getOrDefault(emptyList())
+        _state.value = _state.value.copy(tagSuggestions = list)
+    }
+
+    fun dismissTagSuggestions() {
+        suggestionsHiddenFor = _state.value.selectedId
+        _state.value = _state.value.copy(tagSuggestions = emptyList())
+    }
+
+    /** Write one suggested tag: the core edits the tag line, keeping its layout. */
+    fun applyTag(tag: String) = io {
+        val s = session ?: return@io
+        val id = _state.value.selectedId ?: return@io
+        persistCurrent()
+        val result = runCatching { s.applyTags(id, listOf(tag)) }
+            .getOrElse {
+                Log.e(TAG, "apply tag failed", it)
+                _state.value = _state.value.copy(error = "タグを付けられませんでした: ${it.message}")
+                return@io
+            }
+        loadedBody = result.body
+        seenMtime = result.mtimeMs
+        dirty = false
+        _state.value = _state.value.copy(
+            draft = result.body,
+            noteMtimeMs = result.mtimeMs,
+        )
+        refresh()
+        refreshTagSuggestions()
     }
 
     /** Synchronous: a prefix scan over a few hundred tags is microseconds. */

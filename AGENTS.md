@@ -121,7 +121,8 @@ cargo run --release --example probe -- /path/to/vault
 - [x] macOS: per-pane fonts (family / size / line height) in Settings, editor toolbar
 - [x] Android editor logic covered by JVM tests against the real core
 - [x] Tag suggestions from structure only (title words, customer names, sibling notes,
-      co-occurrence) — precision measured at 96% on the author's vault, chips still to come
+      co-occurrence) — 96% precision on the author's vault; chips in both editors, with
+      the rest behind "ほか ▾" and nothing applied without a tap
 
 ## Editor rendering (macOS)
 
@@ -152,7 +153,8 @@ Parsing is done once per document, then only when it can change the result:
 - [x] macOS 書式 menu shortcuts (⌘B, ⇧⌘7/8/9, ⇧⌘X, ⇧⌘H, ⇧⌘Q, ⌘[ / ⌘])
 ## Remaining
 
-- [ ] Tag suggestion chips (core `suggest_tags_for` / `apply_tags` are done and measured)
+- [ ] macOS: applying a chip rewrites the note text, which clears ⌘Z; make it an undoable
+      NSTextView insertion (`tag_insertion` would need a UTF-16 offset from the core)
 - [ ] Link navigation (only the preview offered it; the core still resolves links)
 - [ ] Android heading spacing is approximated with line height (Compose cannot set
       paragraph spacing)

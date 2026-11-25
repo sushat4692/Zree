@@ -953,9 +953,10 @@ public protocol ZreeSessionProtocol: AnyObject, Sendable {
     func applyFileTimes(times: [FileTimes])  -> UInt32
     
     /**
-     * Append tags to the note's tag line. Returns the text now on disk.
+     * Append tags to the note's tag line. Returns the text now on disk together with the
+     * file's new mtime, which the caller must keep as its base for the next save.
      */
-    func applyTags(id: String, tags: [String]) throws  -> String
+    func applyTags(id: String, tags: [String]) throws  -> TagApplyResult
     
     /**
      * Markdown token stream for a note on disk.
@@ -1114,10 +1115,11 @@ open func applyFileTimes(times: [FileTimes]) -> UInt32  {
 }
     
     /**
-     * Append tags to the note's tag line. Returns the text now on disk.
+     * Append tags to the note's tag line. Returns the text now on disk together with the
+     * file's new mtime, which the caller must keep as its base for the next save.
      */
-open func applyTags(id: String, tags: [String])throws  -> String  {
-    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
+open func applyTags(id: String, tags: [String])throws  -> TagApplyResult  {
+    return try  FfiConverterTypeTagApplyResult_lift(try rustCallWithError(FfiConverterTypeNoteError_lift) {
         uniffiCallStatus in
     uniffi_zree_core_fn_method_zreesession_apply_tags(
             self.uniffiCloneHandle(),
@@ -2083,6 +2085,73 @@ public func FfiConverterTypeSyncReport_lift(_ buf: RustBuffer) throws -> SyncRep
 #endif
 public func FfiConverterTypeSyncReport_lower(_ value: SyncReport) -> RustBuffer {
     return FfiConverterTypeSyncReport.lower(value)
+}
+
+
+/**
+ * The note after tags were written to its tag line.
+ */
+public struct TagApplyResult: Equatable, Hashable {
+    public var body: String
+    /**
+     * New mtime on disk — the caller's next save must use it as `seen_mtime_ms`.
+     */
+    public var mtimeMs: Int64
+    public var tags: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(body: String, 
+        /**
+         * New mtime on disk — the caller's next save must use it as `seen_mtime_ms`.
+         */mtimeMs: Int64, tags: [String]) {
+        self.body = body
+        self.mtimeMs = mtimeMs
+        self.tags = tags
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension TagApplyResult: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTagApplyResult: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagApplyResult {
+        return
+            try TagApplyResult(
+                body: FfiConverterString.read(from: &buf), 
+                mtimeMs: FfiConverterInt64.read(from: &buf), 
+                tags: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TagApplyResult, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.body, into: &buf)
+        FfiConverterInt64.write(value.mtimeMs, into: &buf)
+        FfiConverterSequenceString.write(value.tags, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTagApplyResult_lift(_ buf: RustBuffer) throws -> TagApplyResult {
+    return try FfiConverterTypeTagApplyResult.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTagApplyResult_lower(_ value: TagApplyResult) -> RustBuffer {
+    return FfiConverterTypeTagApplyResult.lower(value)
 }
 
 
@@ -3815,7 +3884,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_zree_core_checksum_method_zreesession_apply_file_times() != 724) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_zree_core_checksum_method_zreesession_apply_tags() != 36320) {
+    if (uniffi_zree_core_checksum_method_zreesession_apply_tags() != 27097) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_zree_core_checksum_method_zreesession_blocks() != 2554) {
