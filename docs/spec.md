@@ -33,15 +33,19 @@ loaded, return `Conflict`. The UI reports "changed on disk" and never overwrites
 
 ## 3. Tags
 
-Inline tags only; no frontmatter.
+Inline tags only; no frontmatter. **The syntax is `@tag`.**
 
-- `#` must be at the start of a line or directly after whitespace
+`#` is never a tag — it is the Markdown heading marker. Keeping them apart is why tag
+completion no longer interferes with typing `# ` at the start of a line, which is what made
+headings impossible to type while completions were active.
+
+- `@` must be at the start of a line or directly after whitespace
 - The body ends at whitespace, `#`, or a terminator (`、。，．！？「」『』（）【】・…—–` plus ASCII
   `, . ! ? " ' ( ) [ ] { } \` | \ / ; : * _ ~ = + ^ $ % & @`)
 - **Excluded**:
-  - `#` followed by whitespace → heading, not a tag
-  - 3–8 characters, all hex digits → colour literal (`#fff`, `#1a2b3c`)
+  - a word glued to `@` (`sush@example.com` is not a tag)
   - anything inside fenced code blocks or inline code spans
+- Migration from the old syntax: `scripts/migrate-tag-syntax.py <vault> [--dry]`
 - Case is preserved. Duplicates collapse to the first occurrence.
 - Filtering with several tags is AND.
 
@@ -147,11 +151,12 @@ for the editor, so tab-indented lists nest correctly.
 
 **Completion** (`completion_context` + `suggest_tags` / `suggest_notes`):
 
-- `#pre` or `＃pre` at a word boundary → tag candidates (prefix match on the tag index,
+- `@pre` at a word boundary → tag candidates (prefix match on the tag index,
   NFKC + lowercase, so width and case do not matter)
 - a boundary is: start of line, whitespace (ASCII or full-width), or a list marker /
   opening punctuation (`- * + > [ ( / 、 。 「 （`). Japanese IMEs swallow the space after
-  `- `, so `-#tag` must still complete
+  `- `, so `-@tag` must still complete
+- a bare `@` offers every tag (unlike `#`, nothing else uses it)
 - `[pre` → note titles, `](pre` → note paths (candidates come from the index)
 - nothing is offered inside a fenced code block
 - the UI replaces `caret - prefix.length .. caret`, so no byte/UTF-16 offsets cross the FFI

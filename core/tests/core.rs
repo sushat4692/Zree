@@ -16,18 +16,18 @@ fn fixture() -> (tempfile::TempDir, Vault) {
 
     fs::write(
         root.join("ワンネス メンタリング 230502.md"),
-        "#ワンネス #メンタリング\n- 1ヶ月振り返り\n  - 8点 - コミュニケーション周りで減点\n- 課題\n  - コミュニケーション\n- 行動目標\n  - 月イチ面談\n![[Screenshot 2025-05-16 at 10.17.26 AM.png]]\n",
+        "@ワンネス @メンタリング\n- 1ヶ月振り返り\n  - 8点 - コミュニケーション周りで減点\n- 課題\n  - コミュニケーション\n- 行動目標\n  - 月イチ面談\n![[Screenshot 2025-05-16 at 10.17.26 AM.png]]\n",
     )
     .unwrap();
 
     fs::write(
         root.join("1on1導入講座 240404.md"),
-        "# 1on1導入講座\n\n導入の目的は **信頼関係** の構築。\n\n```md\n#これはコードブロックなのでタグではない\n```\n\n顧客は #CUBLIC様 と #採用 の文脈。\n![](assets/2024-06-23-124506.png)\n",
+        "# 1on1導入講座\n\n導入の目的は **信頼関係** の構築。\n\n```md\n@これはコードブロックなのでタグではない\n```\n\n顧客は @CUBLIC様 と @採用 の文脈。\n![](assets/2024-06-23-124506.png)\n",
     )
     .unwrap();
 
     fs::write(root.join("sub/メモ.md"), "今日の記事を書いた。\n").unwrap();
-    fs::write(root.join("リンク元.md"), "#リンク\n[相手](sub/メモ.md)\n").unwrap();
+    fs::write(root.join("リンク元.md"), "@リンク\n[相手](sub/メモ.md)\n").unwrap();
 
     let vault = Vault::open(root).unwrap();
     (dir, vault)
@@ -100,20 +100,18 @@ fn trash_moves_instead_of_deleting() {
 }
 
 #[test]
-fn tags_skip_headings_code_and_inline_code() {
-    assert_eq!(
-        tags::extract("#ワンネス #メンタリング\n- 課題"),
-        vec!["ワンネス", "メンタリング"]
-    );
+fn tags_use_at_and_never_hash() {
+    assert_eq!(tags::extract("@ワンネス @メンタリング\n- 課題"), vec!["ワンネス", "メンタリング"]);
+    // `#` is a heading marker, never a tag
     assert_eq!(tags::extract("# 見出しです\n"), Vec::<String>::new());
-    assert_eq!(tags::extract("```\n#コード\n```\n#本物"), vec!["本物"]);
-    assert_eq!(tags::extract("これは `#コード` です #タグ"), vec!["タグ"]);
-    assert_eq!(tags::extract("顧客は #CUBLIC様 と #採用 の文脈。"), vec![
-        "CUBLIC様",
-        "採用"
-    ]);
-    assert_eq!(tags::extract("#重複 #重複"), vec!["重複"]);
-    assert_eq!(tags::extract("色は #fff のような番号は除外"), Vec::<String>::new());
+    assert_eq!(tags::extract("#ワンネス はタグではない"), Vec::<String>::new());
+    // code fences and inline code are ignored
+    assert_eq!(tags::extract("```\n@コード\n```\n@本物"), vec!["本物"]);
+    assert_eq!(tags::extract("これは `@コード` です @タグ"), vec!["タグ"]);
+    // punctuation terminates, duplicates collapse, emails are not tags
+    assert_eq!(tags::extract("顧客は @CUBLIC様 と @採用。"), vec!["CUBLIC様", "採用"]);
+    assert_eq!(tags::extract("@重複 @重複"), vec!["重複"]);
+    assert_eq!(tags::extract("連絡先は sush@example.com です"), Vec::<String>::new());
 }
 
 #[test]
@@ -296,17 +294,24 @@ fn list_continuation_rules() {
 fn completion_context_detection() {
     use zree_core::complete::{completion_context, CompletionKind};
 
-    let ctx = completion_context("本文 #お客").unwrap();
+    // a bare `#` is the start of a heading, not a tag: offering tags there swallowed the
+    // space and headings could not be typed
+    assert!(completion_context("#").is_none());
+    assert!(completion_context("# ").is_none());
+    assert!(completion_context("- #").is_none());
+
+    let ctx = completion_context("本文 @お客").unwrap();
     assert_eq!(ctx.kind, CompletionKind::Tag);
     assert_eq!(ctx.prefix, "お客");
 
     // inside a sentence, not at a word boundary
-    assert!(completion_context("a#b").is_none());
-    // a heading is not a tag (the space after # is what separates them)
+    assert!(completion_context("a@b").is_none());
+    // `#` never starts a tag: headings stay typeable
+    assert!(completion_context("#").is_none());
     assert!(completion_context("# 見出し").is_none());
     // fenced code is ignored
-    assert!(completion_context("```\n#お客").is_none());
-    assert!(completion_context("```\ncode\n```\n#お客").is_some());
+    assert!(completion_context("```\n@お客").is_none());
+    assert!(completion_context("```\ncode\n```\n@お客").is_some());
 
     let link = completion_context("参考 [お客様").unwrap();
     assert_eq!(link.kind, CompletionKind::Note);
@@ -333,30 +338,24 @@ fn suggestions_filter_by_prefix_and_ignore_width() {
 }
 
 #[test]
-fn full_width_hash_from_japanese_ime_is_accepted() {
+fn at_tags_work_with_japanese_text() {
     use zree_core::complete::{completion_context, CompletionKind};
 
-    // Japanese IMEs turn "\#" into "＃"; both must behave the same
-    assert_eq!(tags::extract("- ＃お客様"), vec!["お客様"]);
-    let ctx = completion_context("- ＃お客").unwrap();
-    assert_eq!(ctx.kind, CompletionKind::Tag);
-    assert_eq!(ctx.prefix, "お客");
-    // full-width space also separates a tag
-    let ctx = completion_context("本文　＃お客").unwrap();
-    assert_eq!(ctx.prefix, "お客");
-}
-
-#[test]
-fn tag_completion_accepts_list_markers_as_boundary() {
-    use zree_core::complete::{completion_context, CompletionKind};
-
-    // an IME can eat the space after "- ", so "-#tag" must still complete
-    let ctx = completion_context("-\u{ff03}").unwrap();
+    // a tag directly after a list marker (the IME eats the space after "- ")
+    let ctx = completion_context("-@").unwrap();
     assert_eq!(ctx.kind, CompletionKind::Tag);
     assert_eq!(ctx.prefix, "");
-    assert_eq!(completion_context("- #お客").unwrap().prefix, "お客");
-    // but a word glued to the hash is not a tag
-    assert!(completion_context("ab#cd").is_none());
+
+    let ctx = completion_context("- @お客").unwrap();
+    assert_eq!(ctx.kind, CompletionKind::Tag);
+    assert_eq!(ctx.prefix, "お客");
+
+    // a full-width space also separates a tag
+    let ctx = completion_context("本文　@お客").unwrap();
+    assert_eq!(ctx.prefix, "お客");
+
+    // a word glued to the @ is not a tag
+    assert!(completion_context("ab@cd").is_none());
 }
 
 #[test]

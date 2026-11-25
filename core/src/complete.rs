@@ -515,17 +515,11 @@ pub fn completion_context(before_cursor: &str) -> Option<CompletionContext> {
         }
     }
 
-    // inline tag: #foo / ＃foo (Japanese IMEs produce the full-width form)
-    if let Some((hash, marker)) = line
-        .char_indices()
-        .rev()
-        .find(|(_, c)| *c == '#' || *c == '＃')
-    {
-        let after = hash + marker.len_utf8();
-        let before = &line[..hash];
-        // Japanese IMEs swallow the space after a list marker, so "-#tag" is a
-        // realistic thing to type; treat markers and opening punctuation as a
-        // word boundary too.
+    // inline tag: @foo. `#` is deliberately not a trigger — it starts a heading, and
+    // offering completions there swallowed the space.
+    if let Some((at, _)) = line.char_indices().rev().find(|(_, c)| *c == '@') {
+        let after = at + 1;
+        let before = &line[..at];
         let at_boundary = before.is_empty()
             || before.ends_with(char::is_whitespace)
             || matches!(
@@ -533,10 +527,7 @@ pub fn completion_context(before_cursor: &str) -> Option<CompletionContext> {
                 Some('-' | '*' | '+' | '>' | '[' | '(' | '/' | '、' | '。' | '「' | '（')
             );
         let prefix = &line[after..];
-        let clean = !prefix.contains(' ')
-            && !prefix.contains('　')
-            && !prefix.contains('#')
-            && !prefix.contains('＃');
+        let clean = !prefix.contains(' ') && !prefix.contains('　') && !prefix.contains('@');
         if at_boundary && clean {
             return Some(CompletionContext {
                 kind: CompletionKind::Tag,

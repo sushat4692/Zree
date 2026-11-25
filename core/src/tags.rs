@@ -1,9 +1,10 @@
 //! Tag extraction.
 //!
 //! Rules (shared by macOS and Android, documented in docs/spec.md):
-//! * A tag starts with `#` that is at the start of a line or preceded by whitespace.
-//! * The tag body ends at whitespace, another `#`, or a punctuation/terminator char.
-//! * A `#` followed by whitespace is a Markdown heading, never a tag.
+//! * A tag starts with `@` at the start of a line or preceded by whitespace.
+//! * The body ends at whitespace, another `@`, or a punctuation/terminator char.
+//! * `#` is never a tag: it is the Markdown heading marker (`# `), and keeping the two
+//!   apart is what lets a heading be typed while tag completion is active.
 //! * Tags inside fenced code blocks and inline code spans are ignored.
 //! * Only ASCII punctuation terminates a tag; CJK chars are valid tag body.
 
@@ -50,20 +51,20 @@ pub fn extract(body: &str) -> Vec<String> {
                 continue;
             }
 
-            if c == '#' || c == '＃' {
+            if c == '@' {
                 let at_start = i == 0 || chars[i - 1].is_whitespace();
                 if at_start {
                     let mut j = i + 1;
                     let mut buf = String::new();
                     while j < chars.len() {
                         let ch = chars[j];
-                        if ch.is_whitespace() || ch == '#' || ch == '＃' || TERMINATORS.contains(&ch) {
+                        if ch.is_whitespace() || ch == '@' || TERMINATORS.contains(&ch) {
                             break;
                         }
                         buf.push(ch);
                         j += 1;
                     }
-                    if !buf.is_empty() && !looks_like_color(&buf) {
+                    if !buf.is_empty() {
                         if !out.iter().any(|t| t == &buf) {
                             out.push(buf);
                         }
@@ -86,7 +87,3 @@ fn run_len(chars: &[char], at: usize, c: char) -> usize {
     n
 }
 
-/// `#fff`, `#1a2b3c` are colour literals, not tags. `#AI`, `#1on1` are tags.
-fn looks_like_color(body: &str) -> bool {
-    (3..=8).contains(&body.chars().count()) && body.chars().all(|c| c.is_ascii_hexdigit())
-}

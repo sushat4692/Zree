@@ -337,7 +337,7 @@ fun ListScreen(vm: ZreeViewModel, state: UiState) {
                     }
                     if (row.tags.isNotEmpty()) {
                         Text(
-                            row.tags.take(3).joinToString(" ") { "#$it" },
+                            row.tags.take(3).joinToString(" ") { "@$it" },
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -369,7 +369,7 @@ private fun TagStrip(tags: List<TagCount>, active: Set<String>, onToggle: (Strin
                     .padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
                 Text(
-                    "#${tag.tag} ${tag.count}",
+                    "@${tag.tag} ${tag.count}",
                     style = MaterialTheme.typography.labelSmall,
                     color = if (on) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -689,7 +689,7 @@ private fun MarkdownField(vm: ZreeViewModel, state: UiState) {
             ) {
                 items(suggestions, key = { it }) { tag ->
                     Text(
-                        "#$tag",
+                        "@$tag",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier

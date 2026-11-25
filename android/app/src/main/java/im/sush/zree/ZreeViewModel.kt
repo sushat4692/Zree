@@ -126,7 +126,7 @@ class ZreeViewModel(app: Application) : AndroidViewModel(app) {
     fun createEmptyVault() = io {
         val target = File(defaultVaultPath)
         target.mkdirs()
-        File(target, "ようこそ.md").writeText("#ようこそ\n\nZreeへようこそ。ここに書いていきます。\n")
+        File(target, "ようこそ.md").writeText("# ようこそ\n\nZreeへようこそ。ここに書いていきます。\n")
         openVaultInternal(target.absolutePath)
     }
 

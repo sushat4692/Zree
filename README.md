@@ -16,6 +16,9 @@ A lightweight Markdown note-taking app: **macOS + Android**, fully native UI, on
 - **Git-synced Tree** — built on Git's tree structure, so notes are versioned and synced across devices.
 - **Self-organizing** — focus on writing; automatic tagging weaves your thoughts into a connected tree (future).
 
+Tags are written `@tag` (`#` stays the heading marker). Migration from `#tag`:
+`python3 scripts/migrate-tag-syntax.py /path/to/vault --dry`.
+
 Connections are made by **tags first, standard Markdown links second**. `[[wikilink]]` syntax is not used.
 
 Identifier: `im.sush.zree`

@@ -140,7 +140,7 @@ struct MarkdownEditor: NSViewRepresentable {
             let caret = textView.selectedRange().location
             if caret > 0, caret <= ns.length {
                 let previous = ns.substring(with: NSRange(location: caret - 1, length: 1))
-                if previous == "#" || previous == "＃" {
+                if previous == "@" {
                     textView.complete(nil)
                 }
             }

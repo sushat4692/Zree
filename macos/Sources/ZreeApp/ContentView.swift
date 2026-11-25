@@ -139,7 +139,7 @@ struct TagStrip: View {
                         Button {
                             app.toggleTag(tag.tag)
                         } label: {
-                            Text("#\(tag.tag) \(tag.count)")
+                            Text("@\(tag.tag) \(tag.count)")
                                 .font(.caption2)
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 3)
@@ -179,7 +179,7 @@ struct RowView: View {
                 }
                 if !row.tags.isEmpty {
                     Text("·")
-                    Text(row.tags.prefix(3).map { "#\($0)" }.joined(separator: " "))
+                    Text(row.tags.prefix(3).map { "@\($0)" }.joined(separator: " "))
                         .lineLimit(1)
                         .foregroundStyle(ZreePalette.accent)
                 }
@@ -303,7 +303,7 @@ struct Header: View {
             }
 
             if !app.selectedTags.isEmpty {
-                Text(app.selectedTags.sorted().map { "#\($0)" }.joined(separator: " "))
+                Text(app.selectedTags.sorted().map { "@\($0)" }.joined(separator: " "))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
